@@ -1,0 +1,194 @@
+//--------------------------------------------------------
+//
+//  L2Diagnostic
+//  Author: Mark Stegall
+//  Module: LidarDecoder.h
+//
+//  Purpose:
+//  Determine correct operation of the Unitreee L2 Lidar hardware
+//  and software.  Establish platform independent software protocols
+//  for using the L2 Lidar with its Ethernet interface.
+//
+//  Background:
+//  Unitree provides undoucmented software files in the form:
+//      include files
+//      example application files
+//      .a Archive Library
+//
+//  The source files rely on an Archive library using POSIX I/O
+//  No source exists for the archive Library making it diffcult
+//  to debug or port usage of the L2 Lidar for other platforms.
+//  The hardware has 2 mutually exclusive communication interfaces:
+//      Ethernet using UDP
+//      Serial UART
+//  The serial UART is limited in speed and does not operate at
+//  the full sensor speed of 64K/sec sample points.
+//
+//  Solution:
+//  This software skeleton was created using directed ChatGPT AI
+//  conversation targetting a QT Creator development platform.
+//  It reads UPD packets from the L2, caterorizes them, performs
+//  error detection for bad packets (lost), display subsample
+//  of packets and optionally saves them to a CSV file.
+//
+//  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
+//  V0.2.0  2026-01-02  Documentation, start of debugging
+//                      CRC32normal() added to unitree_lidar_utilies.h
+//                      implementation of LidarDecoder
+//  V0.2.1  2026-01-05  Changed LidarDecoder.h and cpp to L2lidar
+//                      Changed class name from LidarDecoer to L2lidar
+//                      Added USER commands to control L2 lidar
+//                      Updated @notes for unitree_lidar_protocols.h
+//                      Consolidated all UDP operations into this class
+//                      CRC32normal() normal removed from unitree_lidar_utilies.h
+//
+//--------------------------------------------------------
+
+//--------------------------------------------------------
+// This uses the following Unitree L2 sources modules:
+//      unitree_lidar_protocol.h
+//      unitree_lidar_utilities
+// The orignal source can be found at:
+//      https://github.com/unitreerobotics/unilidar_sdk2
+//      under License: BSD 3-Clause License (see files)
+//
+// Corrections/additions have been made to these 2 files
+//--------------------------------------------------------
+
+//--------------------------------------------------------
+// GPL-3.0 license
+//
+// This file is part of L2diagnsotic.
+//
+// L2diagnsotic is free software : you can redistribute it and /or modify it under
+// the terms of the GNU General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+//
+// L2diagnsotic is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License along with L2diagnsotic.
+// If not, see < https://www.gnu.org/licenses/>.
+//--------------------------------------------------------
+
+//--------------------------------------------------------
+//
+//  There are 2 interface sides to the L2 Lidar
+//  The packets sent from the L2 are recieved on different port
+//  then the command packets that are sent to the L2
+//
+//  No ui (user interface) elements are contained in this class
+//
+//  class L2lidar
+//
+//--------------------------------------------------------
+
+#pragma once
+
+#include <QObject>
+#include <QByteArray>
+#include <QUdpSocket>
+#include <Qhostaddress>
+#include <cstdint>
+
+#pragma pack(push, 1)
+#include "unitree_lidar_protocol.h"
+#pragma pack(pop)
+#include "unitree_lidar_utilities.h"
+
+class L2lidar : public QObject {
+    Q_OBJECT
+public:
+    explicit L2lidar(QObject* parent = nullptr);
+
+    // This is the readyread Qt callback for processing
+    // UDP packets that have been recieved
+    void processDatagram(const QByteArray& datagram);
+
+    // Accessors for timer-driven UI updates
+    const LidarImuData& imu() const { return latestImu_; }
+    const LidarPointData& Pcl3D() const { return latest3Ddata_; }
+    const Lidar2DPointData& Pcl2D() const { return latest2Ddata_; }
+    const LidarAckData& ack() const { return latestACKdata_; }
+    const LidarVersionData& version() const { return latestVersion_; }
+    const LidarTimeStampData& timestamp() const { return latestTimestamp_; }
+
+    // packet stats from L2 (only updates when receiving is started
+    const uint64_t& totalIMU() const { return totalIMUpackets_;}
+    const uint64_t& total3D() const { return total3Dpackets_;}
+    const uint64_t& total2D() const { return total2Dpackets_;}
+    const uint64_t& totalACK() const { return totalACKpackets_;}
+    const uint64_t totalPackets() const { return totalPackets_; }
+    const uint64_t lostPackets() const { return lostPackets_; }
+    const uint64_t totalOther() const { return lostPackets_; }
+
+    void ClearCounts();
+
+    // L2 commands
+    bool LidarStartRotation(void);
+    bool LidarStopRotation(void);
+    bool LidarReset(void);
+    bool LidarGetVersion(void);
+
+    // UDP ethernet communications
+
+    void LidarSetCmdConfig(QString srcIP, uint32_t srcPort,
+                           QString dstIP, uint32_t dstPort);
+    bool ConnectL2();  // bind to create, bind socket, connect callback for decode
+    void DisconnectL2();   // close socket
+    void readPendingDatagrams();
+
+signals:
+    void imuReceived();
+    void PCL3DReceived();
+    void PCL2DReceived();
+    void versionReceived();
+    void timestampReceived();
+    void ackReceived();
+
+private:
+    // UDP packet decoders
+    void decode3D(const QByteArray& datagram, uint64_t Offset);
+    void decode2D(const QByteArray& datagram, uint64_t Offset);
+    void decodeImu(const QByteArray& datagram, uint64_t Offset);
+    void decodeVersion(const QByteArray& datagram, uint64_t Offset);
+    void decodeTimestamp(const QByteArray& datagram, uint64_t Offset);
+    void decodeAck(const QByteArray& datagram, uint64_t Offset);
+    void handleRaw(uint32_t packetType,
+                   const QByteArray& datagram, uint64_t Offset);
+    void decodeConfig(const QByteArray& datagram, uint64_t Offset);
+
+    // helper functions
+    void setPacketHeader(FrameHeader *FrameHeader, uint32_t packet_type,
+                         uint32_t packet_size);
+    void setPacketTail(FrameHeader *FrameTale);
+
+    // UDP function(s)
+    bool SendPacket(uint8_t *Buffer,uint32_t Len);
+
+private:
+    // UDP socket
+    QUdpSocket L2socket;
+
+    // Latest decoded values
+    LidarImuData        latestImu_{};
+    LidarVersionData   latestVersion_{};
+    LidarTimeStampData latestTimestamp_{};
+    Lidar2DPointData   latest2Ddata_{};
+    LidarPointData   latest3Ddata_{};
+    LidarAckData latestACKdata_{};
+
+    // Packet counters
+    uint64_t totalPackets_{0};
+    uint64_t lostPackets_{0};
+    uint64_t totalIMUpackets_{0};
+    uint64_t totalACKpackets_{0};
+    uint64_t total3Dpackets_{0};
+    uint64_t total2Dpackets_{0};
+    uint64_t totalOther_{0};
+
+    QString src_ip {""};
+    QString dst_ip {""};
+    uint32_t src_port {0};
+    uint32_t dst_port {0};
+};
