@@ -141,8 +141,16 @@ private:
     //-----------------------------------------------------
     QFile csvFile;
     QTextStream csvStream;
+
+    // configuration dialog
     ConfigDialog config;
 
+    // helper functions
+    QString ACKreport(LidarAckData *ACKdata);
+    QString IMUreport(LidarImuData *IMUdata);
+    QString PCLreport(const LidarPointDataPacket &PCLdata);
+
+    // INI settings functions
     void saveSettings();
     void loadSettings();
     void saveCsv(const QByteArray& datagram);

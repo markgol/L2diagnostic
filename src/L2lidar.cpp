@@ -44,6 +44,9 @@
 //                      Added crc32() calculation on outgoing packets
 //                      Moved all socket calls to this class
 //                      removed CRC32normal()from unitree_lidar_utilies.h
+//                      Full PCL packet is saved because the
+//                          unitree utility to convert PCL cloud
+//                          requires it
 //
 //--------------------------------------------------------
 
@@ -235,10 +238,14 @@ void L2lidar::decode3D(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const LidarPointDataPacket*>(datagram.constData()+Offset);
 
-    latest3Ddata_ = pkt->data;
+    PacketMutex.lock();
+    latest3DdataPacket_.header = pkt->header;
+    latest3DdataPacket_.data = pkt->data;
+    latest3DdataPacket_.tail = pkt->tail;
 
-    latestTimestamp_.data.sec = latest3Ddata_.info.stamp.sec;
-    latestTimestamp_.data.nsec = latest3Ddata_.info.stamp.nsec;
+    latestTimestamp_.data.sec = latest3DdataPacket_.data.info.stamp.sec;
+    latestTimestamp_.data.nsec = latest3DdataPacket_.data.info.stamp.nsec;
+    PacketMutex.unlock();
 
     emit timestampReceived();
     emit PCL3DReceived();
@@ -261,10 +268,12 @@ void L2lidar::decode2D(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const Lidar2DPointDataPacket*>(datagram.constData()+Offset);
 
+    PacketMutex.lock();
     latest2Ddata_ = pkt->data;
 
     latestTimestamp_.data.sec = latest2Ddata_.info.stamp.sec;
     latestTimestamp_.data.nsec = latest2Ddata_.info.stamp.nsec;
+    PacketMutex.unlock();
 
     emit timestampReceived();
     emit PCL2DReceived();
@@ -287,10 +296,12 @@ void L2lidar::decodeImu(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const LidarImuDataPacket*>(datagram.constData()+Offset);
 
+    PacketMutex.lock();
     latestImu_ = pkt->data;
 
     latestTimestamp_.data.sec = latestImu_.info.stamp.sec;
     latestTimestamp_.data.nsec = latestImu_.info.stamp.nsec;
+    PacketMutex.unlock();
 
     emit timestampReceived();
     emit imuReceived();
@@ -314,7 +325,10 @@ void L2lidar::decodeVersion(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const LidarVersionDataPacket*>(datagram.constData()+Offset);
 
+    PacketMutex.lock();
     latestVersion_ = pkt->data;
+    PacketMutex.unlock();
+
     emit versionReceived();
 }
 //--------------------------------------------------------------------
@@ -336,7 +350,10 @@ void L2lidar::decodeTimestamp(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const LidarTimeStampPacket*>(datagram.constData()+Offset);
 
+    PacketMutex.lock();
     latestTimestamp_ = pkt->data;
+    PacketMutex.unlock();
+
     emit timestampReceived();
 }
 
@@ -358,7 +375,10 @@ void L2lidar::decodeAck(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const LidarAckDataPacket*>(datagram.constData()+Offset);
 
+    PacketMutex.lock();
     latestACKdata_ = pkt->data;
+    PacketMutex.unlock();
+
     emit ackReceived();
 }
 
@@ -511,6 +531,36 @@ bool L2lidar::LidarGetVersion(void)
     // send packet
     if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
         qDebug() << "Get Version cmd failed";
+        return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------------------
+// SetWorkMode
+//--------------------------------------------------------------------
+bool L2lidar::SetWorkMode(uint32_t mode)
+{
+    // set header
+    LidarWorkModeConfigPacket cmd;
+    setPacketHeader(&cmd.header,LIDAR_PARAM_WORK_MODE_TYPE,
+                    sizeof(LidarWorkModeConfigPacket));
+
+    // set data
+    cmd.data.mode = mode;
+
+    // set tail
+    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+    cmd.tail.msg_type_check = 0x00007fff;
+    cmd.tail.reserve[0] = 0x5b; // known value from recorded command
+    cmd.tail.reserve[1] = 0x5f; // known value from recorded command
+    cmd.tail.tail[0] = 0x00;
+    cmd.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarWorkModeConfigPacket))) {
+        qDebug() << "Set work mode failed";
         return false;
     }
 

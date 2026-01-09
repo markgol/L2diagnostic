@@ -41,6 +41,7 @@
 //                      Updated @notes for unitree_lidar_protocols.h
 //                      Consolidated all UDP operations into this class
 //                      CRC32normal() normal removed from unitree_lidar_utilies.h
+//  V.2.2   2026-01-08  Added Mutex access to packet copies
 //
 //--------------------------------------------------------
 
@@ -89,6 +90,7 @@
 #include <QByteArray>
 #include <QUdpSocket>
 #include <Qhostaddress>
+#include <QMutex>
 #include <cstdint>
 
 #pragma pack(push, 1)
@@ -105,35 +107,65 @@ public:
     // UDP packets that have been recieved
     void processDatagram(const QByteArray& datagram);
 
-    // Accessors for timer-driven UI updates
-    const LidarImuData& imu() const { return latestImu_; }
-    const LidarPointData& Pcl3D() const { return latest3Ddata_; }
-    const Lidar2DPointData& Pcl2D() const { return latest2Ddata_; }
-    const LidarAckData& ack() const { return latestACKdata_; }
-    const LidarVersionData& version() const { return latestVersion_; }
-    const LidarTimeStampData& timestamp() const { return latestTimestamp_; }
+    // Accessors for external data acces in other threads
+    // such as a timer based GUI
+    const LidarImuData imu() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestImu_;
+    }
+    // const LidarPointData Pcl3D() const {
+    //     QMutexLocker locker(&PacketMutex);
+    //     return latest3Ddata_;
+    // }
+    const LidarPointDataPacket Pcl3Dpacket() const {
+        QMutexLocker locker(&PacketMutex);
+        return latest3DdataPacket_;
+    }
 
-    // packet stats from L2 (only updates when receiving is started
-    const uint64_t& totalIMU() const { return totalIMUpackets_;}
-    const uint64_t& total3D() const { return total3Dpackets_;}
-    const uint64_t& total2D() const { return total2Dpackets_;}
-    const uint64_t& totalACK() const { return totalACKpackets_;}
+    const Lidar2DPointData Pcl2D() const {
+        QMutexLocker locker(&PacketMutex);
+        return latest2Ddata_;
+    }
+    const LidarAckData ack() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestACKdata_;
+    }
+    const LidarVersionData version() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestVersion_;
+    }
+    const LidarTimeStampData timestamp() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestTimestamp_;
+    }
+
+    // packet stats from L2 (only updates when L2 socket connected)
+    // These are not actually critical, only for reporting stats
+    const uint64_t totalIMU() const { return totalIMUpackets_;}
+    const uint64_t total3D() const { return total3Dpackets_;}
+    const uint64_t total2D() const { return total2Dpackets_;}
+    const uint64_t totalACK() const { return totalACKpackets_;}
     const uint64_t totalPackets() const { return totalPackets_; }
     const uint64_t lostPackets() const { return lostPackets_; }
     const uint64_t totalOther() const { return lostPackets_; }
 
-    void ClearCounts();
+    void ClearCounts(); // clears the packet totals
 
     // L2 commands
     bool LidarStartRotation(void);
     bool LidarStopRotation(void);
     bool LidarReset(void);
     bool LidarGetVersion(void);
+    //bool QueryWorkMode(void);
+    bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
 
     // UDP ethernet communications
 
+    // this is only to set the UDP parameters in the class
+    // It DOES NOT change the L2 configuration settings
     void LidarSetCmdConfig(QString srcIP, uint32_t srcPort,
                            QString dstIP, uint32_t dstPort);
+
     bool ConnectL2();  // bind to create, bind socket, connect callback for decode
     void DisconnectL2();   // close socket
     void readPendingDatagrams();
@@ -146,7 +178,7 @@ signals:
     void timestampReceived();
     void ackReceived();
 
-private:
+private: // functions
     // UDP packet decoders
     void decode3D(const QByteArray& datagram, uint64_t Offset);
     void decode2D(const QByteArray& datagram, uint64_t Offset);
@@ -166,19 +198,27 @@ private:
     // UDP function(s)
     bool SendPacket(uint8_t *Buffer,uint32_t Len);
 
-private:
+private: // variable
+    // mutex for critical packet access while copying packet
+    mutable QMutex  PacketMutex;
+
     // UDP socket
     QUdpSocket L2socket;
 
     // Latest decoded values
+    // Accessing these should use mutex lock, PacketMutex
     LidarImuData        latestImu_{};
-    LidarVersionData   latestVersion_{};
-    LidarTimeStampData latestTimestamp_{};
-    Lidar2DPointData   latest2Ddata_{};
-    LidarPointData   latest3Ddata_{};
+    LidarVersionData    latestVersion_{};
+    LidarTimeStampData  latestTimestamp_{};
+    Lidar2DPointData    latest2Ddata_{};
+    //LidarPointData      latest3Ddata_{};
+    LidarPointDataPacket latest3DdataPacket_{}; // the unitree utility for converting these to PCL
+                                                // use the entire packet
     LidarAckData latestACKdata_{};
 
-    // Packet counters
+    // Packet counters, these do not have a mutex lock
+    // and should not be relied on for downstream processing
+    // They are intended to be only informative
     uint64_t totalPackets_{0};
     uint64_t lostPackets_{0};
     uint64_t totalIMUpackets_{0};
@@ -187,6 +227,10 @@ private:
     uint64_t total2Dpackets_{0};
     uint64_t totalOther_{0};
 
+    // QudpSocket parmameters
+    // These should only be a reflection of L2
+    // UDP ethernet interface.  Currently they do not set
+    // ethernet configuration on the L2
     QString src_ip {""};
     QString dst_ip {""};
     uint32_t src_port {0};

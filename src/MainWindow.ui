@@ -87,6 +87,27 @@
      </widget>
     </item>
     <item>
+     <widget class="QLabel" name="lblACK">
+      <property name="text">
+       <string>ACK results:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="lblIMU">
+      <property name="text">
+       <string>IMU:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="lblPCL">
+      <property name="text">
+       <string>PCL:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <spacer name="horizontalSpacer_2">
       <property name="orientation">
        <enum>Qt::Orientation::Horizontal</enum>

@@ -36,7 +36,7 @@
 //                      implementation of LidarDecoder
 //                      Added L2 information to GUI
 //                      separate source file: Settings.cpp
-//
+//  V0.2.2  2026-01-08  Added license info to source files
 //--------------------------------------------------------
 
 //--------------------------------------------------------

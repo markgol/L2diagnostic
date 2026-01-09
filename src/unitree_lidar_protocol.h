@@ -52,6 +52,8 @@
 //          Lidar2DPointDataPacket 5536
 //          udated note on crc32, it is calculated on just data
 //              excluding header and tail
+//          Added workmode bit definitions
+//          Added set workmode cmd type 2002
 //      Added LidarTimeStampData structure to be consistent
 //          with other data packet structures
 //
@@ -89,6 +91,7 @@
 
 #define LIDAR_COMMAND_PACKET_TYPE 2000
 #define LIDAR_PARAM_DATA_PACKET_TYPE 2001
+#define LIDAR_PARAM_WORK_MODE_TYPE 2002    // sets the workmode (requires restart)
 
 #define CMD_RESET_TYPE 1
 #define CMD_PARAM_SAVE 2
@@ -111,6 +114,15 @@
 #define ACK_HEADER_ERROR 3
 #define ACK_BLOCK_ERROR 4
 #define ACK_WAIT_ERROR 5    // data is not ready
+
+// WORKMODE bit definitions
+#define WORK_MODE_WFOV          1  // 0: Standard FOV (180°), 1: Wide-angle FOV (192°)
+#define WORK_MODE_2D            2  // 0: 3D measurement mode, 2D measurement mode
+#define WORK_MODE_IMU_DISABLE   4  // 0: Enable IMU, 1: Disable IMU
+#define WORK_MODE_SERIAL        8  // 0: Ethernet mode, 1: Serial mode
+#define WORK_MODE_STARTUP_WAIT  16 // 0: Power on and start automatically,
+                                   // 1: Power on and wait for start command without rotation
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // FRAME HEADER & FRAME TAIL
@@ -455,6 +467,27 @@ typedef struct
 typedef struct
 {
     uint32_t mode;
+
+    // Bit 0: Switch between standard FOV and wide-angle FOV
+    // 0: Standard FOV (180°)
+    // 1: Wide-angle FOV (192°)
+
+    // Bit 1: Switch between 3D and 2D measurement modes
+    // 0: 3D measurement mode
+    // 1: 2D measurement mode
+
+    // Bit 2: Enable or disable IMU
+    // 0: Enable IMU
+    // 1: Disable IMU
+
+    // Bit 3: Switch between Ethernet mode and serial mode
+    // 0: Ethernet mode
+    // 1: Serial mode
+
+    // Bit 4: Switch between lidar power-on default start mode
+    // 0: Power on and start automatically
+    // 1: Power on and wait for start command without rotation
+
 }LidarWorkModeConfig;
 
 /**
