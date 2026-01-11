@@ -14,14 +14,14 @@ Goals
 		Point cloud data viewer
 
 Current Status
-	UDP only.
-	Display a packet rate chart
-	Display packet counts for various packet type
-	Display ACK packet results
-	Display current L2 time stamp
-	Display IMU accelerometer and gyro data
-	Display converted point cloud packet, num valid data points in packet, first 2 x,y,z,i points
-	Start, Stop, Reset and get Version control
+	UDP only,
+	Display a packet rate chart,
+	Display packet counts for various packet type,
+	Display ACK packet results,
+	Display current L2 time stamp,
+	Display IMU accelerometer and gyro data,
+	Display converted point cloud packet, num valid data points in packet, first 2 x,y,z,i points,
+	Start, Stop, Reset and get Version control,
 	Point cloud viewer
 	
 	Still to do:
