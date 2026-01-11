@@ -22,7 +22,10 @@ Current Status
 	Display IMU accelerometer and gyro data
 	Display converted point cloud packet, num valid data points in packet, first 2 x,y,z,i points
 	Start, Stop, Reset and get Version control
+	Point cloud viewer
 	
-	Still to add:
+	Still to do:
+		cleanup of user GUI
+		Add calibration and Lidar state data
+		Optimize renderer to improve performance
 		GUI for setting workmode parameters
-		Add point cloud viewer

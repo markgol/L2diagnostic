@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 0.2.2
+    VERSION 0.2.4
     LANGUAGES CXX
 )
 
@@ -80,6 +80,8 @@ target_link_libraries(${PROJECT_NAME}
         Qt6::Widgets
         Qt6::Network
         Qt6::Charts
+        Qt6::OpenGL
+        Qt6::OpenGLWidgets
 )
 
 # =============================

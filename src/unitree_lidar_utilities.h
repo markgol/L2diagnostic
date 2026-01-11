@@ -31,9 +31,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // **********************************************************************
-
 #pragma once
 
+// modifcation for use with Qt using Qvector instead of std::vector
 #include <cstdint>
 #include <iostream>
 #include <fstream>

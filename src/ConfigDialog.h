@@ -36,18 +36,9 @@
 //  V0.2.1  2026-01-05  Added src and dst - ip and ports
 //                      Removed the 'divider' which was never used
 //                      removed nth packet loading which was never used
+//  V0.2.4  2026-01-10  removed CSV checkbox, never fully implemented
+//                      Added spinbox for setting skip frame value
 //
-//--------------------------------------------------------
-
-//--------------------------------------------------------
-// This uses the following Unitree L2 sources modules:
-//      unitree_lidar_protocol.h
-//      unitree_lidar_utilities
-// The orignal source can be found at:
-//      https://github.com/unitreerobotics/unilidar_sdk2
-//      under License: BSD 3-Clause License (see files)
-//
-// Corrections/additions have been made to these 2 files
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -95,6 +86,7 @@ public:
         // Reasonable defaults / limits
         ui.srcPortSpin->setRange(1, 65535);
         ui.dstPortSpin->setRange(1, 1'000'000);
+        ui.skipFrameSpin->setRange(0,50);
     }
 
     // =============================
@@ -120,9 +112,9 @@ public:
         return static_cast<uint32_t>(ui.dstPortSpin->value());
     }
 
-    bool csvEnabled() const
+    uint32_t getSkipFrame() const
     {
-        return ui.csvEnable->isChecked();
+        return static_cast<uint32_t>(ui.skipFrameSpin->value());
     }
 
     // =============================
@@ -138,7 +130,6 @@ public:
         ui.dstIPedit->setText(ip);
     }
 
-
     void setSRCport(uint16_t p)
     {
         ui.srcPortSpin->setValue(p);
@@ -149,9 +140,9 @@ public:
         ui.dstPortSpin->setValue(p);
     }
 
-    void setCsvEnabled(bool enabled)
+    void setSkipFrame(uint16_t p)
     {
-        ui.csvEnable->setChecked(enabled);
+        ui.skipFrameSpin->setValue(p);
     }
 
 private:

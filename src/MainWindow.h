@@ -36,6 +36,10 @@
 //  V0.2.1  2026-01-05  Changed LidarDecoder.h and cpp to L2lidar
 //                      Added user commands to control L2 lidar
 //                      Changed class name from LidarDecoer to L2lidar
+//  V0.2.3  2026-01-09  Add point cloud viewer
+//  V0.2.4  2026-01-10  Changed OpenGL approach
+//                      Reogranized MainWindow.cpp
+//                      removed save CSV file skeleton
 //
 //--------------------------------------------------------
 
@@ -74,22 +78,26 @@
 #include <QFile>
 #include <QTextStream>
 #include <deque>
-// atomic is used for thread safe variables
-// to provide indivisble read modify write operations
-// such as incrementing a variable in a multi-threaded app
-#include <atomic>
 #include <QUdpSocket>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
+#include <QVector>
+#include <QQueue>
 #include "ConfigDialog.h"
 #include "L2lidar.h"
+#include "PointCloudWindow.h"
+#include "unitree_lidar_utilities.h"
+
+//class PointCloudWindow;
 
 #define CHART_UPDATE_TIMER 100
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
+using Frame = QVector<PCpoint>;
 
 class MainWindow : public QMainWindow
 {
@@ -98,6 +106,10 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
+
+signals:
+    // used to notify Cloud viewer ui
+    void flattenedCloudReady(const QVector<PCpoint>& points);
 
 private slots:
     // button controls
@@ -113,7 +125,7 @@ private slots:
 
     // ui updates
     void updateChart();
-
+    void updatePointCloud();
 private:
     // Application MainWindow ui
     Ui::MainWindow* ui;
@@ -130,17 +142,32 @@ private:
     const size_t maxPoints = 100;
     uint64_t LastRateCount {0};
 
+    // Point cloud viewer window (persistent)
+    PointCloudWindow* pcWindow = nullptr;
+
+    // Point cloud viewer Timer
+    QTimer cloudTimer;
+
+    // flatten the cloud points from latest frame
+    QVector<PCpoint> buildFlattenedCloud();
+    void onNewLidarFrame();
+
+    // throttle for point cloud viewer
+    uint32_t NumFramesToSkip {4};
+    uint32_t CurrentSkipCount {0};
+
+    // mutexf for point cloud frame updates
+    QMutex m_cloudMutex;
+
+    // ring storage for point cloud frames to display
+    QVector<Frame> m_frameRing;   // Fixed-capacity ring
+    size_t m_ringWrite = 0;       // Next write index
+    size_t m_ringCount = 0;       // Number of valid frames (<= MAX_FRAMES)
+
     //-----------------------------------------------------
     // unitree L2 lidar hardware
     //-----------------------------------------------------
     L2lidar l2lidar;
-
-    //-----------------------------------------------------
-    // ??? this will need attention later
-    // CSV file for saving packet data
-    //-----------------------------------------------------
-    QFile csvFile;
-    QTextStream csvStream;
 
     // configuration dialog
     ConfigDialog config;
@@ -153,5 +180,9 @@ private:
     // INI settings functions
     void saveSettings();
     void loadSettings();
-    void saveCsv(const QByteArray& datagram);
+
+    // diagnostic variables
+    float minIntensity {10000};
+    float maxIntensity {-10000};
+
 };

@@ -46,6 +46,12 @@
 //                      Added 3d point packet to 3d PCL cloud conversion
 //                          to demonstrate packets are being received
 //                          and processed correctly
+//  V0.2.3  2026-01-08  Added point cloud viewer
+//                      updated PC stats
+//  V.02.4  2026-01-10  Started add of Calibration and internal State dialog
+//                      Started add of set work mode dialog
+//                      Changed OpenGL approach to add coloring
+//                      Added SkipFrame settings for point cloud display
 //
 //--------------------------------------------------------
 
@@ -93,6 +99,7 @@
 //      set(CMAKE_AUTORCC ON)
 //--------------------------------------------------------
 #include "ui_MainWindow.h"
+#include "PointCloudWindow.h"
 
 //--------------------------------------------------------
 //  Qt includes
@@ -161,20 +168,36 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->btnResetL2, &QPushButton::clicked, this, &MainWindow::sendReset);
     connect(ui->btnVersion, &QPushButton::clicked, this, &MainWindow::getVersion);
 
-    // Lidar UPD decoder callbacks
+    // initiate 3D point cloud veiwer
+    pcWindow = new PointCloudWindow(this);
+    pcWindow->hide();       // show when L2 start is called
 
-    // ACK handling optional for now
-    //lidarDecoder.onAck([](const uint8_t*) {});
+    // point cloud viewer connections
+    connect(&l2lidar,
+            &::L2lidar::PCL3DReceived,
+            this,
+            &MainWindow::onNewLidarFrame,
+            Qt::QueuedConnection);
 
-    // IMU handling later
-    //lidarDecoder.onImu([](const uint8_t*) {});
+    connect(this,
+            &MainWindow::flattenedCloudReady,
+            pcWindow->view(),
+            &PointCloudView::setPointCloud,
+            Qt::QueuedConnection);
 
-    // Point data handling later
-    //lidarDecoder.onPointData([](const uint8_t*) {});
+    connect(&cloudTimer,
+            &QTimer::timeout,
+            this,
+            &MainWindow::updatePointCloud);
 
+    // 3D point cloud viewer buffering
+    m_frameRing.resize(MAX_FRAMES); // ring buffer pre allocated
 
     // Load previously saved user settings
     loadSettings();
+    NumFramesToSkip = config.getSkipFrame();
+
+    // load the com parameters in the l2lidar class
     l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
                               config.getDSTip(),config.getDSTport());
 }
@@ -187,17 +210,159 @@ MainWindow::~MainWindow()
     // Make sure live capture is stopped
     L2disconnect();
 
-    // close the CSV file output if required
-    if (csvFile.isOpen()) csvFile.close();
-
-    // Save current user settings
+   // Save current user settings
     saveSettings();
 
     delete ui;
 }
 
 //--------------------------------------------------------
+//
+//  Point cloud viewer data generator
+//
+//  timer driven separate GUI window from main GUI window
+//
+//--------------------------------------------------------
+
+//--------------------------------------------------------
+//  onNewLidarFrame()
+//  signal recieved from l2lidar class that a new frame
+//  of point cloud data is availabe
+//  This removes the oldest frame from the fifo if the fifo
+//  is full and and adds the new frame to the fifo
+//  for display
+//
+//  This is updated at the packet receive rate
+//
+//--------------------------------------------------------
+void MainWindow::onNewLidarFrame()
+{
+    // skip packet logic to reduce load
+    // skip 0 take severy packet
+    // skip 1 takes every other packet
+    // skip 2 takes every 3rd packet
+    // ...
+    // ...
+    static uint64_t frameCounter = 0;
+
+    // if(NumFramesToSkip!=0){
+    //     if(CurrentSkipCount!=0) {
+    //         if(CurrentSkipCount>=NumFramesToSkip) {
+    //             // skip this frame, capture next frame
+    //             CurrentSkipCount = 0;
+    //             return;
+    //         }
+    //         // skip this frame
+    //         CurrentSkipCount++;
+    //         return;
+    //     }
+    //     CurrentSkipCount++;
+    // }
+
+    if (NumFramesToSkip > 0 &&
+        (++frameCounter % (NumFramesToSkip + 1)) != 0)
+    {
+        return;
+    }
+
+    // Retrieve packet
+    auto packet = l2lidar.Pcl3Dpacket();
+
+    unilidar_sdk2::PointCloudUnitree cloud;
+    unilidar_sdk2::parseFromPacketToPointCloud(
+        cloud, packet, false, 0, 100);
+
+    Frame frame;
+    frame.reserve(cloud.points.size());
+
+    for (const auto& p : cloud.points)
+    {
+        frame.push_back({
+            p.x,
+            p.y,
+            p.z,
+            p.intensity,
+            p.time,
+            p.ring
+        });
+    }
+
+
+    QMutexLocker lock(&m_cloudMutex);
+
+    // Overwrite oldest frame in-place
+    m_frameRing[m_ringWrite] = std::move(frame);
+
+    m_ringWrite = (m_ringWrite + 1) % MAX_FRAMES;
+    if (m_ringCount < MAX_FRAMES)
+        ++m_ringCount;
+}
+
+//--------------------------------------------------------
+//  updatePointCloud()
+//  timer driven emitter for point cloud viewer
+//  The acculated frames are flattened and sent
+//  to the viewer at the viewer display rate
+//  This timer set and started in L2connect()
+//--------------------------------------------------------
+void MainWindow::updatePointCloud()
+{
+    auto cloud = buildFlattenedCloud();
+    if (!cloud.isEmpty())
+        emit flattenedCloudReady(cloud);
+}
+
+
+//--------------------------------------------------------
+//  buildFlattenedCloud()
+//  help function that converts the frame fifo
+//  into a flattened point cloud array
+//--------------------------------------------------------
+QVector<PCpoint> MainWindow::buildFlattenedCloud()
+{
+    QVector<Frame> localFrames;
+
+    {
+        QMutexLocker lock(&m_cloudMutex);
+
+        if (m_ringCount == 0)
+            return {};
+
+        const size_t oldest =
+            (m_ringWrite + MAX_FRAMES - m_ringCount) % MAX_FRAMES;
+
+        localFrames.reserve(m_ringCount);
+        for (size_t i = 0; i < m_ringCount; ++i) {
+            size_t idx = (oldest + i) % MAX_FRAMES;
+            localFrames.push_back(m_frameRing[idx]); // shallow copy
+        }
+    } // mutex released here
+
+    // Now flatten WITHOUT holding the mutex
+    QVector<PCpoint> PCcloud;
+    size_t totalPoints = 0;
+    for (const auto& f : localFrames)
+        totalPoints += f.size();
+
+    PCcloud.reserve(totalPoints);
+    for (const auto& f : localFrames)
+        PCcloud += f;
+
+    return PCcloud;
+}
+
+
+//--------------------------------------------------------
+//
+//  GUI mainwindow
+//  button presses
+//
+//--------------------------------------------------------
+
+//--------------------------------------------------------
 //  openConfig
+//  button press
+//
 //  open the configuration dialog to allow the user to change
 //  application settings.
 //--------------------------------------------------------
@@ -206,12 +371,14 @@ void MainWindow::openConfig()
     if (config.exec() == QDialog::Accepted) {
         l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
                                   config.getDSTip(),config.getDSTport());
+        NumFramesToSkip = config.getSkipFrame();
         saveSettings();
     }
 }
 
 //--------------------------------------------------------
 //  L2connect()
+//  button press
 //--------------------------------------------------------
 void MainWindow::L2connect()
 {
@@ -219,20 +386,6 @@ void MainWindow::L2connect()
     if(!l2lidar.ConnectL2()) {
         qWarning() << "Failed: coudl open open communications port to L2";
         return;
-    }
-
-    // CSV setup
-    // ??? this still to be implemented
-    // This is placeholder reminder
-    if (config.csvEnabled()) {
-        QString filename = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + "_log.csv";
-        csvFile.setFileName(filename);
-        if (csvFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            csvStream.setDevice(&csvFile);
-            csvStream << "Timestamp,Value\n";
-        } else {
-            qWarning() << "Failed to open CSV file:" << filename;
-        }
     }
 
     LastRateCount = 0; // reset rate count
@@ -247,10 +400,16 @@ void MainWindow::L2connect()
     ui->btnStopRotation->setEnabled(true);
     ui->btnResetL2->setEnabled(true);
     ui->btnVersion->setEnabled(true);
+
+    // start point cloud viewer
+    pcWindow->show();
+    cloudTimer.start(33); // ~30 FPS viewer update
+
 }
 
 //--------------------------------------------------------
 //  L2disconnect()
+//  button press
 //--------------------------------------------------------
 void MainWindow::L2disconnect()
 {
@@ -258,8 +417,6 @@ void MainWindow::L2disconnect()
 
     // close UDP connection for receiving data
     l2lidar.DisconnectL2();
-
-    if (csvFile.isOpen()) csvFile.close();
 
     l2lidar.ClearCounts();
     recentRates.clear(); // clear the rate history
@@ -271,7 +428,56 @@ void MainWindow::L2disconnect()
     ui->btnResetL2->setEnabled(false);
     ui->btnVersion->setEnabled(false);
 
+    // turn off point cloud viewer
+    cloudTimer.stop();
+    pcWindow->hide();
 }
+
+//--------------------------------------------------------
+//  startRotation
+//  button press
+//--------------------------------------------------------
+void MainWindow::startRotation()
+{
+    l2lidar.LidarStartRotation();
+    return;
+}
+
+//--------------------------------------------------------
+//  stopRotation
+//  button press
+//--------------------------------------------------------
+void MainWindow::stopRotation()
+{
+    l2lidar.LidarStopRotation();
+    return;
+}
+
+//--------------------------------------------------------
+//  sendReset
+//  button press
+//--------------------------------------------------------
+void MainWindow::sendReset()
+{
+    l2lidar.LidarReset();
+    return;
+}
+
+//--------------------------------------------------------
+//  getVersion
+//  button press
+//--------------------------------------------------------
+void MainWindow::getVersion()
+{
+    l2lidar.LidarGetVersion();
+    return;
+}
+
+//--------------------------------------------------------
+//
+// timer driven update of main window GUI
+//
+//--------------------------------------------------------
 
 //--------------------------------------------------------
 //  updateChart()
@@ -343,7 +549,7 @@ void MainWindow::updateChart()
     QString Product = QString::fromUtf8((const char *)Version.reserve);
 
     ui->lblVersion->setText(QString("%1  HW Version: %2   FW Version: %3   Date: %4")
-                            .arg(Product,HWversion, FWversion,BuildDate));
+                                .arg(Product,HWversion, FWversion,BuildDate));
 
     // report the last ACK packet result
     if(ACKdata.packet_type!=0) {
@@ -367,54 +573,23 @@ void MainWindow::updateChart()
     LidarTimeStampData TimeStamp = l2lidar.timestamp();
 
     QString PacketStats = QString().asprintf("Seconds:%6llu   nsec:%9llu    Packets Processed:%6llu  3D PCL:%6llu   2d PCL:%6llu   IMU:%6llu   ACK:%6llu   Other:%6llu   Lost:%6llu",
-                                              TimeStamp.data.sec,
-                                              TimeStamp.data.nsec,
-                                              countPackets,
-                                              count3DPCL,
-                                              count2DPCL,
-                                              countIMU,
-                                              countACK,
-                                              countOther,
-                                              lostPackets);
+                                             TimeStamp.data.sec,
+                                             TimeStamp.data.nsec,
+                                             countPackets,
+                                             count3DPCL,
+                                             count2DPCL,
+                                             countIMU,
+                                             countACK,
+                                             countOther,
+                                             lostPackets);
     ui->lblPacketStats->setText(PacketStats);
 }
 
 //--------------------------------------------------------
-// startRotation
+//
+// packet processing used by update
+//
 //--------------------------------------------------------
-void MainWindow::startRotation()
-{
-    l2lidar.LidarStartRotation();
-    return;
-}
-
-//--------------------------------------------------------
-// stopRotation
-//--------------------------------------------------------
-void MainWindow::stopRotation()
-{
-    l2lidar.LidarStopRotation();
-    return;
-}
-
-//--------------------------------------------------------
-// sendReset
-//--------------------------------------------------------
-void MainWindow::sendReset()
-{
-    l2lidar.LidarReset();
-    return;
-}
-
-//--------------------------------------------------------
-// getVersion
-//--------------------------------------------------------
-void MainWindow::getVersion()
-{
-    l2lidar.LidarGetVersion();
-    return;
-}
-
 
 //--------------------------------------------------------
 // ACKreport
@@ -634,7 +809,7 @@ QString MainWindow::PCLreport(const LidarPointDataPacket &PCLdataPacket)
     unilidar_sdk2::PointCloudUnitree Cloud;
     unilidar_sdk2::parseFromPacketToPointCloud( Cloud, PCLdataPacket, false, 0, 100);
 
-    Packet = Packet.asprintf("Num Points %5d : %7.2f,%7.2f,%7.2f:%1.1f    %7.2f,%7.2f,%7.2f:%6.1f",
+    Packet = Packet.asprintf("Num Points %5d\n 1: %7.2f,%7.2f,%7.2f:%1.1f\n2: %7.2f,%7.2f,%7.2f:%6.1f\n Dirty: %f\n APD: %f C",
                              Cloud.points.size(),
                              Cloud.points[0].x,
                              Cloud.points[0].y,
@@ -643,22 +818,9 @@ QString MainWindow::PCLreport(const LidarPointDataPacket &PCLdataPacket)
                              Cloud.points[1].x,
                              Cloud.points[1].y,
                              Cloud.points[1].z,
-                             Cloud.points[1].intensity
+                             Cloud.points[1].intensity,
+                             PCLdataPacket.data.state.dirty_index,
+                             PCLdataPacket.data.state.apd_temperature
                              );
     return Packet;
-}
-
-//--------------------------------------------------------
-// saveCsv()
-// ??? This will need updating
-//--------------------------------------------------------
-void MainWindow::saveCsv(const QByteArray& datagram)
-{
-    // ??? this needs to be moved the the l2lidar
-    // if (!csvFile.isOpen()) return;
-
-    // PacketData packet = PacketData::fromDatagram(datagram);
-    // QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
-    // csvStream << timestamp << "," << "," << packet.value << "\n";
-    // csvStream.flush();
 }

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WorkmodeDialog</class>
+ <widget class="QDialog" name="WorkmodeDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>286</width>
+    <height>293</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QDialogButtonBox" name="btnbxOK">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>270</y>
+     <width>116</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="cbxReset">
+   <property name="geometry">
+    <rect>
+     <x>90</x>
+     <y>240</y>
+     <width>91</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>RESET L2 after  OK</string>
+   </property>
+  </widget>
+  <widget class="QWidget" name="gridLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>261</width>
+     <height>221</height>
+    </rect>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="horizontalSpacing">
+     <number>2</number>
+    </property>
+    <property name="verticalSpacing">
+     <number>5</number>
+    </property>
+    <item row="2" column="0">
+     <widget class="QRadioButton" name="chkWideFOV">
+      <property name="text">
+       <string>Wide FOV</string>
+      </property>
+     </widget>
+    </item>
+    <item row="11" column="0">
+     <widget class="QRadioButton" name="chk2D">
+      <property name="text">
+       <string>2D</string>
+      </property>
+     </widget>
+    </item>
+    <item row="18" column="0">
+     <widget class="QRadioButton" name="chkUDP">
+      <property name="text">
+       <string>UDP</string>
+      </property>
+     </widget>
+    </item>
+    <item row="22" column="0">
+     <widget class="QRadioButton" name="chkPWRon">
+      <property name="text">
+       <string>Startup on power up</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QRadioButton" name="chkStdFOV">
+      <property name="text">
+       <string>Std FOV</string>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="0">
+     <widget class="QRadioButton" name="chk3D">
+      <property name="text">
+       <string>3D</string>
+      </property>
+     </widget>
+    </item>
+    <item row="14" column="0">
+     <widget class="QRadioButton" name="chkIMUon">
+      <property name="text">
+       <string>IMU on</string>
+      </property>
+     </widget>
+    </item>
+    <item row="23" column="0">
+     <widget class="QRadioButton" name="chkPWRstdby">
+      <property name="text">
+       <string>Standby on power up</string>
+      </property>
+     </widget>
+    </item>
+    <item row="19" column="0">
+     <widget class="QRadioButton" name="chkSerial">
+      <property name="text">
+       <string>Serial</string>
+      </property>
+     </widget>
+    </item>
+    <item row="15" column="0">
+     <widget class="QRadioButton" name="chkIMUoff">
+      <property name="text">
+       <string>IMU off</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <tabstops>
+  <tabstop>chkWideFOV</tabstop>
+  <tabstop>chk3D</tabstop>
+  <tabstop>chkIMUon</tabstop>
+  <tabstop>chkUDP</tabstop>
+  <tabstop>chkPWRon</tabstop>
+  <tabstop>cbxReset</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

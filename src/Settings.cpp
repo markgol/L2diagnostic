@@ -102,9 +102,9 @@ void MainWindow::saveSettings()
     settings.setValue("dstPort", config.getDSTport());
     settings.endGroup();
 
-    // Recording
-    settings.beginGroup("record");
-    settings.setValue("csv", config.csvEnabled());
+    // Point cloud
+    settings.beginGroup("pointcloud");
+    settings.setValue("NumFramesToSkip", config.getSkipFrame());
     settings.endGroup();
 }
 
@@ -129,9 +129,8 @@ void MainWindow::loadSettings()
     config.setSRCport(settings.value("srcPort", 6201).toUInt());
     config.setDSTport(settings.value("dstPort", 6101).toUInt());
     settings.endGroup();
-
-    // Recording
-    settings.beginGroup("record");
-    config.setCsvEnabled(settings.value("csv", false).toBool());
+    // Point cloud
+    settings.beginGroup("pointcloud");
+    config.setSkipFrame(settings.value("NumFramesToSkip", 4).toUInt());
     settings.endGroup();
 }

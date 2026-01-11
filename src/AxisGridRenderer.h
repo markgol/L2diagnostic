@@ -2,7 +2,7 @@
 //
 //  L2Diagnostic
 //  Author: Mark Stegall
-//  Module: ConfigDialog.cpp
+//  Module: AxisGridRenderer.h
 //
 //  Purpose:
 //  Determine correct operation of the Unitreee L2 Lidar hardware
@@ -31,39 +31,31 @@
 //  error detection for bad packets (lost), display subsample
 //  of packets and optionally saves them to a CSV file.
 //
-//  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
-//  V0.2.0  2026-01-02  Documentation, start of debugging
-//  V0.2.4  2026-01-10  removed CSV checkbox, never fully implemented
-//                      Added SkipFrame spinbox
+//  V0.2.3  2026-01-09  Added Point Cloud Renderer
 //
 //--------------------------------------------------------
+#pragma once
+
+#include <QOpenGLShaderProgram>
+#include <QOpenGLVertexArrayObject>
+#include <QOpenGLBuffer>
+#include <QOpenGLFunctions>
+#include <QMatrix4x4>
 
 //--------------------------------------------------------
-// GPL-3.0 license
-//
-// This file is part of L2diagnsotic.
-//
-// L2diagnsotic is free software : you can redistribute it and /or modify it under
-// the terms of the GNU General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
-//
-// L2diagnsotic is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License along with L2diagnsotic.
-// If not, see < https://www.gnu.org/licenses/>.
+//  OpenGL renderer
 //--------------------------------------------------------
 
-//--------------------------------------------------------
-// This is the user configuration dialog
-//--------------------------------------------------------
+class AxisGridRenderer : protected QOpenGLFunctions
+{
+public:
+    void initialize();
+    void render(const QMatrix4x4& mvp);
 
-#include "ConfigDialog.h"
+private:
+    QOpenGLShaderProgram m_program;   // ✅ MUST be this type
+    QOpenGLVertexArrayObject m_vao;
+    QOpenGLBuffer m_vbo{ QOpenGLBuffer::VertexBuffer };
 
-//--------------------------------------------------------
-// Empty since all logic is in header via Ui setup
-// Optional: additional validation can go here if needed
-//--------------------------------------------------------
-
-
-
+    int m_vertexCount = 0;
+};
