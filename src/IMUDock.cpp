@@ -31,8 +31,9 @@
 //  error detection for bad packets (lost), display subsample
 //  of packets and optionally saves them to a CSV file.
 //
-//  V.02.5  2026-01-10  added Calibration and internal State dock
+//  V0.2.5  2026-01-10  added Calibration and internal State dock
 //								added IMU dock
+//  V0.2.6  2026-01-12  Corrected IMU units
 //
 //--------------------------------------------------------
 
@@ -113,10 +114,10 @@ void IMUDock::updateIMU(const LidarImuData& Imu )
     ResultString = ResultString.asprintf("%.3f rad",Imu.angular_velocity[2]);
     ui->lblGyroZValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f mm",Imu.quaternion[0]);
+    ResultString = ResultString.asprintf("%.6f",Imu.quaternion[0]);
     ui->lblQuat0Value->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f rad",Imu.quaternion[1]);
+    ResultString = ResultString.asprintf("%.6f",Imu.quaternion[1]);
     ui->lblQuat1Value->setText(ResultString);
 
     ResultString = ResultString.asprintf("%.6f",Imu.quaternion[2]);
