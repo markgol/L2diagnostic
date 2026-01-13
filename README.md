@@ -16,16 +16,19 @@ Goals
 Current Status
 	UDP only.
 	Display a packet rate chart
-	Display packet counts for various packet type
+	Display time stamp, packet counts for various packet types
 	Display ACK packet results
-	Display current L2 time stamp
-	Display IMU accelerometer and gyro data
-	Display converted point cloud packet, num valid data points in packet, first 2 x,y,z,i points
-	Start, Stop, Reset and get Version control
+	Display IMU accelerometer, gyro, quaternion data
+	Displau Calibration and inside state data
+	Send Start, Stop, Reset and get Version control commands
 	Point cloud viewer
+	Added dockable windows for Calibration/state, IMU packet, ACK packet, packet stats
+	
+	Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
+	unitree_lidar_utilites.h to perform required function needs for using the L2  in the
+	UDP mode without the use of the unitree archive library
 	
 	Still to do:
-		cleanup of user GUI
-		Add calibration and Lidar state data
+		Finish cleanup of user GUI
 		Optimize renderer to improve performance
-		GUI for setting workmode parameters
+		UI for setting workmode parameters

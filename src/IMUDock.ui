@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>IMUDock</class>
+ <widget class="QDockWidget" name="IMUDock">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>79</width>
+    <height>270</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>L2 IMU data</string>
+  </property>
+  <widget class="QWidget" name="dockContents">
+   <layout class="QVBoxLayout" name="mainLayout">
+    <item>
+     <widget class="QGroupBox" name="grpAccel">
+      <property name="title">
+       <string>Acceleration</string>
+      </property>
+      <layout class="QFormLayout" name="accelLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblAccelXText">
+         <property name="text">
+          <string>X (0.1G)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lblAccelXValue"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblAccelYText">
+         <property name="text">
+          <string>Y (0.1G)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="lblAccelYValue"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblAccelZText">
+         <property name="text">
+          <string>Z (0.1G)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="lblAccelZValue"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpGyro">
+      <property name="title">
+       <string>Gyroscope</string>
+      </property>
+      <layout class="QFormLayout" name="gyroLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblGyroXText">
+         <property name="text">
+          <string>X (rad/sec)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lblGyroXValue"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblGyroYText">
+         <property name="text">
+          <string>Y (rad/sec)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="lblGyroYValue"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblGyroZText">
+         <property name="text">
+          <string>Z (rad/sec)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="lblGyroZValue"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpQuat">
+      <property name="title">
+       <string>Quaternion</string>
+      </property>
+      <layout class="QFormLayout" name="quatLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblQuat0Text">
+         <property name="text">
+          <string>0</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lblQuat0Value"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblQuat1Text">
+         <property name="text">
+          <string>1</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="lblQuat1Value"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblQuat2Text">
+         <property name="text">
+          <string>2</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="lblQuat2Value"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="lblQuat3Text">
+         <property name="text">
+          <string>3</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="lblQuat3Value"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <spacer name="verticalSpacer">
+      <property name="orientation">
+       <enum>Qt::Orientation::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

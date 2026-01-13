@@ -48,10 +48,17 @@
 //                          and processed correctly
 //  V0.2.3  2026-01-08  Added point cloud viewer
 //                      updated PC stats
-//  V.02.4  2026-01-10  Started add of Calibration and internal State dialog
+//  V0.2.4  2026-01-10  Started add of Calibration and internal State dialog
 //                      Started add of set work mode dialog
 //                      Changed OpenGL approach to add coloring
 //                      Added SkipFrame settings for point cloud display
+//  V0.2.5  20260-01-12 Start of mainwindow GUI reorg
+//                      Added heartbeat timer to update some of the
+//                      dockable uis
+//                      Added IMU dockable window
+//                      Added ACK dockable window
+//                      Added packet stats dockable window
+//                      Added Calib and internal state dockable window
 //
 //--------------------------------------------------------
 
@@ -113,7 +120,7 @@
 //--------------------------------------------------------
 //  Project specific includes not part of MainWindow.h
 //--------------------------------------------------------
-#include "ConfigDialog.h"
+// #include "ConfigDialog.h"
 
 //--------------------------------------------------------
 //  MainWIndow class constructor
@@ -124,8 +131,65 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
 
-    // Instantiated the GUI elements
+    //--------------------------------------------------------
+    //  setup the dockable data guis
+    //--------------------------------------------------------
 
+    //--------------------------------------------------------
+    //  This timer is used to trigger updates
+    //  for Diagnostics, IMU and Stats
+    //--------------------------------------------------------
+
+    mHeartBeat = new QTimer(this);
+    mHeartBeat->setInterval(250); // 4 Hz
+
+    connect(mHeartBeat, &QTimer::timeout, this, &MainWindow::HeartbeatFire);
+
+    //--------------------------------------------------------
+    //  setup the dockable diagnsotics gui
+    //--------------------------------------------------------
+    m_diagnosticsDock = new DiagnosticsDock(this);
+    addDockWidget(Qt::RightDockWidgetArea, m_diagnosticsDock);
+    m_diagnosticsDock->hide();   // start hidden
+    resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
+
+    //--------------------------------------------------------
+    //  setup dockable packet Stats gui
+    //--------------------------------------------------------
+    m_StatsDock = new StatsDock(this);
+    addDockWidget(Qt::LeftDockWidgetArea, m_StatsDock);
+    m_StatsDock->hide();   // start hidden
+    resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
+
+    //--------------------------------------------------------
+    //  setup dockable IMU gui
+    //--------------------------------------------------------
+    m_IMUDock = new IMUDock(this);
+    addDockWidget(Qt::LeftDockWidgetArea, m_IMUDock);
+    m_IMUDock->hide();   // start hidden
+    resizeDocks({ m_IMUDock },{ 220 },Qt::Horizontal);
+
+    //--------------------------------------------------------
+    //  setup dockable ACK gui (this is not timer driven)
+    //  It is event driven.  ACKs are extermely low rate events
+    //--------------------------------------------------------
+    m_ACKDock = new ACKDock(this);
+    addDockWidget(Qt::TopDockWidgetArea, m_ACKDock);
+    m_ACKDock->hide();   // start hidden
+
+    connect(&l2lidar,
+            &::L2lidar::ackReceived,
+            this,
+            &MainWindow::updateACK,
+            Qt::QueuedConnection);
+
+    //--------------------------------------------------------
+    //  setup the Main window GUI
+    //--------------------------------------------------------
+
+    //--------------------------------------------------------
+    //  Chart view gui
+    //--------------------------------------------------------
     // GUI utlizes the chart timer to update the GUI
     // from stored memory so that it does not block I/O
 
@@ -151,14 +215,10 @@ MainWindow::MainWindow(QWidget* parent)
     // The chart timer is started/stopped by start and stop GUI buttons
     connect(&chartTimer, &QTimer::timeout, this, &MainWindow::updateChart);
 
-    // Connect UI buttons
-    // Do NOT bind socket or start timer here
-    ui->btnStart->setEnabled(true);
-    ui->btnStop->setEnabled(false);
-    ui->btnStartRotation->setEnabled(false);
-    ui->btnStopRotation->setEnabled(false);
-    ui->btnResetL2->setEnabled(false);
-    ui->btnVersion->setEnabled(false);
+    //--------------------------------------------------------
+    //  Connect UI buttons
+    //--------------------------------------------------------
+
     connect(ui->btnStart, &QPushButton::clicked, this, &MainWindow::L2connect);
     connect(ui->btnStop, &QPushButton::clicked, this, &MainWindow::L2disconnect);
     connect(ui->btnConfig, &QPushButton::clicked, this, &MainWindow::openConfig);
@@ -168,7 +228,9 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->btnResetL2, &QPushButton::clicked, this, &MainWindow::sendReset);
     connect(ui->btnVersion, &QPushButton::clicked, this, &MainWindow::getVersion);
 
-    // initiate 3D point cloud veiwer
+    //--------------------------------------------------------
+    //  setup point cloud viewer GUI
+    //--------------------------------------------------------
     pcWindow = new PointCloudWindow(this);
     pcWindow->hide();       // show when L2 start is called
 
@@ -185,7 +247,10 @@ MainWindow::MainWindow(QWidget* parent)
             &PointCloudView::setPointCloud,
             Qt::QueuedConnection);
 
-    connect(&cloudTimer,
+    // setup timer for point cloud updating
+    cloudTimer = new QTimer(this);
+    cloudTimer->setInterval(33); // 30 Hz
+    connect(cloudTimer,
             &QTimer::timeout,
             this,
             &MainWindow::updatePointCloud);
@@ -200,6 +265,9 @@ MainWindow::MainWindow(QWidget* parent)
     // load the com parameters in the l2lidar class
     l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
                               config.getDSTip(),config.getDSTport());
+
+    // initial state of buttons and uis is L2 disconnected
+    L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
 }
 
 //--------------------------------------------------------
@@ -207,6 +275,10 @@ MainWindow::MainWindow(QWidget* parent)
 //--------------------------------------------------------
 MainWindow::~MainWindow()
 {
+    // delete timers and window docks
+    // if(!m_diagTimer) delete m_diagTimer;
+    // if(!m_diagnosticsDock) delete m_diagnosticsDock;
+
     // Make sure live capture is stopped
     L2disconnect();
 
@@ -214,6 +286,167 @@ MainWindow::~MainWindow()
     saveSettings();
 
     delete ui;
+}
+
+//--------------------------------------------------------
+//
+//  helper functions
+//
+//--------------------------------------------------------
+
+//--------------------------------------------------------
+//  L2DisconnectedButtonsUIs
+//--------------------------------------------------------
+void MainWindow::L2ConnectedButtonsUIs()
+{ // set buttons and UIs states when L2 disconnected
+    // disable start, enable stop
+    ui->btnStart->setEnabled(false);
+    ui->btnStop->setEnabled(true);
+    ui->btnStartRotation->setEnabled(true);
+    ui->btnStopRotation->setEnabled(true);
+    ui->btnResetL2->setEnabled(true);
+    ui->btnVersion->setEnabled(true);
+
+    // show diagnostics, IMU and stats window
+    // these update at the heartbeat rate
+    m_diagnosticsDock->show();
+    m_IMUDock->show();
+    m_StatsDock->show();
+    mHeartBeat->start();
+
+    // ACK window is event driven, on ACK packet receive
+    m_ACKDock->show();
+
+    // start point cloud viewer
+    StartPointCloudViewer();
+
+}
+
+//--------------------------------------------------------
+//  L2ConnectedButtonsUIs
+//--------------------------------------------------------
+void MainWindow::L2DisconnectedButtonsUIs()
+{ // set buttons and UIs states when L2 connected
+    ui->btnStart->setEnabled(true);
+    ui->btnStop->setEnabled(false);
+    ui->btnStartRotation->setEnabled(false);
+    ui->btnStopRotation->setEnabled(false);
+    ui->btnResetL2->setEnabled(false);
+    ui->btnVersion->setEnabled(false);
+
+    // turn off point cloud viewer
+    StopPointCloudViewer();
+
+    // turn off docks
+    mHeartBeat->stop();
+    m_diagnosticsDock->hide();
+    m_IMUDock->hide();
+    m_StatsDock->hide();
+
+    // turn off ACK, this is event drive
+    // it is very low rate
+    m_ACKDock->hide();
+}
+
+//--------------------------------------------------------
+//  StartPointCloudViewer
+//--------------------------------------------------------
+void MainWindow::StartPointCloudViewer()
+{
+    cloudTimer->start();
+    pcWindow->show();
+}
+
+//--------------------------------------------------------
+//  StopPointCloudViewer
+//--------------------------------------------------------
+void MainWindow::StopPointCloudViewer()
+{
+    cloudTimer->stop();
+    pcWindow->hide();
+}
+
+//--------------------------------------------------------
+//
+//  Dockable windows
+//
+//  timer driven separate GUI windows from main GUI window
+//
+//--------------------------------------------------------
+
+void MainWindow::HeartbeatFire()
+{
+    updateDiagnostics();
+    updateIMU();
+    updateStats();
+    return;
+}
+
+//--------------------------------------------------------
+//  updateStats
+//--------------------------------------------------------
+void MainWindow::updateStats()
+{
+    // update detailed packet stats
+    uint64_t countPackets = l2lidar.totalPackets();
+    uint64_t lostPackets = l2lidar.lostPackets();
+    uint64_t count3DPCL = l2lidar.total3D();
+    uint64_t count2DPCL = l2lidar.total2D();
+    uint64_t countIMU = l2lidar.totalIMU();
+    uint64_t countACK = l2lidar.totalACK();
+    uint64_t countOther = l2lidar.totalOther();
+    LidarTimeStampData TimeStamp = l2lidar.timestamp();
+    m_StatsDock->updateStats(
+                TimeStamp.data.sec,
+                TimeStamp.data.nsec,
+                countPackets,
+                count3DPCL,
+                count2DPCL,
+                countIMU,
+                countACK,
+                countOther,
+                lostPackets
+                );
+
+    return;
+}
+
+//--------------------------------------------------------
+//  updateDiagnostics
+//--------------------------------------------------------
+void MainWindow::updateDiagnostics()
+{
+    LidarVersionData Version = l2lidar.version();
+    LidarPointDataPacket PCLpacket = l2lidar.Pcl3Dpacket();
+
+    m_diagnosticsDock->updateDiagnostics(PCLpacket.data.state, PCLpacket.data.param);
+    m_diagnosticsDock->updateVersion(Version);
+
+    return;
+}
+
+//--------------------------------------------------------
+//  updateIMU
+//--------------------------------------------------------
+void MainWindow::updateIMU()
+{
+    LidarImuData Imu = l2lidar.imu();
+
+
+    m_IMUDock->updateIMU(Imu);
+
+    return;
+}
+
+//--------------------------------------------------------
+//  updateACK, event driven not timer driven
+//--------------------------------------------------------
+void MainWindow::updateACK()
+{
+    LidarAckData ACKdata = l2lidar.ack();
+    m_ACKDock->updateACK(ACKdata);
+
+    return;
 }
 
 //--------------------------------------------------------
@@ -244,20 +477,6 @@ void MainWindow::onNewLidarFrame()
     // ...
     // ...
     static uint64_t frameCounter = 0;
-
-    // if(NumFramesToSkip!=0){
-    //     if(CurrentSkipCount!=0) {
-    //         if(CurrentSkipCount>=NumFramesToSkip) {
-    //             // skip this frame, capture next frame
-    //             CurrentSkipCount = 0;
-    //             return;
-    //         }
-    //         // skip this frame
-    //         CurrentSkipCount++;
-    //         return;
-    //     }
-    //     CurrentSkipCount++;
-    // }
 
     if (NumFramesToSkip > 0 &&
         (++frameCounter % (NumFramesToSkip + 1)) != 0)
@@ -393,18 +612,7 @@ void MainWindow::L2connect()
     // Start chart timer
     chartTimer.start(CHART_UPDATE_TIMER);
 
-    // disable start, enable stop
-    ui->btnStart->setEnabled(false);
-    ui->btnStop->setEnabled(true);
-    ui->btnStartRotation->setEnabled(true);
-    ui->btnStopRotation->setEnabled(true);
-    ui->btnResetL2->setEnabled(true);
-    ui->btnVersion->setEnabled(true);
-
-    // start point cloud viewer
-    pcWindow->show();
-    cloudTimer.start(33); // ~30 FPS viewer update
-
+    L2ConnectedButtonsUIs();
 }
 
 //--------------------------------------------------------
@@ -421,16 +629,7 @@ void MainWindow::L2disconnect()
     l2lidar.ClearCounts();
     recentRates.clear(); // clear the rate history
 
-    ui->btnStart->setEnabled(true);
-    ui->btnStop->setEnabled(false);
-    ui->btnStartRotation->setEnabled(false);
-    ui->btnStopRotation->setEnabled(false);
-    ui->btnResetL2->setEnabled(false);
-    ui->btnVersion->setEnabled(false);
-
-    // turn off point cloud viewer
-    cloudTimer.stop();
-    pcWindow->hide();
+    L2DisconnectedButtonsUIs();
 }
 
 //--------------------------------------------------------
@@ -487,17 +686,6 @@ void MainWindow::updateChart()
 {
     // update detailed packet stats
     uint64_t countPackets = l2lidar.totalPackets();
-    uint64_t lostPackets = l2lidar.lostPackets();
-    uint64_t count3DPCL = l2lidar.total3D();
-    uint64_t count2DPCL = l2lidar.total2D();
-    uint64_t countIMU = l2lidar.totalIMU();
-    uint64_t countACK = l2lidar.totalACK();
-    uint64_t countOther = l2lidar.totalOther();
-    LidarVersionData Version = l2lidar.version();
-
-    LidarAckData ACKdata = l2lidar.ack();
-    LidarPointDataPacket PCLpacket = l2lidar.Pcl3Dpacket();
-    LidarImuData IMUdata = l2lidar.imu();
 
     uint64_t RateCount;
     uint64_t RatePerSec;
@@ -525,302 +713,5 @@ void MainWindow::updateChart()
     // update general packet stats
     ui->lblRate->setText(QString("Rate: %1 pkt/s").arg(RatePerSec));
 
-    // update the hw/fw verion infor
-
-    // update Version information if present
-    QString HWversion = QString().asprintf("%d.%d.%d.%d",
-                                           Version.hw_version[0],
-                                           Version.hw_version[1],
-                                           Version.hw_version[2],
-                                           Version.hw_version[3]);
-    QString FWversion = QString().asprintf("%d.%d.%d.%d",
-                                           Version.sw_version[0],
-                                           Version.sw_version[1],
-                                           Version.sw_version[2],
-                                           Version.sw_version[3]);
-    QString BuildDate = QString().asprintf("20%c%c-%c%c-%c%c",
-                                           Version.date[0],
-                                           Version.date[1],
-                                           Version.date[2],
-                                           Version.date[3],
-                                           Version.date[4],
-                                           Version.date[5]);
-
-    QString Product = QString::fromUtf8((const char *)Version.reserve);
-
-    ui->lblVersion->setText(QString("%1  HW Version: %2   FW Version: %3   Date: %4")
-                                .arg(Product,HWversion, FWversion,BuildDate));
-
-    // report the last ACK packet result
-    if(ACKdata.packet_type!=0) {
-        QString ACKstring = ACKreport(&ACKdata);
-        ui->lblACK->setText(ACKstring);
-    }
-
-    // report the IMU packet results
-    if(IMUdata.info.stamp.nsec!=0) {
-        QString IMUstring = IMUreport(&IMUdata);
-        ui->lblIMU->setText(IMUstring);
-    }
-
-    // report the PCL data
-    if(PCLpacket.data.info.stamp.nsec!=0) {
-        QString PCLstring = PCLreport(PCLpacket);
-        ui->lblPCL->setText(PCLstring);
-    }
-
-    // get latest time stamp for UDP data
-    LidarTimeStampData TimeStamp = l2lidar.timestamp();
-
-    QString PacketStats = QString().asprintf("Seconds:%6llu   nsec:%9llu    Packets Processed:%6llu  3D PCL:%6llu   2d PCL:%6llu   IMU:%6llu   ACK:%6llu   Other:%6llu   Lost:%6llu",
-                                             TimeStamp.data.sec,
-                                             TimeStamp.data.nsec,
-                                             countPackets,
-                                             count3DPCL,
-                                             count2DPCL,
-                                             countIMU,
-                                             countACK,
-                                             countOther,
-                                             lostPackets);
-    ui->lblPacketStats->setText(PacketStats);
-}
-
-//--------------------------------------------------------
-//
-// packet processing used by update
-//
-//--------------------------------------------------------
-
-//--------------------------------------------------------
-// ACKreport
-// reports ACK packet decode
-// note: there are certain ACK packets that should never occur
-// but are included here for completeness
-// There is insufficient documenation to properly identify these
-//--------------------------------------------------------
-QString MainWindow::ACKreport(LidarAckData *ACKdata)
-{
-    QString ACKstring;
-    QString Packet;
-    QString Result;
-
-    // The LidarAckData packet is supposed to provide
-    // the acknowledgement of a control/query cmd sent to
-    // L2 unit.  It primary purpose is to provide success or failure
-    // in receiving the control/query cmd.
-    //
-    // It should be noted that there are discrepancies in the other
-    // return values in this packet were is may not provide the
-    // correct packet type, cmd type or value.  THese values should
-    // not be relied upon without verfication of correct reporting
-    // specifically for that command
-    //
-    // In at least one instance no ACK packet will be return.
-    // This is for a reset a L2 command
-
-    switch(ACKdata->packet_type) {
-    case LIDAR_USER_CMD_PACKET_TYPE:
-        switch(ACKdata->cmd_type) {
-        case USER_CMD_RESET_TYPE:
-            Packet = QString("ACK: LIDAR_USER_CMD_PACKET_TYPE: USER_CMD_RESET_TYPE  value: %1").arg(ACKdata->cmd_value);
-            break;
-        case USER_CMD_STANDBY_TYPE:   // value 0: start; value 1: standby
-            Packet = QString("ACK: LIDAR_USER_CMD_PACKET_TYPE: USER_CMD_STANDBY_TYPE  value: %1").arg(ACKdata->cmd_value);
-            break;
-        case USER_CMD_VERSION_GET:
-            Packet = QString("ACK: LIDAR_USER_CMD_PACKET_TYPE: USER_CMD_VERSION_GET  value: %1").arg(ACKdata->cmd_value);
-            break;
-        case USER_CMD_LATENCY_TYPE:
-            Packet = QString("ACK: LIDAR_USER_CMD_PACKET_TYPE: USER_CMD_LATENCY_TYPE  value: %1").arg(ACKdata->cmd_value);
-            break;
-        case USER_CMD_CONFIG_RESET:
-            Packet = QString("ACK: LIDAR_USER_CMD_PACKET_TYPE: USER_CMD_CONFIG_RESET  value: %1").arg(ACKdata->cmd_value);
-            break;
-        case USER_CMD_CONFIG_GET:
-            Packet = QString("ACK: LIDAR_USER_CMD_PACKET_TYPE: USER_CMD_CONFIG_GET  value: %1").arg(ACKdata->cmd_value);
-            break;
-        case USER_CMD_CONFIG_AUTO_STANDBY:
-            Packet = QString("ACK: LIDAR_USER_CMD_PACKET_TYPE: USER_CMD_CONFIG_AUTO_STANDBY  value: %1").arg(ACKdata->cmd_value);
-            break;
-        default:
-            Packet = QString("ACK :LIDAR_USER_CMD_PACKET_TYPE:  cmd: %1   value: %2").arg(ACKdata->cmd_type,ACKdata->cmd_value);
-            break;
-        }
-        break;
-
-    case LIDAR_ACK_DATA_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_ACK_DATA_PACKET_TYPE:  cmd: %1  value:%2  UNEXPECTED packet")
-                         .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_POINT_DATA_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_POINT_DATA_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_2D_POINT_DATA_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_2D_POINT_DATA_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_IMU_DATA_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_IMU_DATA_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_VERSION_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_VERSION_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_TIME_STAMP_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_TIME_STAMP_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_WORK_MODE_CONFIG_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_WORK_MODE_CONFIG_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_IP_ADDRESS_CONFIG_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_IP_ADDRESS_CONFIG_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_MAC_ADDRESS_CONFIG_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_MAC_ADDRESS_CONFIG_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    case LIDAR_COMMAND_PACKET_TYPE:
-        switch(ACKdata->cmd_type) {
-            case CMD_RESET_TYPE:
-                Packet = QString("ACK: LIDAR_COMMAND_PACKET_TYPE  cmd: CMD_RESET_TYPE  value:%1")
-                                 .arg(ACKdata->cmd_value);
-                break;
-
-            case CMD_PARAM_SAVE:
-                Packet = QString("ACK: LIDAR_COMMAND_PACKET_TYPE  cmd: CMD_PARAM_SAVE  value:%1")
-                             .arg(ACKdata->cmd_value);
-                break;
-
-            case CMD_PARAM_GET:
-                Packet = QString("ACK: LIDAR_COMMAND_PACKET_TYPE  cmd: CMD_PARAM_GET  value:%1")
-                             .arg(ACKdata->cmd_value);
-                break;
-
-            case CMD_VERSION_GET:
-                Packet = QString("ACK: LIDAR_COMMAND_PACKET_TYPE  cmd: CMD_VERSION_GET  value:%1")
-                             .arg(ACKdata->cmd_value);
-                break;
-
-            case CMD_STANDBY_TYPE:
-                Packet = QString("ACK: LIDAR_COMMAND_PACKET_TYPE  cmd: CMD_STANDBY_TYPE  value:%1")
-                             .arg(ACKdata->cmd_value);
-                break;
-
-            case CMD_LATENCY_TYPE:
-                Packet = QString("ACK: LIDAR_COMMAND_PACKET_TYPE  cmd: CMD_LATENCY_TYPE  value:%1")
-                             .arg(ACKdata->cmd_value);
-                break;
-
-            case CMD_CONFIG_RESET:
-                Packet = QString("ACK: LIDAR_COMMAND_PACKET_TYPE cmd: CMD_CONFIG_RESET  value:%1")
-                             .arg(ACKdata->cmd_value);
-            break;
-
-        default:
-                Packet = QString("ACK: LIDAR_COMMAND_PACKET_TYPE  cmd: %1  value:%2")
-                             .arg(ACKdata->cmd_type, ACKdata->cmd_value);
-            break;
-        }
-        break;
-
-    case LIDAR_PARAM_DATA_PACKET_TYPE:
-        Packet = QString("ACK: LIDAR_PARAM_DATA_PACKET_TYPE:  cmd: %1  value:%2")
-                     .arg(ACKdata->cmd_type,ACKdata->cmd_value);
-        break;
-
-    default:
-        // unkown type
-        Packet = QString("ACK: problem unknown packet type: %1  cmd: %2  value:%3")
-                         .arg(ACKdata->packet_type,ACKdata->cmd_value,ACKdata->cmd_value);
-        break;
-    }
-
-    // ACKdata.status
-    switch(ACKdata->status) {
-    case ACK_SUCCESS:
-        Result = "ACK_SUCCESS";
-        break;
-
-    case ACK_CRC_ERROR:
-        Result = "";
-        break;
-
-    case ACK_HEADER_ERROR:
-        Result = "ACK_CRC_ERROR";
-        break;
-
-    case ACK_BLOCK_ERROR:
-        Result = "ACK_BLOCK_ERROR";
-        break;
-
-    case ACK_WAIT_ERROR:
-        Result = "ACK_WAIT_ERROR";
-        break;
-
-    default:
-        Result = "Unknown status";
-        break;
-    }
-
-    return QString("%1   %2").arg(Packet,Result);
-}
-
-//--------------------------------------------------------
-// IMUreport()
-//--------------------------------------------------------
-QString MainWindow::IMUreport(LidarImuData *IMUdata)
-{
-    QString Packet;
-    Packet = Packet.asprintf("IMU: ax:%9.4f   ay:%9.4f   az:%9.4f  gx:%9.4f   gy:%9.4f  gz:%9.4f",
-                             IMUdata->linear_acceleration[0],
-                             IMUdata->linear_acceleration[1],
-                             IMUdata->linear_acceleration[2],
-                             IMUdata->angular_velocity[0],
-                             IMUdata->angular_velocity[1],
-                             IMUdata->angular_velocity[2]
-                             );
-
-    return Packet;
-}
-//LidarPointData
-//--------------------------------------------------------
-// IMUreport()
-//--------------------------------------------------------
-QString MainWindow::PCLreport(const LidarPointDataPacket &PCLdataPacket)
-{
-    QString Packet;
-
-    // convert to point cloud data: x,y,z,intensity,time
-    // This uses the unitree provided parseFromPacketToPointCloud()
-    unilidar_sdk2::PointCloudUnitree Cloud;
-    unilidar_sdk2::parseFromPacketToPointCloud( Cloud, PCLdataPacket, false, 0, 100);
-
-    Packet = Packet.asprintf("Num Points %5d\n 1: %7.2f,%7.2f,%7.2f:%1.1f\n2: %7.2f,%7.2f,%7.2f:%6.1f\n Dirty: %f\n APD: %f C",
-                             Cloud.points.size(),
-                             Cloud.points[0].x,
-                             Cloud.points[0].y,
-                             Cloud.points[0].z,
-                             Cloud.points[0].intensity,
-                             Cloud.points[1].x,
-                             Cloud.points[1].y,
-                             Cloud.points[1].z,
-                             Cloud.points[1].intensity,
-                             PCLdataPacket.data.state.dirty_index,
-                             PCLdataPacket.data.state.apd_temperature
-                             );
-    return Packet;
+    return;
 }

@@ -36,10 +36,16 @@
 //  V0.2.1  2026-01-05  Changed LidarDecoder.h and cpp to L2lidar
 //                      Added user commands to control L2 lidar
 //                      Changed class name from LidarDecoer to L2lidar
-//  V0.2.3  2026-01-09  Add point cloud viewer
-//  V0.2.4  2026-01-10  Changed OpenGL approach
-//                      Reogranized MainWindow.cpp
+//  V0.2.3  2026-01-10  Add point cloud viewer
+//  V0.2.4  2026-01-11  Changed OpenGL approach
+//  V0.2.5  2026-01-12  Reogranized MainWindow.cpp
 //                      removed save CSV file skeleton
+//                      Added menu to enable/disable docks, point cloud viewer
+//                      and packet stats/rate chart
+//                      Added dockable windows
+//                          Calibration and internal state
+//                          IMU information
+//                          packet stats information
 //
 //--------------------------------------------------------
 
@@ -87,9 +93,12 @@
 #include "ConfigDialog.h"
 #include "L2lidar.h"
 #include "PointCloudWindow.h"
-#include "unitree_lidar_utilities.h"
+#include "DiagnosticsDock.h"
+#include "IMUDock.h"
+#include "StatsDock.h"
+#include "ACKDock.h"
 
-//class PointCloudWindow;
+//#include "unitree_lidar_utilities.h" // this is used in other files
 
 #define CHART_UPDATE_TIMER 100
 
@@ -126,15 +135,45 @@ private slots:
     // ui updates
     void updateChart();
     void updatePointCloud();
+
 private:
     // Application MainWindow ui
     Ui::MainWindow* ui;
 
-    // Socket class for UDP
-    QUdpSocket udpSocket;
+    //-----------------------------------------------------
+    // dockable diagnostics. imu and  stats ui
+    //-----------------------------------------------------
+    QTimer* mHeartBeat;  // start in L2 connect
+            // initialize in MainWindow constructor
+
+    void HeartbeatFire();   // this is the callback for
+                            // heartbeat timer
+
+    // dockable windows
+    DiagnosticsDock *m_diagnosticsDock{nullptr};
+    IMUDock *m_IMUDock{nullptr};
+    StatsDock *m_StatsDock{nullptr};
+    ACKDock *m_ACKDock{nullptr};
+
+    // update the dockable windows
+    void updateDiagnostics(); // runs off of timer to feed updated
+                            // diagnostics data to diagnostic dock
+    void updateIMU();
+    void updateStats();
+
+    // ack packets are very low rate, only occurs
+    // when a command is sent to the hardware
+    // it should be connected to a signal
+    // void MainWindow::updateACK()
+    void updateACK();
+
+    //-----------------------------------------------------
+    // Packet Chart view with packet stats
+    //-----------------------------------------------------
 
     // Chart timer to trigger chart update
-    QTimer chartTimer;
+    QTimer chartTimer; // start in L2 connect
+            // initialize in MainWindow constructor
 
     // variables for chart
     QLineSeries* rateSeries{ nullptr };
@@ -142,11 +181,15 @@ private:
     const size_t maxPoints = 100;
     uint64_t LastRateCount {0};
 
+    //-----------------------------------------------------
+    // Point cloud veiwer
+    //-----------------------------------------------------
+
     // Point cloud viewer window (persistent)
     PointCloudWindow* pcWindow = nullptr;
 
     // Point cloud viewer Timer
-    QTimer cloudTimer;
+    QTimer* cloudTimer;
 
     // flatten the cloud points from latest frame
     QVector<PCpoint> buildFlattenedCloud();
@@ -165,7 +208,7 @@ private:
     size_t m_ringCount = 0;       // Number of valid frames (<= MAX_FRAMES)
 
     //-----------------------------------------------------
-    // unitree L2 lidar hardware
+    // For unitree L2 lidar hardware interaction
     //-----------------------------------------------------
     L2lidar l2lidar;
 
@@ -173,16 +216,15 @@ private:
     ConfigDialog config;
 
     // helper functions
-    QString ACKreport(LidarAckData *ACKdata);
-    QString IMUreport(LidarImuData *IMUdata);
-    QString PCLreport(const LidarPointDataPacket &PCLdata);
+    void L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
+    void L2ConnectedButtonsUIs(); // set buttons and UIs states when L2 connected
+    void StopPointCloudViewer();
+    void StartPointCloudViewer();
 
+    //-----------------------------------------------------
     // INI settings functions
+    //-----------------------------------------------------
+
     void saveSettings();
     void loadSettings();
-
-    // diagnostic variables
-    float minIntensity {10000};
-    float maxIntensity {-10000};
-
 };

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>StatsDock</class>
+ <widget class="QDockWidget" name="StatsDock">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>93</width>
+    <height>219</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>L2 packet stats</string>
+  </property>
+  <widget class="QWidget" name="dockContents">
+   <layout class="QVBoxLayout" name="mainLayout">
+    <item>
+     <widget class="QGroupBox" name="grpStats">
+      <property name="title">
+       <string>Packet Stats</string>
+      </property>
+      <layout class="QFormLayout" name="StatsLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblTimeSecText">
+         <property name="text">
+          <string>Time (sec)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lblTimeSecValue"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblTimeNSecText">
+         <property name="text">
+          <string>Time (nsec)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="lblTimeNSecValue"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblTotalText">
+         <property name="text">
+          <string>TotalPackets</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="lblTotalValue"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="lblTotalText">
+         <property name="text">
+          <string>Total Packets</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="lblTotalValue"/>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="lbl3DText">
+         <property name="text">
+          <string>3D point cloud</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QLabel" name="lbl3DValue"/>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="lbl2DText">
+         <property name="text">
+          <string>2D point cloud</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QLabel" name="lbl2DValue"/>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="lblIMUText">
+         <property name="text">
+          <string>IMU packets</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
+        <widget class="QLabel" name="lblIMUValue"/>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="lblACKText">
+         <property name="text">
+          <string>ACK packets</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QLabel" name="lblACKValue"/>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="lblOtherText">
+         <property name="text">
+          <string>Other packets</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QLabel" name="lblOtherValue"/>
+       </item>
+       <item row="9" column="0">
+        <widget class="QLabel" name="lblLostText">
+         <property name="text">
+          <string>Lost packets</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="1">
+        <widget class="QLabel" name="lblLostValue"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <spacer name="verticalSpacer">
+      <property name="orientation">
+       <enum>Qt::Orientation::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

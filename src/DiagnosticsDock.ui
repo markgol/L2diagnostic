@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DiagnosticsDock</class>
+ <widget class="QDockWidget" name="DiagnosticsDock">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>146</width>
+    <height>484</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>L2 Diagnostics</string>
+  </property>
+  <widget class="QWidget" name="dockContents">
+   <layout class="QVBoxLayout" name="mainLayout">
+    <item>
+     <widget class="QGroupBox" name="grpCalibration">
+      <property name="title">
+       <string>Calibration</string>
+      </property>
+      <layout class="QFormLayout" name="calibLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblAaxisText">
+         <property name="text">
+          <string>A-axis distance</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lblAaxisValue"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblBaxisText">
+         <property name="text">
+          <string>B-axis distance</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="lblBaxisValue"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblThetaBiasText">
+         <property name="text">
+          <string>Theta angle bias</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="lblThetaBiasValue"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="lblAlphaBiasText">
+         <property name="text">
+          <string>Alpha angle bias</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="lblAlphaBiasValue"/>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="lblBetaAngleText">
+         <property name="text">
+          <string>Beta angle</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QLabel" name="lblBetaAngleValue"/>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="lblXiAngleText">
+         <property name="text">
+          <string>Xi angle</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QLabel" name="lblXiAngleValue"/>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="lblRangeBiasText">
+         <property name="text">
+          <string>Range bias</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
+        <widget class="QLabel" name="lblRangeBiasValue"/>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="lblRangeScaleText">
+         <property name="text">
+          <string>Range scale</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QLabel" name="lblRangeScaleValue"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpInternalState">
+      <property name="title">
+       <string>Internal State</string>
+      </property>
+      <layout class="QFormLayout" name="stateLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblSysSpeedText">
+         <property name="text">
+          <string>System rotation speed</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lblSysSpeedValue"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblComSpeedText">
+         <property name="text">
+          <string>Com rotation speed</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="lblComSpeedValue"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblDirtyText">
+         <property name="text">
+          <string>Dirty index</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="lblDirtyValue"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="lblLostUpText">
+         <property name="text">
+          <string>Lost up</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="lblLostUpValue"/>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="lblLostDownText">
+         <property name="text">
+          <string>Lost down</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QLabel" name="lblLostDownValue"/>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="lblApdTempText">
+         <property name="text">
+          <string>APD temperature</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QLabel" name="lblApdTempValue"/>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="lblApdVoltageText">
+         <property name="text">
+          <string>APD voltage</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
+        <widget class="QLabel" name="lblApdVoltageValue"/>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="lblLaserVoltageText">
+         <property name="text">
+          <string>Laser voltage</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QLabel" name="lblLaserVoltageValue"/>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="lblImuTempText">
+         <property name="text">
+          <string>IMU temperature</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QLabel" name="lblImuTempValue"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpVersion">
+      <property name="title">
+       <string>Version</string>
+      </property>
+      <layout class="QFormLayout" name="versionLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblProductText">
+         <property name="text">
+          <string>Product</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lblProductValue"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblHardwareText">
+         <property name="text">
+          <string>Hardware</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="lblHardwareValue"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblFirmwareText">
+         <property name="text">
+          <string>Firmware</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="lblFirmwareValue"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="lblDateText">
+         <property name="text">
+          <string>Build date</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="lblDateValue"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <spacer name="verticalSpacer">
+      <property name="orientation">
+       <enum>Qt::Orientation::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

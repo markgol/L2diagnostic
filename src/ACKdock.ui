@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ACKDock</class>
+ <widget class="QDockWidget" name="ACKDock">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>287</width>
+    <height>122</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>L2 ACK packet</string>
+  </property>
+  <widget class="QWidget" name="dockContents">
+   <layout class="QVBoxLayout" name="mainLayout">
+    <item>
+     <widget class="QGroupBox" name="grpACK">
+      <property name="title">
+       <string>ACK packet results</string>
+      </property>
+      <layout class="QFormLayout" name="ACKLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblPacketTypeText">
+         <property name="text">
+          <string>Packet type</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lblPacketTypeValue"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblCmdTypeText">
+         <property name="text">
+          <string>cmd type</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="lblCmdTypeValue"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblCmdValueText">
+         <property name="text">
+          <string>cmd value</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="lblCmdValueValue"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="lblStatusText">
+         <property name="text">
+          <string>Status</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="lblStatusValue"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <spacer name="verticalSpacer">
+      <property name="orientation">
+       <enum>Qt::Orientation::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
