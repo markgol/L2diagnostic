@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>93</width>
-    <height>219</height>
+    <width>160</width>
+    <height>210</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,73 +52,63 @@
         <widget class="QLabel" name="lblTotalValue"/>
        </item>
        <item row="3" column="0">
-        <widget class="QLabel" name="lblTotalText">
-         <property name="text">
-          <string>Total Packets</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLabel" name="lblTotalValue"/>
-       </item>
-       <item row="4" column="0">
         <widget class="QLabel" name="lbl3DText">
          <property name="text">
           <string>3D point cloud</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="1">
-        <widget class="QLabel" name="lbl3DValue"/>
-       </item>
-       <item row="5" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="lbl2DText">
          <property name="text">
           <string>2D point cloud</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="1">
-        <widget class="QLabel" name="lbl2DValue"/>
-       </item>
-       <item row="6" column="0">
+       <item row="5" column="0">
         <widget class="QLabel" name="lblIMUText">
          <property name="text">
           <string>IMU packets</string>
          </property>
         </widget>
        </item>
-       <item row="6" column="1">
-        <widget class="QLabel" name="lblIMUValue"/>
-       </item>
-       <item row="7" column="0">
+       <item row="6" column="0">
         <widget class="QLabel" name="lblACKText">
          <property name="text">
           <string>ACK packets</string>
          </property>
         </widget>
        </item>
-       <item row="7" column="1">
-        <widget class="QLabel" name="lblACKValue"/>
-       </item>
-       <item row="8" column="0">
+       <item row="7" column="0">
         <widget class="QLabel" name="lblOtherText">
          <property name="text">
           <string>Other packets</string>
          </property>
         </widget>
        </item>
-       <item row="8" column="1">
-        <widget class="QLabel" name="lblOtherValue"/>
-       </item>
-       <item row="9" column="0">
+       <item row="8" column="0">
         <widget class="QLabel" name="lblLostText">
          <property name="text">
           <string>Lost packets</string>
          </property>
         </widget>
        </item>
-       <item row="9" column="1">
+       <item row="3" column="1">
+        <widget class="QLabel" name="lbl3DValue"/>
+       </item>
+       <item row="4" column="1">
+        <widget class="QLabel" name="lbl2DValue"/>
+       </item>
+       <item row="5" column="1">
+        <widget class="QLabel" name="lblIMUValue"/>
+       </item>
+       <item row="6" column="1">
+        <widget class="QLabel" name="lblACKValue"/>
+       </item>
+       <item row="7" column="1">
+        <widget class="QLabel" name="lblOtherValue"/>
+       </item>
+       <item row="8" column="1">
         <widget class="QLabel" name="lblLostValue"/>
        </item>
       </layout>

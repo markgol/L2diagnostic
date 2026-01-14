@@ -179,8 +179,8 @@ void DiagnosticsDock::updateVersion(const LidarVersionData& version)
 
     QString Product = QString::fromUtf8((const char *)version.reserve);
 
-     ui->lblProductValue->setText(HWversion);
-     ui->lblHardwareValue->setText(FWversion);
-     ui->lblFirmwareValue->setText(BuildDate);
-     ui->lblDateValue->setText(Product);
+     ui->lblProductValue->setText(Product);
+     ui->lblHardwareValue->setText(HWversion);
+     ui->lblFirmwareValue->setText(FWversion);
+     ui->lblDateValue->setText(BuildDate);
 }

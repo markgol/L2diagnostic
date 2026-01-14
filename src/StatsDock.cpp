@@ -89,45 +89,35 @@ StatsDock::~StatsDock()
 //  updateDiagnostics
 //  signal callback to update diagnostics
 //--------------------------------------------------------
-void StatsDock::updateStats(
-							uint32_t TimeSec,
-							uint32_t TimeNsec,
-							uint64_t countPackets,
-							uint64_t count3DPCL,
-							uint64_t count2DPCL,
-							uint64_t countIMU,
-							uint64_t countACK,
-							uint64_t countOther,
-							uint64_t lostPackets
-							)
+void StatsDock::updateStats(PacketStats& Stats)
 {
     // Calibration
     QString ResultString;
 
-    ResultString = ResultString.asprintf("%6llu",TimeSec);
+    ResultString = ResultString.asprintf("%6llu",Stats.TimeSec);
     ui->lblTimeSecValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%9llu",TimeNsec);
+    ResultString = ResultString.asprintf("%9llu",Stats.TimeNsec);
     ui->lblTimeNSecValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",countPackets);
+    ResultString = ResultString.asprintf("%6llu",Stats.countPackets);
     ui->lblTotalValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",count3DPCL);
+    ResultString = ResultString.asprintf("%6llu",Stats.count3DPCL);
     ui->lbl3DValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",count2DPCL);
+    ResultString = ResultString.asprintf("%6llu",Stats.count2DPCL);
     ui->lbl2DValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",countIMU);
+    ResultString = ResultString.asprintf("%6llu",Stats.countIMU);
     ui->lblIMUValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",countACK);
+    ResultString = ResultString.asprintf("%6llu",Stats.countACK);
     ui->lblACKValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",countOther);
+    ResultString = ResultString.asprintf("%6llu",Stats.countOther);
     ui->lblOtherValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",lostPackets);
+    ResultString = ResultString.asprintf("%6llu",Stats.lostPackets);
     ui->lblLostValue->setText(ResultString);
 }

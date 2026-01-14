@@ -46,6 +46,7 @@
 //                          Calibration and internal state
 //                          IMU information
 //                          packet stats information
+//                          packet rate chart
 //
 //--------------------------------------------------------
 
@@ -79,17 +80,20 @@
 
 #pragma once
 
+// Qt includes
 #include <QMainWindow>
 #include <QTimer>
 #include <QFile>
 #include <QTextStream>
-#include <deque>
 #include <QUdpSocket>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 #include <QVector>
 #include <QQueue>
+#include <QElapsedTimer>
+
+// project specific includes
 #include "ConfigDialog.h"
 #include "L2lidar.h"
 #include "PointCloudWindow.h"
@@ -97,10 +101,8 @@
 #include "IMUDock.h"
 #include "StatsDock.h"
 #include "ACKDock.h"
-
-//#include "unitree_lidar_utilities.h" // this is used in other files
-
-#define CHART_UPDATE_TIMER 100
+#include "ControlsDock.h"
+#include "PacketRateDock.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -121,7 +123,9 @@ signals:
     void flattenedCloudReady(const QVector<PCpoint>& points);
 
 private slots:
-    // button controls
+    // The slots are triggered by ControlsDock class
+
+    // // button controls
     void L2connect();
     void L2disconnect();
     void openConfig();
@@ -131,10 +135,6 @@ private slots:
     void stopRotation();
     void sendReset();
     void getVersion();
-
-    // ui updates
-    void updateChart();
-    void updatePointCloud();
 
 private:
     // Application MainWindow ui
@@ -154,12 +154,17 @@ private:
     IMUDock *m_IMUDock{nullptr};
     StatsDock *m_StatsDock{nullptr};
     ACKDock *m_ACKDock{nullptr};
+    ControlsDock *m_controlsDock{nullptr};
+    PacketRateDock* m_packetRateDock{nullptr};
 
     // update the dockable windows
     void updateDiagnostics(); // runs off of timer to feed updated
                             // diagnostics data to diagnostic dock
     void updateIMU();
     void updateStats();
+    void updatePointCloud();
+    void updatePacketRate();
+
 
     // ack packets are very low rate, only occurs
     // when a command is sent to the hardware
@@ -170,16 +175,9 @@ private:
     //-----------------------------------------------------
     // Packet Chart view with packet stats
     //-----------------------------------------------------
-
-    // Chart timer to trigger chart update
-    QTimer chartTimer; // start in L2 connect
-            // initialize in MainWindow constructor
-
-    // variables for chart
-    QLineSeries* rateSeries{ nullptr };
-    std::deque<uint32_t> recentRates;
-    const size_t maxPoints = 100;
-    uint64_t LastRateCount {0};
+    QElapsedTimer*  m_rateTimer; // this measures actual elpased time
+    QTimer*         mPacketBeat; // this is heartbeat for the packet rate chart
+    uint64_t        m_lastPacketCount = 0;
 
     //-----------------------------------------------------
     // Point cloud veiwer
@@ -218,9 +216,12 @@ private:
     // helper functions
     void L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
     void L2ConnectedButtonsUIs(); // set buttons and UIs states when L2 connected
+
     void StopPointCloudViewer();
     void StartPointCloudViewer();
 
+    void StartPacketChart();
+    void StopPacketChart();
     //-----------------------------------------------------
     // INI settings functions
     //-----------------------------------------------------

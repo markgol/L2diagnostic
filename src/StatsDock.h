@@ -73,6 +73,18 @@ class StatsDock;
 QT_END_NAMESPACE
 
 // needed device data structures
+typedef struct
+{
+        uint32_t TimeSec;
+        uint32_t TimeNsec;
+        uint64_t countPackets;
+        uint64_t count3DPCL;
+        uint64_t count2DPCL;
+        uint64_t countIMU;
+        uint64_t countACK;
+        uint64_t countOther;
+        uint64_t lostPackets;
+}PacketStats;
 
 //--------------------------------------------------------
 // StatsDock class definition
@@ -102,15 +114,7 @@ public:
     ~StatsDock();
 
     // use these calls to update this dock window
-    void updateStats(uint32_t TimeSec, uint32_t TimeNsec,
-							uint64_t countPackets,
-							uint64_t count3DPCL,
-							uint64_t count2DPCL,
-							uint64_t countIMU,
-							uint64_t countACK,
-							uint64_t countOther,
-							uint64_t lostPackets
-							);
+    void updateStats(PacketStats& Stats);
 
 private:
     Ui::StatsDock* ui;

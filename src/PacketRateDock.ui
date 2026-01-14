@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PacketRateDock</class>
+
+ <widget class="QDockWidget" name="PacketRateDock">
+  <property name="windowTitle">
+   <string>Packet Rate</string>
+  </property>
+
+  <widget class="QWidget" name="dockContents">
+   <layout class="QVBoxLayout" name="mainLayout">
+    <item>
+     <widget class="QChartView" name="chartView"/>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+
+ <customwidgets>
+  <customwidget>
+   <class>QChartView</class>
+   <extends>QWidget</extends>
+   <header>QtCharts/QChartView</header>
+  </customwidget>
+ </customwidgets>
+
+ <resources/>
+ <connections/>
+</ui>

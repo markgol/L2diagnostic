@@ -116,7 +116,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QDebug>
-
+#include <QMessageBox>
 //--------------------------------------------------------
 //  Project specific includes not part of MainWindow.h
 //--------------------------------------------------------
@@ -142,8 +142,15 @@ MainWindow::MainWindow(QWidget* parent)
 
     mHeartBeat = new QTimer(this);
     mHeartBeat->setInterval(250); // 4 Hz
-
     connect(mHeartBeat, &QTimer::timeout, this, &MainWindow::HeartbeatFire);
+
+    //--------------------------------------------------------
+    //  This timer is used to trigger updates
+    //  for Diagnostics, IMU and Stats
+    //--------------------------------------------------------
+    mPacketBeat = new QTimer(this);
+    mPacketBeat->setInterval(100); // 10 Hz
+    connect(mPacketBeat, &QTimer::timeout, this, &MainWindow::updatePacketRate);
 
     //--------------------------------------------------------
     //  setup the dockable diagnsotics gui
@@ -184,49 +191,44 @@ MainWindow::MainWindow(QWidget* parent)
             Qt::QueuedConnection);
 
     //--------------------------------------------------------
-    //  setup the Main window GUI
+    //  setup dockable Controls gui (this is not timer driven)
+    //  This is the buttons dialog.
+    //  It is event driven.
     //--------------------------------------------------------
+    m_controlsDock = new ControlsDock(this);
+    addDockWidget(Qt::TopDockWidgetArea, m_controlsDock);
+    m_controlsDock->show();   // always visible
+    resizeDocks({ m_controlsDock },{ 160 },Qt::Vertical);
+
+    //added the seven button connections
+    connect(m_controlsDock, &ControlsDock::L2connectRequested,
+            this, &MainWindow::L2connect);
+
+    connect(m_controlsDock, &ControlsDock::L2disconnectRequested,
+            this, &MainWindow::L2disconnect);
+
+    connect(m_controlsDock, &ControlsDock::ConfigRequested,
+            this, &MainWindow::openConfig);
+
+    connect(m_controlsDock, &ControlsDock::startRotationRequested,
+            this, &MainWindow::startRotation);
+
+    connect(m_controlsDock, &ControlsDock::stopRotationRequested,
+            this, &MainWindow::stopRotation);
+
+    connect(m_controlsDock, &ControlsDock::L2resetRequested,
+            this, &MainWindow::sendReset);
+
+    connect(m_controlsDock, &ControlsDock::GetVersionRequested,
+            this, &MainWindow::getVersion);
 
     //--------------------------------------------------------
-    //  Chart view gui
+    //  packetRateDock setup
     //--------------------------------------------------------
-    // GUI utlizes the chart timer to update the GUI
-    // from stored memory so that it does not block I/O
-
-    // Setup chart GUI elements
-    auto chart = new QChart();
-    rateSeries = new QLineSeries();
-    chart->addSeries(rateSeries);
-
-    auto axisX = new QValueAxis();
-    auto axisY = new QValueAxis();
-    axisX->setRange(0, 100); // 100 smaples
-    axisY->setRange(0, 1000); // 0-1000 packets per second
-    chart->addAxis(axisX, Qt::AlignBottom);
-    chart->addAxis(axisY, Qt::AlignLeft);
-    rateSeries->attachAxis(axisX);
-    rateSeries->attachAxis(axisY);
-
-    auto chartView = new QChartView(chart);
-    chartView->setRenderHint(QPainter::Antialiasing);
-    ui->verticalLayout->addWidget(chartView);
-
-    // Chart update timer
-    // The chart timer is started/stopped by start and stop GUI buttons
-    connect(&chartTimer, &QTimer::timeout, this, &MainWindow::updateChart);
-
-    //--------------------------------------------------------
-    //  Connect UI buttons
-    //--------------------------------------------------------
-
-    connect(ui->btnStart, &QPushButton::clicked, this, &MainWindow::L2connect);
-    connect(ui->btnStop, &QPushButton::clicked, this, &MainWindow::L2disconnect);
-    connect(ui->btnConfig, &QPushButton::clicked, this, &MainWindow::openConfig);
-
-    connect(ui->btnStartRotation, &QPushButton::clicked, this, &MainWindow::startRotation);
-    connect(ui->btnStopRotation, &QPushButton::clicked, this, &MainWindow::stopRotation);
-    connect(ui->btnResetL2, &QPushButton::clicked, this, &MainWindow::sendReset);
-    connect(ui->btnVersion, &QPushButton::clicked, this, &MainWindow::getVersion);
+    m_packetRateDock = new PacketRateDock(this);
+    addDockWidget(Qt::BottomDockWidgetArea, m_packetRateDock);
+    m_rateTimer = new QElapsedTimer;
+    m_rateTimer->restart();
 
     //--------------------------------------------------------
     //  setup point cloud viewer GUI
@@ -268,6 +270,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     // initial state of buttons and uis is L2 disconnected
     L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
+
 }
 
 //--------------------------------------------------------
@@ -295,17 +298,12 @@ MainWindow::~MainWindow()
 //--------------------------------------------------------
 
 //--------------------------------------------------------
-//  L2DisconnectedButtonsUIs
+//  L2ConnectedButtonsUIs
 //--------------------------------------------------------
 void MainWindow::L2ConnectedButtonsUIs()
 { // set buttons and UIs states when L2 disconnected
     // disable start, enable stop
-    ui->btnStart->setEnabled(false);
-    ui->btnStop->setEnabled(true);
-    ui->btnStartRotation->setEnabled(true);
-    ui->btnStopRotation->setEnabled(true);
-    ui->btnResetL2->setEnabled(true);
-    ui->btnVersion->setEnabled(true);
+    m_controlsDock->setConnectState(true);
 
     // show diagnostics, IMU and stats window
     // these update at the heartbeat rate
@@ -314,11 +312,11 @@ void MainWindow::L2ConnectedButtonsUIs()
     m_StatsDock->show();
     mHeartBeat->start();
 
+    StartPacketChart();
+    StartPointCloudViewer();
+
     // ACK window is event driven, on ACK packet receive
     m_ACKDock->show();
-
-    // start point cloud viewer
-    StartPointCloudViewer();
 
 }
 
@@ -327,15 +325,10 @@ void MainWindow::L2ConnectedButtonsUIs()
 //--------------------------------------------------------
 void MainWindow::L2DisconnectedButtonsUIs()
 { // set buttons and UIs states when L2 connected
-    ui->btnStart->setEnabled(true);
-    ui->btnStop->setEnabled(false);
-    ui->btnStartRotation->setEnabled(false);
-    ui->btnStopRotation->setEnabled(false);
-    ui->btnResetL2->setEnabled(false);
-    ui->btnVersion->setEnabled(false);
+    m_controlsDock->setConnectState(false);
 
-    // turn off point cloud viewer
     StopPointCloudViewer();
+    StopPacketChart();
 
     // turn off docks
     mHeartBeat->stop();
@@ -346,6 +339,24 @@ void MainWindow::L2DisconnectedButtonsUIs()
     // turn off ACK, this is event drive
     // it is very low rate
     m_ACKDock->hide();
+}
+
+//--------------------------------------------------------
+//  StartPacketChart
+//--------------------------------------------------------
+void  MainWindow::StartPacketChart()
+{
+    mPacketBeat->start();
+    m_packetRateDock->show();
+}
+
+//--------------------------------------------------------
+//  StopPacketChart
+//--------------------------------------------------------
+void  MainWindow::StopPacketChart()
+{
+    mPacketBeat->stop();
+    m_packetRateDock->show(); // leave chart viewable
 }
 
 //--------------------------------------------------------
@@ -363,7 +374,7 @@ void MainWindow::StartPointCloudViewer()
 void MainWindow::StopPointCloudViewer()
 {
     cloudTimer->stop();
-    pcWindow->hide();
+    pcWindow->show(); // leave point cloud viewable
 }
 
 //--------------------------------------------------------
@@ -388,27 +399,43 @@ void MainWindow::HeartbeatFire()
 void MainWindow::updateStats()
 {
     // update detailed packet stats
-    uint64_t countPackets = l2lidar.totalPackets();
-    uint64_t lostPackets = l2lidar.lostPackets();
-    uint64_t count3DPCL = l2lidar.total3D();
-    uint64_t count2DPCL = l2lidar.total2D();
-    uint64_t countIMU = l2lidar.totalIMU();
-    uint64_t countACK = l2lidar.totalACK();
-    uint64_t countOther = l2lidar.totalOther();
+    PacketStats Stats;
+    Stats.countPackets = l2lidar.totalPackets();
+    Stats.lostPackets = l2lidar.lostPackets();
+    Stats.count3DPCL = l2lidar.total3D();
+    Stats.count2DPCL = l2lidar.total2D();
+    Stats.countIMU = l2lidar.totalIMU();
+    Stats.countACK = l2lidar.totalACK();
+    Stats.countOther = l2lidar.totalOther();
     LidarTimeStampData TimeStamp = l2lidar.timestamp();
-    m_StatsDock->updateStats(
-                TimeStamp.data.sec,
-                TimeStamp.data.nsec,
-                countPackets,
-                count3DPCL,
-                count2DPCL,
-                countIMU,
-                countACK,
-                countOther,
-                lostPackets
-                );
+    Stats.TimeSec = TimeStamp.data.sec;
+    Stats.TimeNsec = TimeStamp.data.nsec;
+    m_StatsDock->updateStats(Stats);
 
     return;
+}
+
+//--------------------------------------------------------
+//
+// timer driven update of Packet Rate dock
+//
+//--------------------------------------------------------
+void MainWindow::updatePacketRate()
+{
+    const qint64 elapsedMs = m_rateTimer->elapsed();
+    if (elapsedMs < 100)
+        return;
+
+    const uint64_t total = l2lidar.totalPackets();
+    const uint64_t deltaPackets = total - m_lastPacketCount;
+
+    const double rate =
+        (deltaPackets * 1000.0) / static_cast<double>(elapsedMs);
+
+    m_packetRateDock->addSample(rate);
+
+    m_lastPacketCount = total;
+    m_rateTimer->restart();
 }
 
 //--------------------------------------------------------
@@ -603,14 +630,17 @@ void MainWindow::L2connect()
 {
     //
     if(!l2lidar.ConnectL2()) {
-        qWarning() << "Failed: coudl open open communications port to L2";
+        QMessageBox msgBox;
+        msgBox.setText("Connect to L2 LiDAR");
+        msgBox.setInformativeText("Could not open");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
         return;
     }
 
-    LastRateCount = 0; // reset rate count
-
-    // Start chart timer
-    chartTimer.start(CHART_UPDATE_TIMER);
+    m_lastPacketCount = l2lidar.totalPackets();
+    m_rateTimer->restart(); // elapsed timer
+    mPacketBeat->start();
 
     L2ConnectedButtonsUIs();
 }
@@ -621,13 +651,11 @@ void MainWindow::L2connect()
 //--------------------------------------------------------
 void MainWindow::L2disconnect()
 {
-    chartTimer.stop();
-
     // close UDP connection for receiving data
     l2lidar.DisconnectL2();
 
     l2lidar.ClearCounts();
-    recentRates.clear(); // clear the rate history
+    //recentRates.clear(); // clear the rate history
 
     L2DisconnectedButtonsUIs();
 }
@@ -669,49 +697,5 @@ void MainWindow::sendReset()
 void MainWindow::getVersion()
 {
     l2lidar.LidarGetVersion();
-    return;
-}
-
-//--------------------------------------------------------
-//
-// timer driven update of main window GUI
-//
-//--------------------------------------------------------
-
-//--------------------------------------------------------
-//  updateChart()
-//  update the user GUI with latest I/O results
-//--------------------------------------------------------
-void MainWindow::updateChart()
-{
-    // update detailed packet stats
-    uint64_t countPackets = l2lidar.totalPackets();
-
-    uint64_t RateCount;
-    uint64_t RatePerSec;
-
-    // update the packet rate chart
-
-    // calculate packets per second
-    RateCount = countPackets;
-    // ??? save the timestamp with each rate sample
-    //  calculate rate using delta timestamp
-    // this would result in a rate not subject to GUI interactions
-    RatePerSec = (RateCount - LastRateCount)*1000/CHART_UPDATE_TIMER;
-    LastRateCount = RateCount; // save for next timer timer
-
-    // save RatesPerSec for graph
-    recentRates.push_back(RatePerSec);
-    if (recentRates.size() > maxPoints)
-        recentRates.pop_front();
-
-    rateSeries->clear();
-    int x = 0;
-    for (auto value : recentRates)
-        rateSeries->append(x++, static_cast<qreal>(value));
-
-    // update general packet stats
-    ui->lblRate->setText(QString("Rate: %1 pkt/s").arg(RatePerSec));
-
     return;
 }

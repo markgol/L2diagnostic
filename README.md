@@ -23,6 +23,8 @@ Current Status
 	Send Start, Stop, Reset and get Version control commands
 	Point cloud viewer
 	Added dockable windows for Calibration/state, IMU packet, ACK packet, packet stats
+	Made packet rate chart dockable window
+	Control buttons are now dockable window
 	
 	Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 	unitree_lidar_utilites.h to perform required function needs for using the L2  in the
