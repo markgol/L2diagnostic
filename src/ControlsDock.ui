@@ -6,77 +6,104 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>114</height>
+    <width>362</width>
+    <height>120</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>L2 Controls</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
-   <widget class="QWidget" name="gridLayoutWidget">
+   <widget class="QPushButton" name="btnL2Disconnect">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>10</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>L2 disconnect</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnVersion">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>10</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Version info</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnConfig">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>10</y>
+      <width>56</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Config</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnStop">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>60</y>
+      <width>101</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Stop rotation</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnStart">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>60</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Start rotation</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnReset">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>60</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>L2 reset</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnL2Connect">
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>0</y>
-      <width>401</width>
-      <height>81</height>
+      <y>10</y>
+      <width>71</width>
+      <height>31</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="gridLayout">
-     <property name="verticalSpacing">
-      <number>2</number>
-     </property>
-     <item row="1" column="1">
-      <widget class="QPushButton" name="btnStop">
-       <property name="text">
-        <string>Stop rotation</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QPushButton" name="btnStart">
-       <property name="text">
-        <string>Start rotation</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="btnL2Disconnect">
-       <property name="text">
-        <string>L2 disconnect</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QPushButton" name="btnL2Connect">
-       <property name="text">
-        <string>L2 connect</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="2">
-      <widget class="QPushButton" name="btnReset">
-       <property name="text">
-        <string>L2 reset</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="3">
-      <widget class="QPushButton" name="btnVersion">
-       <property name="text">
-        <string>Version info</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="3">
-      <widget class="QPushButton" name="btnConfig">
-       <property name="text">
-        <string>Config</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <property name="text">
+     <string>L2 connect</string>
+    </property>
    </widget>
   </widget>
  </widget>

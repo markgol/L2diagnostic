@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>146</width>
-    <height>447</height>
+    <width>556</width>
+    <height>197</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>L2 Diagnostics</string>
   </property>
   <widget class="QWidget" name="dockContents">
-   <layout class="QVBoxLayout" name="mainLayout">
+   <layout class="QHBoxLayout" name="mainLayout">
     <item>
      <widget class="QGroupBox" name="grpCalibration">
       <property name="title">
@@ -251,19 +251,6 @@
        </item>
       </layout>
      </widget>
-    </item>
-    <item>
-     <spacer name="verticalSpacer">
-      <property name="orientation">
-       <enum>Qt::Orientation::Vertical</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>40</height>
-       </size>
-      </property>
-     </spacer>
     </item>
    </layout>
   </widget>

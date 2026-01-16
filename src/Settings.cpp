@@ -92,6 +92,8 @@ void MainWindow::saveSettings()
     // Window geometry
     settings.beginGroup("window");
     settings.setValue("geometry", saveGeometry());
+    settings.setValue("state", saveState());
+
     settings.endGroup();
 
     // Network
@@ -102,9 +104,22 @@ void MainWindow::saveSettings()
     settings.setValue("dstPort", config.getDSTport());
     settings.endGroup();
 
-    // Point cloud
-    settings.beginGroup("pointcloud");
+    // throttling
+    settings.beginGroup("throttling");
     settings.setValue("NumFramesToSkip", config.getSkipFrame());
+    settings.setValue("PacketUpdateRate", config.getPacketUpdateRate());
+    settings.setValue("DiagUpdateRate", config.getDiagUpdateRate());
+    settings.setValue("PCupdateRate", config.getPCupdateRate());
+    settings.endGroup();
+
+    // windows visibility
+    settings.beginGroup("visibility");
+    settings.setValue("PCviewer", config.isPCviewerEnabled());
+    settings.setValue("ACK", config.isACKenabled());
+    settings.setValue("Diag", config.isDiagEnabled());
+    settings.setValue("IMU", config.isIMUenabled());
+    settings.setValue("PacketRateChart", config.isPacketRateChartEnabled());
+    settings.setValue("Stats", config.isStatsEnabled());
     settings.endGroup();
 }
 
@@ -118,8 +133,13 @@ void MainWindow::loadSettings()
     QSettings settings(iniPath, QSettings::IniFormat);
 
     // Window geometry
+
     settings.beginGroup("window");
-    restoreGeometry(settings.value("geometry").toByteArray());
+    if (settings.contains("geometry"))
+        restoreGeometry(settings.value("geometry").toByteArray());
+
+    if (settings.contains("state"))
+        restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
     // Network
@@ -129,8 +149,24 @@ void MainWindow::loadSettings()
     config.setSRCport(settings.value("srcPort", 6201).toUInt());
     config.setDSTport(settings.value("dstPort", 6101).toUInt());
     settings.endGroup();
-    // Point cloud
-    settings.beginGroup("pointcloud");
+
+    // throttling
+    settings.beginGroup("throttling");
     config.setSkipFrame(settings.value("NumFramesToSkip", 4).toUInt());
+    config.setPacketUpdateRate(settings.value("PacketUpdateRate", 100).toUInt());
+    config.setDiagUpdateRate(settings.value("DiagUpdateRate", 250).toUInt());
+    config.setPCupdateRate(settings.value("PCupdateRate", 33).toUInt());
     settings.endGroup();
+
+    // windows visibility
+    settings.beginGroup("visibility");
+    config.setPCviewerEnabled(settings.value("PCviewer", false).toBool());
+    config.setACKenabled(settings.value("ACK", false).toBool());  
+    config.setDiagEnabled(settings.value("Diag", false).toBool()); 
+    config.setIMUenabled(settings.value("IMU", false).toBool());
+    config.setPacketRateChartEnabled(settings.value("PacketRateChart", false).toBool());
+    config.setStatsEnabled(settings.value("Stats", false).toBool());
+
+    settings.endGroup();
+
 }

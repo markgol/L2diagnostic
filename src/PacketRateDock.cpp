@@ -15,11 +15,11 @@ PacketRateDock::PacketRateDock(QWidget* parent)
     m_chart->legend()->hide();
     m_chart->setTitle("Packet Rate");
 
-    m_axisX->setTitleText("Time (samples)");
+    m_axisX->setTitleText("Time (last 25 seconds @ 10 Hz)");
     m_axisX->setRange(0, MAX_SAMPLES);
 
     m_axisY->setTitleText("Packets / second");
-    m_axisY->setRange(0, 1000);   // conservative default, auto-expand later if needed
+    m_axisY->setRange(0, 1000);   // typical full packet rate is ~500/sec
 
     m_chart->addAxis(m_axisX, Qt::AlignBottom);
     m_chart->addAxis(m_axisY, Qt::AlignLeft);

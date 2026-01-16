@@ -55,4 +55,6 @@ PointCloudWindow::PointCloudWindow(QWidget* parent)
     connect(&m_renderTimer, &QTimer::timeout,
             m_view, QOverload<>::of(&PointCloudView::update));
     m_renderTimer.start();
+
+
 }

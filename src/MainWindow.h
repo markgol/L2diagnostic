@@ -222,6 +222,18 @@ private:
 
     void StartPacketChart();
     void StopPacketChart();
+
+    // these are only used in the class constructor
+    // to help orgranize the flow for creating the
+    // dockable windows and the point cloud viewer
+    void SetupGUIrefreshTimers();
+    void createDocksViewer();
+    void AssignDocksObjectNames();
+    void AddDocksViewer();
+    void ConnectDocksViewerActions();
+    void applyDocksVisibilityConstraint();
+    void ShowWindows();
+
     //-----------------------------------------------------
     // INI settings functions
     //-----------------------------------------------------

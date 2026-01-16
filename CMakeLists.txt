@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 0.2.6
+    VERSION 0.2.7
     LANGUAGES CXX
 )
 

@@ -131,75 +131,208 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
 
-    //--------------------------------------------------------
-    //  setup the dockable data guis
-    //--------------------------------------------------------
+    SetupGUIrefreshTimers();
+    createDocksViewer();
+    AssignDocksObjectNames();
+    AddDocksViewer();
+    ConnectDocksViewerActions();
 
+    // Load previously saved user settings
+    loadSettings();
+
+    // this is only done after loadsettings()
+    applyDocksVisibilityConstraint();
+
+    // 3D point cloud viewer buffering
+    m_frameRing.resize(MAX_FRAMES); // ring buffer pre allocated
+    NumFramesToSkip = config.getSkipFrame();
+
+    // load the com parameters in the l2lidar class
+    l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
+                              config.getDSTip(),config.getDSTport());
+
+    // initial state of buttons and uis is L2 disconnected
+    L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
+    ShowWindows();
+}
+
+//--------------------------------------------------------
+//  MainWIndow class destructor
+//--------------------------------------------------------
+MainWindow::~MainWindow()
+{
+    // delete timers and window docks
+    // if(!m_diagTimer) delete m_diagTimer;
+    // if(!m_diagnosticsDock) delete m_diagnosticsDock;
+
+    // Make sure live capture is stopped
+    L2disconnect();
+
+   // Save current user settings
+    saveSettings();
+
+    delete ui;
+}
+
+//========================================================
+// constructor helpers
+//========================================================
+
+//--------------------------------------------------------
+// SetupGUIrefreshTimers
+//--------------------------------------------------------
+void MainWindow::SetupGUIrefreshTimers()
+{
     //--------------------------------------------------------
     //  This timer is used to trigger updates
     //  for Diagnostics, IMU and Stats
     //--------------------------------------------------------
-
     mHeartBeat = new QTimer(this);
-    mHeartBeat->setInterval(250); // 4 Hz
+    mHeartBeat->setInterval(config.getDiagUpdateRate()); // suggest 4 Hz
     connect(mHeartBeat, &QTimer::timeout, this, &MainWindow::HeartbeatFire);
 
     //--------------------------------------------------------
-    //  This timer is used to trigger updates
-    //  for Diagnostics, IMU and Stats
+    //  These timers are used to trigger updates
+    //  for packet rate chart update
     //--------------------------------------------------------
     mPacketBeat = new QTimer(this);
-    mPacketBeat->setInterval(100); // 10 Hz
+    mPacketBeat->setInterval(config.getPacketUpdateRate()); // suggest 10 Hz
     connect(mPacketBeat, &QTimer::timeout, this, &MainWindow::updatePacketRate);
+    // The elpased timer is used for calculating the packet rate/sec
+    // It does not tigger and signals
+    m_rateTimer = new QElapsedTimer;
+    m_rateTimer->restart();
 
+    //--------------------------------------------------------
+    // setup timer for point cloud updating
+    //--------------------------------------------------------
+    // The cloud timer should be replaced by an
+    // onUpdatePC callback from the L2lidar class
+    cloudTimer = new QTimer(this);
+    cloudTimer->setInterval(config.getPCupdateRate()); // suggest 30 Hz
+    connect(cloudTimer,
+            &QTimer::timeout,
+            this,
+            &MainWindow::updatePointCloud);
+}
+
+//--------------------------------------------------------
+// createDocksViewer
+//--------------------------------------------------------
+void MainWindow::createDocksViewer()
+{
     //--------------------------------------------------------
     //  setup the dockable diagnsotics gui
     //--------------------------------------------------------
     m_diagnosticsDock = new DiagnosticsDock(this);
-    addDockWidget(Qt::RightDockWidgetArea, m_diagnosticsDock);
-    m_diagnosticsDock->hide();   // start hidden
-    resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
-
-    //--------------------------------------------------------
-    //  setup dockable packet Stats gui
-    //--------------------------------------------------------
-    m_StatsDock = new StatsDock(this);
-    addDockWidget(Qt::LeftDockWidgetArea, m_StatsDock);
-    m_StatsDock->hide();   // start hidden
-    resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
-
     //--------------------------------------------------------
     //  setup dockable IMU gui
     //--------------------------------------------------------
     m_IMUDock = new IMUDock(this);
-    addDockWidget(Qt::LeftDockWidgetArea, m_IMUDock);
-    m_IMUDock->hide();   // start hidden
-    resizeDocks({ m_IMUDock },{ 220 },Qt::Horizontal);
-
     //--------------------------------------------------------
-    //  setup dockable ACK gui (this is not timer driven)
-    //  It is event driven.  ACKs are extermely low rate events
-    //--------------------------------------------------------
-    m_ACKDock = new ACKDock(this);
-    addDockWidget(Qt::TopDockWidgetArea, m_ACKDock);
-    m_ACKDock->hide();   // start hidden
-
-    connect(&l2lidar,
-            &::L2lidar::ackReceived,
-            this,
-            &MainWindow::updateACK,
-            Qt::QueuedConnection);
-
-    //--------------------------------------------------------
-    //  setup dockable Controls gui (this is not timer driven)
-    //  This is the buttons dialog.
-    //  It is event driven.
+    //  setup dockable Controls gui
     //--------------------------------------------------------
     m_controlsDock = new ControlsDock(this);
-    addDockWidget(Qt::TopDockWidgetArea, m_controlsDock);
-    m_controlsDock->show();   // always visible
-    resizeDocks({ m_controlsDock },{ 160 },Qt::Vertical);
+    //--------------------------------------------------------
+    //  setup dockable packet Stats gui
+    //--------------------------------------------------------
+    m_StatsDock = new StatsDock(this);
+    //--------------------------------------------------------
+    //  setup dockable ACK gui (this is not timer driven)
+    //--------------------------------------------------------
+    m_ACKDock = new ACKDock(this);
+    //--------------------------------------------------------
+    //  packetRateDock setup
+    //--------------------------------------------------------
+    m_packetRateDock = new PacketRateDock(this);
+    //--------------------------------------------------------
+    //  setup point cloud viewer GUI
+    //--------------------------------------------------------
+    pcWindow = new PointCloudWindow(this);
+}
 
+//--------------------------------------------------------
+// AssignDocksObjectNames
+//--------------------------------------------------------
+void MainWindow::AssignDocksObjectNames()
+{
+    //--------------------------------------------------------
+    //  setup the dockable diagnsotics gui
+    //--------------------------------------------------------
+    m_diagnosticsDock->setObjectName("DiagnosticsDock");
+    //--------------------------------------------------------
+    //  setup dockable IMU gui
+    //--------------------------------------------------------
+    m_IMUDock->setObjectName("IMUDock");
+    //--------------------------------------------------------
+    //  setup dockable Controls gui
+    //--------------------------------------------------------
+    m_controlsDock->setObjectName("ControlsDock");
+    //--------------------------------------------------------
+    //  setup dockable packet Stats gui
+    //--------------------------------------------------------
+    m_StatsDock->setObjectName("StatsDock");
+    //--------------------------------------------------------
+    //  setup dockable ACK gui (this is not timer driven)
+    //--------------------------------------------------------
+    m_ACKDock->setObjectName("ACKDock");
+    //--------------------------------------------------------
+    //  packetRateDock setup
+    //--------------------------------------------------------
+    m_packetRateDock->setObjectName("PacketRateDock");
+    //--------------------------------------------------------
+    //  setup point cloud viewer GUI
+    //--------------------------------------------------------
+    pcWindow->setObjectName("PointCloudViewer");
+}
+
+//--------------------------------------------------------
+// addDocksViewer
+//--------------------------------------------------------
+void MainWindow::AddDocksViewer()
+{
+    //--------------------------------------------------------
+    //  setup the dockable diagnsotics gui
+    //--------------------------------------------------------
+    addDockWidget(Qt::RightDockWidgetArea, m_diagnosticsDock);
+    //--------------------------------------------------------
+    //  setup dockable IMU gui
+    //--------------------------------------------------------
+    addDockWidget(Qt::RightDockWidgetArea, m_IMUDock);
+
+    //--------------------------------------------------------
+    //  setup dockable Controls gui
+    //--------------------------------------------------------
+    addDockWidget(Qt::LeftDockWidgetArea, m_controlsDock);
+    //--------------------------------------------------------
+    //  setup dockable packet Stats gui
+    //--------------------------------------------------------
+    addDockWidget(Qt::LeftDockWidgetArea, m_StatsDock);
+    //--------------------------------------------------------
+    //  setup dockable ACK gui (this is not timer driven)
+    //--------------------------------------------------------
+   addDockWidget(Qt::LeftDockWidgetArea, m_ACKDock);
+    //--------------------------------------------------------
+    //  packetRateDock setup
+    //--------------------------------------------------------
+    m_packetRateDock->setAllowedAreas(Qt::BottomDockWidgetArea);
+    addDockWidget(Qt::BottomDockWidgetArea, m_packetRateDock);
+    //--------------------------------------------------------
+    //  setup point cloud viewer GUI
+    //--------------------------------------------------------
+    setCentralWidget(pcWindow);
+}
+
+//--------------------------------------------------------
+// ConnectDocksViewerActions
+// create all connections needed
+//--------------------------------------------------------
+void MainWindow::ConnectDocksViewerActions()
+{
+    //--------------------------------------------------------
+    //  Controls gui
+    //  This is the buttons dialog.
+    //--------------------------------------------------------
     //added the seven button connections
     connect(m_controlsDock, &ControlsDock::L2connectRequested,
             this, &MainWindow::L2connect);
@@ -223,19 +356,18 @@ MainWindow::MainWindow(QWidget* parent)
             this, &MainWindow::getVersion);
 
     //--------------------------------------------------------
-    //  packetRateDock setup
+    //  setup dockable ACK gui (this is not timer driven)
+    //  It is event driven.  ACKs are extermely low rate events
     //--------------------------------------------------------
-    m_packetRateDock = new PacketRateDock(this);
-    addDockWidget(Qt::BottomDockWidgetArea, m_packetRateDock);
-    m_rateTimer = new QElapsedTimer;
-    m_rateTimer->restart();
+    connect(&l2lidar,
+            &::L2lidar::ackReceived,
+            this,
+            &MainWindow::updateACK,
+            Qt::QueuedConnection);
 
     //--------------------------------------------------------
     //  setup point cloud viewer GUI
     //--------------------------------------------------------
-    pcWindow = new PointCloudWindow(this);
-    pcWindow->hide();       // show when L2 start is called
-
     // point cloud viewer connections
     connect(&l2lidar,
             &::L2lidar::PCL3DReceived,
@@ -248,54 +380,38 @@ MainWindow::MainWindow(QWidget* parent)
             pcWindow->view(),
             &PointCloudView::setPointCloud,
             Qt::QueuedConnection);
-
-    // setup timer for point cloud updating
-    cloudTimer = new QTimer(this);
-    cloudTimer->setInterval(33); // 30 Hz
-    connect(cloudTimer,
-            &QTimer::timeout,
-            this,
-            &MainWindow::updatePointCloud);
-
-    // 3D point cloud viewer buffering
-    m_frameRing.resize(MAX_FRAMES); // ring buffer pre allocated
-
-    // Load previously saved user settings
-    loadSettings();
-    NumFramesToSkip = config.getSkipFrame();
-
-    // load the com parameters in the l2lidar class
-    l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
-                              config.getDSTip(),config.getDSTport());
-
-    // initial state of buttons and uis is L2 disconnected
-    L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
-
 }
 
 //--------------------------------------------------------
-//  MainWIndow class destructor
+// applyDocksVisibilityConstraint
 //--------------------------------------------------------
-MainWindow::~MainWindow()
+void MainWindow::applyDocksVisibilityConstraint()
 {
-    // delete timers and window docks
-    // if(!m_diagTimer) delete m_diagTimer;
-    // if(!m_diagnosticsDock) delete m_diagnosticsDock;
+    // set absolute geometry and state
+    resizeDocks({ m_IMUDock },{ 220 },Qt::Horizontal);
+    resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
+    resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 
-    // Make sure live capture is stopped
-    L2disconnect();
+    m_packetRateDock->setFloating(true); // Start undocked
 
-   // Save current user settings
-    saveSettings();
-
-    delete ui;
+    m_controlsDock->setMinimumWidth(400);
+    m_controlsDock->setMinimumHeight(200);
+    resizeDocks({ m_controlsDock },{ 160 },Qt::Vertical);
+    ShowWindows();
 }
 
 //--------------------------------------------------------
-//
-//  helper functions
-//
+// ShowWindows
 //--------------------------------------------------------
+void MainWindow::ShowWindows()
+{
+    m_diagnosticsDock->setVisible(config.isDiagEnabled());
+    m_IMUDock->setVisible(config.isIMUenabled());
+    m_ACKDock->setVisible(config.isACKenabled());
+    m_packetRateDock->setVisible(config.isPacketRateChartEnabled());
+    m_StatsDock->setVisible(config.isStatsEnabled());
+    pcWindow->setVisible(config.isPCviewerEnabled());
+}
 
 //--------------------------------------------------------
 //  L2ConnectedButtonsUIs
@@ -305,19 +421,10 @@ void MainWindow::L2ConnectedButtonsUIs()
     // disable start, enable stop
     m_controlsDock->setConnectState(true);
 
-    // show diagnostics, IMU and stats window
-    // these update at the heartbeat rate
-    m_diagnosticsDock->show();
-    m_IMUDock->show();
-    m_StatsDock->show();
     mHeartBeat->start();
 
     StartPacketChart();
     StartPointCloudViewer();
-
-    // ACK window is event driven, on ACK packet receive
-    m_ACKDock->show();
-
 }
 
 //--------------------------------------------------------
@@ -332,13 +439,6 @@ void MainWindow::L2DisconnectedButtonsUIs()
 
     // turn off docks
     mHeartBeat->stop();
-    m_diagnosticsDock->hide();
-    m_IMUDock->hide();
-    m_StatsDock->hide();
-
-    // turn off ACK, this is event drive
-    // it is very low rate
-    m_ACKDock->hide();
 }
 
 //--------------------------------------------------------
@@ -346,8 +446,8 @@ void MainWindow::L2DisconnectedButtonsUIs()
 //--------------------------------------------------------
 void  MainWindow::StartPacketChart()
 {
-    mPacketBeat->start();
-    m_packetRateDock->show();
+    m_packetRateDock->reset();
+     mPacketBeat->start();
 }
 
 //--------------------------------------------------------
@@ -356,7 +456,6 @@ void  MainWindow::StartPacketChart()
 void  MainWindow::StopPacketChart()
 {
     mPacketBeat->stop();
-    m_packetRateDock->show(); // leave chart viewable
 }
 
 //--------------------------------------------------------
@@ -365,7 +464,6 @@ void  MainWindow::StopPacketChart()
 void MainWindow::StartPointCloudViewer()
 {
     cloudTimer->start();
-    pcWindow->show();
 }
 
 //--------------------------------------------------------
@@ -374,7 +472,6 @@ void MainWindow::StartPointCloudViewer()
 void MainWindow::StopPointCloudViewer()
 {
     cloudTimer->stop();
-    pcWindow->show(); // leave point cloud viewable
 }
 
 //--------------------------------------------------------
@@ -597,7 +694,6 @@ QVector<PCpoint> MainWindow::buildFlattenedCloud()
     return PCcloud;
 }
 
-
 //--------------------------------------------------------
 //
 //  GUI mainwindow
@@ -619,6 +715,7 @@ void MainWindow::openConfig()
                                   config.getDSTip(),config.getDSTport());
         NumFramesToSkip = config.getSkipFrame();
         saveSettings();
+        ShowWindows(); // update window visibility
     }
 }
 

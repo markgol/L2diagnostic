@@ -6,88 +6,380 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>253</width>
-    <height>196</height>
+    <width>402</width>
+    <height>341</height>
    </rect>
   </property>
-  <layout class="QFormLayout">
-   <item row="0" column="0">
-    <widget class="QLabel" name="labelLocalIP">
-     <property name="text">
-      <string>UDP dst IP</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QLineEdit" name="dstIPedit">
-     <property name="text">
-      <string>192.168.1.62</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="labelOutPort">
-     <property name="text">
-      <string>UDP dstPort</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QSpinBox" name="dstPortSpin"/>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="labelL2ip">
-     <property name="text">
-      <string>UDP src IP</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <widget class="QLineEdit" name="srcIPedit">
-     <property name="text">
-      <string>192.168.1.2</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="labelInPort">
-     <property name="text">
-      <string>UDP src Port </string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="1">
-    <widget class="QSpinBox" name="srcPortSpin"/>
-   </item>
-   <item row="8" column="1">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0">
-    <widget class="QCheckBox" name="enPCviewer">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="text">
-      <string>Enable point cloud viewer</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Everything nth frame</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="1">
-    <widget class="QSpinBox" name="skipFrameSpin"/>
-   </item>
-  </layout>
+  <widget class="QDialogButtonBox" name="buttonBox">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>320</y>
+     <width>116</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="gbUDPparams">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>10</y>
+     <width>171</width>
+     <height>141</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>application UDP settings</string>
+   </property>
+   <widget class="QLabel" name="labelLocalIP">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>42</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>UDP dst IP</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="dstIPedit">
+    <property name="geometry">
+     <rect>
+      <x>70</x>
+      <y>20</y>
+      <width>81</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>192.168.1.62</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelOutPort">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>49</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>UDP dstPort</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="dstPortSpin">
+    <property name="geometry">
+     <rect>
+      <x>70</x>
+      <y>50</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelL2ip">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>80</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>UDP src IP</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="srcIPedit">
+    <property name="geometry">
+     <rect>
+      <x>70</x>
+      <y>80</y>
+      <width>81</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>192.168.1.2</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelInPort">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>110</y>
+      <width>53</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>UDP src Port </string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="srcPortSpin">
+    <property name="geometry">
+     <rect>
+      <x>70</x>
+      <y>110</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="gbThrottle">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>201</width>
+     <height>151</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Throttling</string>
+   </property>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>7</x>
+      <y>19</y>
+      <width>75</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Point cloud frames to skip</string>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinNframe">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>18</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>76</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Point Cloud Viewer display update rate</string>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinPCrate">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>50</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinPacketrate">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>80</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinDiagrate">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>110</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>50</y>
+      <width>21</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>msec</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>115</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>msec</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>80</y>
+      <width>21</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>msec</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>80</y>
+      <width>66</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Packe Rate chart  update rate</string>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>110</y>
+      <width>62</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Diagnostic data update rate</string>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>20</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0-10</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="gbVisible">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>170</y>
+     <width>251</width>
+     <height>131</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Visible</string>
+   </property>
+   <layout class="QFormLayout" name="formLayout">
+    <item row="0" column="0">
+     <widget class="QCheckBox" name="cbPCviewer">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="text">
+       <string>Point cloud viewer</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QCheckBox" name="cbIMU">
+      <property name="text">
+       <string>IMU</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QCheckBox" name="cbPacketRate">
+      <property name="text">
+       <string>Packet rate chart</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QCheckBox" name="cbDiag">
+      <property name="text">
+       <string>Calibration and internal state</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QCheckBox" name="cbStats">
+      <property name="text">
+       <string>Packet stats</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QCheckBox" name="cbACK">
+      <property name="text">
+       <string>ACK</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
  </widget>
+ <tabstops>
+  <tabstop>spinNframe</tabstop>
+  <tabstop>spinPCrate</tabstop>
+  <tabstop>spinPacketrate</tabstop>
+  <tabstop>spinDiagrate</tabstop>
+  <tabstop>cbPCviewer</tabstop>
+  <tabstop>cbPacketRate</tabstop>
+  <tabstop>cbIMU</tabstop>
+  <tabstop>cbDiag</tabstop>
+  <tabstop>cbStats</tabstop>
+  <tabstop>cbACK</tabstop>
+  <tabstop>dstIPedit</tabstop>
+  <tabstop>dstPortSpin</tabstop>
+  <tabstop>srcIPedit</tabstop>
+  <tabstop>srcPortSpin</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

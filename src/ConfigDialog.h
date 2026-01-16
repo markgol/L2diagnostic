@@ -38,6 +38,7 @@
 //                      removed nth packet loading which was never used
 //  V0.2.4  2026-01-10  removed CSV checkbox, never fully implemented
 //                      Added spinbox for setting skip frame value
+//  V0.2.6  2026-01-14  Added window visibility settings, throttling setting
 //
 //--------------------------------------------------------
 
@@ -85,13 +86,21 @@ public:
 
         // Reasonable defaults / limits
         ui.srcPortSpin->setRange(1, 65535);
-        ui.dstPortSpin->setRange(1, 1'000'000);
-        ui.skipFrameSpin->setRange(0,50);
+        ui.dstPortSpin->setRange(1, 65535);
+
+        ui.spinNframe->setRange(0,10);
+        ui.spinDiagrate->setRange(200,500);
+        ui.spinPCrate->setRange(25,200);
+        ui.spinPacketrate->setRange(100,500);
     }
 
     // =============================
     // Getters
     // =============================
+
+    //--------------------------------------------------------
+    // Ehternet Application UDP parameters
+    //--------------------------------------------------------
     QString getSRCip() const
     {
         return ui.srcIPedit->text().trimmed();
@@ -112,14 +121,69 @@ public:
         return static_cast<uint32_t>(ui.dstPortSpin->value());
     }
 
+    //--------------------------------------------------------
+    // Application throttling parameters
+    //--------------------------------------------------------
     uint32_t getSkipFrame() const
     {
-        return static_cast<uint32_t>(ui.skipFrameSpin->value());
+        return static_cast<uint32_t>(ui.spinNframe->value());
+    }
+
+    uint32_t getDiagUpdateRate() const
+    {
+        return static_cast<uint32_t>(ui.spinDiagrate->value());
+    }
+
+    uint32_t getPCupdateRate() const
+    {
+        return static_cast<uint32_t>(ui.spinPCrate->value());
+    }
+
+     uint32_t getPacketUpdateRate() const
+    {
+        return static_cast<uint32_t>(ui.spinPacketrate->value());
+    }
+
+    //--------------------------------------------------------
+    // Application window visibilty
+    //--------------------------------------------------------
+    bool isPCviewerEnabled()
+    {
+        return static_cast<bool>(ui.cbPCviewer->isChecked());
+    }
+
+    bool isPacketRateChartEnabled()
+    {
+        return static_cast<bool>(ui.cbPacketRate->isChecked());
+    }
+
+    bool isACKenabled()
+    {
+        return static_cast<bool>(ui.cbACK->isChecked());
+    }
+
+    bool isDiagEnabled()
+    {
+        return static_cast<bool>(ui.cbDiag->isChecked());
+    }
+
+    bool isStatsEnabled()
+    {
+        return static_cast<bool>(ui.cbStats->isChecked());
+    }
+
+    bool isIMUenabled()
+    {
+        return static_cast<bool>(ui.cbIMU->isChecked());
     }
 
     // =============================
     // Setters (for LoadSettings)
     // =============================
+
+    //--------------------------------------------------------
+    // Ehternet Application UDP parameters
+    //--------------------------------------------------------
     void setSRCip(const QString& ip)
     {
         ui.srcIPedit->setText(ip);
@@ -140,10 +204,62 @@ public:
         ui.dstPortSpin->setValue(p);
     }
 
+    //--------------------------------------------------------
+    // Application throttling parameters
+    //--------------------------------------------------------
     void setSkipFrame(uint16_t p)
     {
-        ui.skipFrameSpin->setValue(p);
+        ui.spinNframe->setValue(p);
     }
+
+    void setDiagUpdateRate(uint16_t p) const
+    {
+        ui.spinDiagrate->setValue(p);
+    }
+
+    void setPCupdateRate(uint16_t p) const
+    {
+        ui.spinPCrate->setValue(p);
+    }
+
+    void setPacketUpdateRate(uint16_t p) const
+    {
+        ui.spinPacketrate->setValue(p);
+    }
+
+    //--------------------------------------------------------
+    // Application window visibilty
+    //--------------------------------------------------------
+    void setPCviewerEnabled(bool p)
+    {
+        ui.cbPCviewer->setChecked(p);
+    }
+
+    void setPacketRateChartEnabled(bool p)
+    {
+        ui.cbPacketRate->setChecked(p);
+    }
+
+    void setACKenabled(bool p)
+    {
+        ui.cbACK->setChecked(p);
+    }
+
+    void setDiagEnabled(bool p)
+    {
+        ui.cbDiag->setChecked(p);
+    }
+
+    void setStatsEnabled(bool p)
+    {
+        ui.cbStats->setChecked(p);
+   }
+
+    void setIMUenabled(bool p)
+    {
+        ui.cbIMU->setChecked(p);
+    }
+
 
 private:
     Ui::ConfigDialog ui;
