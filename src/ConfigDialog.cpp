@@ -57,13 +57,31 @@
 //--------------------------------------------------------
 // This is the user configuration dialog
 //--------------------------------------------------------
-
+#include <QMessageBox>
 #include "ConfigDialog.h"
 
 //--------------------------------------------------------
-// Empty since all logic is in header via Ui setup
-// Optional: additional validation can go here if needed
+//
 //--------------------------------------------------------
+void ConfigDialog::ResetPCview()
+{
+    // Distance
+    // Yaw
+    // Pitch
+    // Hsize
+    // V size
+    PCsettings settings;
+    settings.Distance = ui.spinDistance->value();
+    settings.Yaw = ui.spinYaw->value();
+    settings.Pitch = ui.spinPitch->value();
 
+    // need emit function here to send this to mainwindow
+
+    QMessageBox msgBox;
+    msgBox.setText("Not Yet Implemented");
+    msgBox.setInformativeText("Reset PC view coming soon");
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.exec();
+}
 
 

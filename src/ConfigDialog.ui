@@ -6,17 +6,17 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>402</width>
-    <height>341</height>
+    <width>700</width>
+    <height>380</height>
    </rect>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
-     <x>140</x>
-     <y>320</y>
+     <x>530</x>
+     <y>250</y>
      <width>116</width>
-     <height>18</height>
+     <height>41</height>
     </rect>
    </property>
    <property name="standardButtons">
@@ -26,10 +26,10 @@
   <widget class="QGroupBox" name="gbUDPparams">
    <property name="geometry">
     <rect>
-     <x>220</x>
+     <x>20</x>
      <y>10</y>
-     <width>171</width>
-     <height>141</height>
+     <width>191</width>
+     <height>161</height>
     </rect>
    </property>
    <property name="title">
@@ -40,18 +40,21 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>42</width>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
      <string>UDP dst IP</string>
     </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
    </widget>
    <widget class="QLineEdit" name="dstIPedit">
     <property name="geometry">
      <rect>
-      <x>70</x>
+      <x>90</x>
       <y>20</y>
       <width>81</width>
       <height>21</height>
@@ -66,18 +69,21 @@
      <rect>
       <x>10</x>
       <y>50</y>
-      <width>49</width>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
      <string>UDP dstPort</string>
     </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
    </widget>
    <widget class="QSpinBox" name="dstPortSpin">
     <property name="geometry">
      <rect>
-      <x>70</x>
+      <x>90</x>
       <y>50</y>
       <width>71</width>
       <height>21</height>
@@ -88,20 +94,23 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>80</y>
-      <width>41</width>
+      <y>90</y>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
      <string>UDP src IP</string>
     </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
    </widget>
    <widget class="QLineEdit" name="srcIPedit">
     <property name="geometry">
      <rect>
-      <x>70</x>
-      <y>80</y>
+      <x>90</x>
+      <y>90</y>
       <width>81</width>
       <height>21</height>
      </rect>
@@ -113,130 +122,80 @@
    <widget class="QLabel" name="labelInPort">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>110</y>
-      <width>53</width>
+      <x>12</x>
+      <y>120</y>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
      <string>UDP src Port </string>
     </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
    </widget>
    <widget class="QSpinBox" name="srcPortSpin">
     <property name="geometry">
      <rect>
-      <x>70</x>
-      <y>110</y>
+      <x>90</x>
+      <y>120</y>
       <width>71</width>
       <height>21</height>
      </rect>
     </property>
    </widget>
   </widget>
-  <widget class="QGroupBox" name="gbThrottle">
+  <widget class="QGroupBox" name="gbDisplayRates">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>230</x>
      <y>10</y>
-     <width>201</width>
-     <height>151</height>
+     <width>231</width>
+     <height>141</height>
     </rect>
    </property>
    <property name="title">
-    <string>Throttling</string>
+    <string>Display update rates</string>
    </property>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>7</x>
-      <y>19</y>
-      <width>75</width>
-      <height>24</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Point cloud frames to skip</string>
-    </property>
-    <property name="wordWrap">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QSpinBox" name="spinNframe">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>18</y>
-      <width>71</width>
-      <height>21</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>50</y>
-      <width>76</width>
-      <height>24</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Point Cloud Viewer display update rate</string>
-    </property>
-    <property name="wordWrap">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QSpinBox" name="spinPCrate">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>50</y>
-      <width>71</width>
-      <height>21</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QSpinBox" name="spinPacketrate">
     <property name="geometry">
      <rect>
-      <x>90</x>
-      <y>80</y>
+      <x>110</x>
+      <y>60</y>
       <width>71</width>
       <height>21</height>
      </rect>
+    </property>
+    <property name="minimum">
+     <number>50</number>
+    </property>
+    <property name="maximum">
+     <number>500</number>
     </property>
    </widget>
    <widget class="QSpinBox" name="spinDiagrate">
     <property name="geometry">
      <rect>
-      <x>90</x>
-      <y>110</y>
+      <x>110</x>
+      <y>100</y>
       <width>71</width>
       <height>21</height>
      </rect>
     </property>
-   </widget>
-   <widget class="QLabel" name="label_3">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>50</y>
-      <width>21</width>
-      <height>16</height>
-     </rect>
+    <property name="minimum">
+     <number>100</number>
     </property>
-    <property name="text">
-     <string>msec</string>
+    <property name="maximum">
+     <number>500</number>
     </property>
    </widget>
    <widget class="QLabel" name="label_4">
     <property name="geometry">
      <rect>
-      <x>170</x>
-      <y>115</y>
-      <width>21</width>
+      <x>190</x>
+      <y>100</y>
+      <width>31</width>
       <height>21</height>
      </rect>
     </property>
@@ -247,9 +206,9 @@
    <widget class="QLabel" name="label_5">
     <property name="geometry">
      <rect>
-      <x>170</x>
-      <y>80</y>
-      <width>21</width>
+      <x>190</x>
+      <y>60</y>
+      <width>31</width>
       <height>16</height>
      </rect>
     </property>
@@ -261,13 +220,16 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>80</y>
-      <width>66</width>
-      <height>24</height>
+      <y>60</y>
+      <width>91</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
      <string>Packe Rate chart  update rate</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
     <property name="wordWrap">
      <bool>true</bool>
@@ -277,39 +239,77 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>110</y>
-      <width>62</width>
-      <height>24</height>
+      <y>100</y>
+      <width>91</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Diagnostic data update rate</string>
+     <string>Diagnostic, IMU, stats update rate</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
     <property name="wordWrap">
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QLabel" name="label_8">
+   <widget class="QSpinBox" name="spinRenderRate">
     <property name="geometry">
      <rect>
-      <x>170</x>
+      <x>110</x>
       <y>20</y>
-      <width>21</width>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
+    <property name="minimum">
+     <number>16</number>
+    </property>
+    <property name="maximum">
+     <number>100</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_19">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>20</y>
+      <width>31</width>
+      <height>16</height>
+     </rect>
+    </property>
     <property name="text">
-     <string>0-10</string>
+     <string>msec</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_20">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Point Cloud Viewer rendering rate</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>
   <widget class="QGroupBox" name="gbVisible">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>170</y>
-     <width>251</width>
-     <height>131</height>
+     <x>490</x>
+     <y>10</y>
+     <width>191</width>
+     <height>181</height>
     </rect>
    </property>
    <property name="title">
@@ -326,13 +326,6 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="1">
-     <widget class="QCheckBox" name="cbIMU">
-      <property name="text">
-       <string>IMU</string>
-      </property>
-     </widget>
-    </item>
     <item row="1" column="0">
      <widget class="QCheckBox" name="cbPacketRate">
       <property name="text">
@@ -340,28 +333,393 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QCheckBox" name="cbDiag">
-      <property name="text">
-       <string>Calibration and internal state</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="1">
-     <widget class="QCheckBox" name="cbStats">
-      <property name="text">
-       <string>Packet stats</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="1">
+    <item row="5" column="0">
      <widget class="QCheckBox" name="cbACK">
       <property name="text">
        <string>ACK</string>
       </property>
      </widget>
     </item>
+    <item row="2" column="0">
+     <widget class="QCheckBox" name="cbDiag">
+      <property name="text">
+       <string>Calibration and internal state</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QCheckBox" name="cbStats">
+      <property name="text">
+       <string>Packet stats</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QCheckBox" name="cbIMU">
+      <property name="text">
+       <string>IMU</string>
+      </property>
+     </widget>
+    </item>
    </layout>
+  </widget>
+  <widget class="QGroupBox" name="gpPCdefault">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>180</y>
+     <width>201</width>
+     <height>181</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Point Cloud view</string>
+   </property>
+   <widget class="QLabel" name="label_9">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>20</y>
+      <width>51</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Distance</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_10">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Yaw</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_11">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>80</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Pitch</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnSetView">
+    <property name="geometry">
+     <rect>
+      <x>70</x>
+      <y>120</y>
+      <width>71</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>set View</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_14">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>21</y>
+      <width>37</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Meters</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_15">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>51</y>
+      <width>37</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>degrees</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_16">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>81</y>
+      <width>37</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>degrees</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="spinDistance">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>20</y>
+      <width>91</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>100.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.100000000000000</double>
+    </property>
+    <property name="stepType">
+     <enum>QAbstractSpinBox::StepType::DefaultStepType</enum>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="spinYaw">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>50</y>
+      <width>91</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="minimum">
+     <double>-360.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>360.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.100000000000000</double>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="spinPitch">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>80</y>
+      <width>91</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="minimum">
+     <double>-89.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>89.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.100000000000000</double>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>180</y>
+     <width>231</width>
+     <height>181</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Point Cloud controls</string>
+   </property>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>20</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0-10</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinNframe">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>18</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Point cloud frames to skip</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>60</y>
+      <width>31</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>msec</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>60</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Point Cloud update rate</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinPCrate">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>60</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>5</number>
+    </property>
+    <property name="maximum">
+     <number>100</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_21">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>100</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Max number of 3D frames to show</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_22">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>140</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Max number of 2D frames to show</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinMax3DFrames">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>100</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>30</number>
+    </property>
+    <property name="maximum">
+     <number>300</number>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinMax2DFrames">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>140</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>10</number>
+    </property>
+    <property name="maximum">
+     <number>50</number>
+    </property>
+   </widget>
   </widget>
  </widget>
  <tabstops>
@@ -369,12 +727,6 @@
   <tabstop>spinPCrate</tabstop>
   <tabstop>spinPacketrate</tabstop>
   <tabstop>spinDiagrate</tabstop>
-  <tabstop>cbPCviewer</tabstop>
-  <tabstop>cbPacketRate</tabstop>
-  <tabstop>cbIMU</tabstop>
-  <tabstop>cbDiag</tabstop>
-  <tabstop>cbStats</tabstop>
-  <tabstop>cbACK</tabstop>
   <tabstop>dstIPedit</tabstop>
   <tabstop>dstPortSpin</tabstop>
   <tabstop>srcIPedit</tabstop>

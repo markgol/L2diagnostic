@@ -67,6 +67,7 @@
 #include <QDialog>
 #include <QString>
 #include "ui_ConfigDialog.h"
+#include "PointCloudWindow.h"
 
 class ConfigDialog : public QDialog
 {
@@ -84,14 +85,20 @@ public:
         connect(ui.buttonBox, &QDialogButtonBox::rejected,
                 this, &QDialog::reject);
 
+        // Reset View button
+        connect(ui.btnSetView, &QPushButton::clicked,
+                this, &ConfigDialog::ResetPCview);
+
         // Reasonable defaults / limits
+        // UDP ports
         ui.srcPortSpin->setRange(1, 65535);
         ui.dstPortSpin->setRange(1, 65535);
 
-        ui.spinNframe->setRange(0,10);
-        ui.spinDiagrate->setRange(200,500);
-        ui.spinPCrate->setRange(25,200);
-        ui.spinPacketrate->setRange(100,500);
+        // timers
+        // range is set in .ui file
+
+        // Point Cloud Controls
+        // range is set in .ui file
     }
 
     // =============================
@@ -110,6 +117,7 @@ public:
     {
         return ui.dstIPedit->text().trimmed();
     }
+
 
     uint16_t getSRCport() const
     {
@@ -144,6 +152,11 @@ public:
         return static_cast<uint32_t>(ui.spinPacketrate->value());
     }
 
+    uint32_t getRenderRate() const
+    {
+        return static_cast<uint32_t>(ui.spinRenderRate->value());
+    }
+
     //--------------------------------------------------------
     // Application window visibilty
     //--------------------------------------------------------
@@ -175,6 +188,25 @@ public:
     bool isIMUenabled()
     {
         return static_cast<bool>(ui.cbIMU->isChecked());
+    }
+
+    //--------------------------------------------------------
+    // point cloud viewer settings
+    //--------------------------------------------------------
+
+    float getPCWdistance() const
+    {
+        return static_cast<float>(ui.spinDistance->value());
+    }
+
+    float getPCWyaw() const
+    {
+        return static_cast<float>(ui.spinYaw->value());
+    }
+
+    float getPCWpitch() const
+    {
+        return static_cast<float>(ui.spinPitch->value());
     }
 
     // =============================
@@ -227,6 +259,30 @@ public:
         ui.spinPacketrate->setValue(p);
     }
 
+    void setRenderRate(uint16_t p) const
+    {
+        ui.spinRenderRate->setValue(p);
+    }
+
+    //--------------------------------------------------------
+    // point cloud viewer settings
+    //--------------------------------------------------------
+
+    void setPCWdistance(float p) const
+    {
+        ui.spinDistance->setValue(p);
+    }
+
+    void setPCWyaw(float p) const
+    {
+        ui.spinYaw->setValue(p);
+    }
+
+    void setPCWpitch(float p) const
+    {
+        ui.spinPitch->setValue(p);
+    }
+
     //--------------------------------------------------------
     // Application window visibilty
     //--------------------------------------------------------
@@ -259,6 +315,9 @@ public:
     {
         ui.cbIMU->setChecked(p);
     }
+
+private slots:
+    void ResetPCview();
 
 
 private:

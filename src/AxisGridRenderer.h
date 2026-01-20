@@ -32,6 +32,7 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V0.2.3  2026-01-09  Added Point Cloud Renderer
+//  V0.2.8  2026-01-17  Added reset() method
 //
 //--------------------------------------------------------
 #pragma once
@@ -51,6 +52,7 @@ class AxisGridRenderer : protected QOpenGLFunctions
 public:
     void initialize();
     void render(const QMatrix4x4& mvp);
+    void reset();
 
 private:
     QOpenGLShaderProgram m_program;   // ✅ MUST be this type

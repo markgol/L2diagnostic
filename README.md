@@ -21,7 +21,7 @@ Current Status
 	Display IMU accelerometer, gyro, quaternion data
 	Displau Calibration and inside state data
 	Send Start, Stop, Reset and get Version control commands
-	Point cloud viewer
+	Point cloud viewer with mouse controls for pan, zoom, rotate
 	Added dockable windows for Calibration/state, IMU packet, ACK packet, packet stats
 	Made packet rate chart dockable window
 	Control buttons are now dockable window
@@ -30,7 +30,29 @@ Current Status
 	unitree_lidar_utilites.h to perform required function needs for using the L2  in the
 	UDP mode without the use of the unitree archive library
 	
+	POINT CLOUD VIEWER WINDOW (can not be docked)
+	The orientation of the display is assuming the the L2 base sitting parallel to the earth,
+	like on a table.  So the x,y plane will be paraellel to the earth, z axis in distance
+	vertical (perpendicular) to the earth.
+	
+	MOUSE CONTROLS FOR POINT CLOUD VIEWER
+	left+right buttons+movement -> pans in x,y
+	rightbutton+movement -> pans z (up/down z axis)
+	leftbutton+movement -> orbits (yaw and pitch)
+	shift+left+rightbuttons+movement -> resets view to default
+	
+	DOCKED WINDOWS
+	All other windows are dockable and default to docked
+	If you want to see the packet rate chart window in more detail you would undock
+	and resize that window.  Once undocked the packet rate window can only
+	docked again using the windows reset button.  All other windows can be 
+	undocked and redocked.
+	
+	VISIBILITY OF WINDOWS
+	Use the config dialog to control visibility of windows
+	
 	Still to do:
-		Finish cleanup of user GUI
-		Optimize renderer to improve performance
+		Point cloud Renderer performance improvements
+		Add 2D point cloud capture and rendereing
 		UI for setting workmode parameters
+		Add UART commmunications

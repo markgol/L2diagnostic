@@ -47,6 +47,8 @@
 //                          IMU information
 //                          packet stats information
 //                          packet rate chart
+//  V0.2.8  2026-01-16  Changed point cloud viewer to dockable window
+//                      Added reset of layout
 //
 //--------------------------------------------------------
 
@@ -182,12 +184,13 @@ private:
     //-----------------------------------------------------
     // Point cloud veiwer
     //-----------------------------------------------------
-
-    // Point cloud viewer window (persistent)
-    PointCloudWindow* pcWindow = nullptr;
+    PointCloudWindow* m_pointCloudWindow{nullptr};
 
     // Point cloud viewer Timer
     QTimer* cloudTimer;
+
+    // close point cloud viewer
+    void closeEvent(QCloseEvent* e);
 
     // flatten the cloud points from latest frame
     QVector<PCpoint> buildFlattenedCloud();
@@ -237,7 +240,11 @@ private:
     //-----------------------------------------------------
     // INI settings functions
     //-----------------------------------------------------
+    void resetWindowLayout();
+    void saveSettings(bool resetRequested);
+    void loadSettings(bool resetRequested);
+    bool GetSettingsReset();
+    void SetSettingsReset(bool Reset);
 
-    void saveSettings();
-    void loadSettings();
+
 };

@@ -68,6 +68,9 @@ ControlsDock::ControlsDock(QWidget *parent)
     connect(ui->btnL2Disconnect, &QPushButton::clicked,
             this, &ControlsDock::L2disconnectRequested);
 
+    connect(ui->btnResetWindows, &QPushButton::clicked,
+            this, &ControlsDock::ResetWindowsRequested);
+
     setConnectState(false); // L2 is disconnected at start
 
 }

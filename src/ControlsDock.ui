@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>362</width>
+    <width>461</width>
     <height>120</height>
    </rect>
   </property>
@@ -17,9 +17,9 @@
    <widget class="QPushButton" name="btnL2Disconnect">
     <property name="geometry">
      <rect>
-      <x>90</x>
+      <x>120</x>
       <y>10</y>
-      <width>71</width>
+      <width>81</width>
       <height>31</height>
      </rect>
     </property>
@@ -30,8 +30,8 @@
    <widget class="QPushButton" name="btnVersion">
     <property name="geometry">
      <rect>
-      <x>180</x>
-      <y>10</y>
+      <x>350</x>
+      <y>60</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -43,9 +43,9 @@
    <widget class="QPushButton" name="btnConfig">
     <property name="geometry">
      <rect>
-      <x>290</x>
+      <x>350</x>
       <y>10</y>
-      <width>56</width>
+      <width>81</width>
       <height>31</height>
      </rect>
     </property>
@@ -95,14 +95,27 @@
    <widget class="QPushButton" name="btnL2Connect">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>10</x>
       <y>10</y>
-      <width>71</width>
+      <width>81</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
      <string>L2 connect</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnResetWindows">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>10</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Reset windows</string>
     </property>
    </widget>
   </widget>

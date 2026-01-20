@@ -42,6 +42,8 @@
 // ----------------- initialize() -----------------
 void AxisGridRenderer::initialize()
 {
+    reset();
+
     // Must be called once a valid context is current
     initializeOpenGLFunctions();
 
@@ -89,19 +91,19 @@ void AxisGridRenderer::initialize()
     vertices.append({ {0,0,0}, {0,0,1} });
     vertices.append({ {0,0,axisLen}, {0,0,1} });
 
-    // Ground grid (gray lines)
-    for(int i=-gridHalf; i<=gridHalf; ++i)
+    // Ground grid in X–Y plane (Z = 0)
+    for (int i = -gridHalf; i <= gridHalf; ++i)
     {
         float v = i * gridStep;
-        float c = (i==0)?0.6f:0.25f;
+        float c = (i == 0) ? 0.6f : 0.25f;
 
-        // lines parallel to X
-        vertices.append({ {-gridHalf*gridStep, v, 0}, {c,c,c} });
-        vertices.append({ { gridHalf*gridStep, v, 0}, {c,c,c} });
+        // Lines parallel to X (vary Y)
+        vertices.append({ {-gridHalf * gridStep, v, 0}, {c,c,c} });
+        vertices.append({ { gridHalf * gridStep, v, 0}, {c,c,c} });
 
-        // lines parallel to Y
-        vertices.append({ {v, -gridHalf*gridStep,0}, {c,c,c} });
-        vertices.append({ {v,  gridHalf*gridStep,0}, {c,c,c} });
+        // Lines parallel to Y (vary X)
+        vertices.append({ {v, -gridHalf * gridStep, 0}, {c,c,c} });
+        vertices.append({ {v,  gridHalf * gridStep, 0}, {c,c,c} });
     }
 
     m_vertexCount = vertices.size();
@@ -123,6 +125,21 @@ void AxisGridRenderer::initialize()
 
     m_vbo.release();
     m_vao.release();
+}
+
+// ----------------- reset() -----------------
+void AxisGridRenderer::reset()
+{
+    if (m_program.isLinked())
+        m_program.removeAllShaders();
+
+    if (m_vao.isCreated())
+        m_vao.destroy();
+
+    if (m_vbo.isCreated())
+        m_vbo.destroy();
+
+    m_vertexCount = 0;
 }
 
 // ----------------- render() -----------------

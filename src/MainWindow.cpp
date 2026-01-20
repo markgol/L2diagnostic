@@ -59,6 +59,9 @@
 //                      Added ACK dockable window
 //                      Added packet stats dockable window
 //                      Added Calib and internal state dockable window
+//  V0.2.8  2026-01-16  Changed point cloud viewer to dockable window
+//  V0.3.0  2026-01-18  Changed point cloud veiwer to OpenGL window
+//                      PC viewer as dockable window intractable
 //
 //--------------------------------------------------------
 
@@ -89,6 +92,27 @@
 // If not, see < https://www.gnu.org/licenses/>.
 //--------------------------------------------------------
 
+//--------------------------------------------------------
+//  Data flow for point cloud
+//      MainWindow:onNewLidarFrame()  this operates at L2 point cloud
+//          |              packet rate ~200-250 packets/sec
+//          |
+//      throttling         fifo, save only every nth PCpoint
+//          |
+//      MainWindow:updatePointCloud() create flattened point cloud
+//          |              cloudTimer Timer driven
+//          |
+//      MainWindow:flattenedCloudReady() signals next step
+//          |
+//      PointCloudWindow::setPointCloud()
+//          |              push flattened cloud to viewer
+//          |
+//      PointCloudWindow::update()
+//                         repaint window
+//                         renderTimer Timer driven
+//
+//--------------------------------------------------------
+
 
 //--------------------------------------------------------
 // Main project includes required before anything else
@@ -106,7 +130,6 @@
 //      set(CMAKE_AUTORCC ON)
 //--------------------------------------------------------
 #include "ui_MainWindow.h"
-#include "PointCloudWindow.h"
 
 //--------------------------------------------------------
 //  Qt includes
@@ -131,20 +154,28 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
 
-    SetupGUIrefreshTimers();
     createDocksViewer();
     AssignDocksObjectNames();
     AddDocksViewer();
-    ConnectDocksViewerActions();
+
+    // create cloud viewer window
+    // This is not a Qt window but a OpenGL managed window
+    m_pointCloudWindow = new PointCloudWindow();
+    m_pointCloudWindow->setTransientParent(windowHandle());
+    m_pointCloudWindow->setFlag(Qt::Window);
 
     // Load previously saved user settings
-    loadSettings();
+    loadSettings(GetSettingsReset());
+    SetSettingsReset(false);
 
-    // this is only done after loadsettings()
+    SetupGUIrefreshTimers();
+    ConnectDocksViewerActions();
+
+    // these are only done after loadsettings()
     applyDocksVisibilityConstraint();
 
     // 3D point cloud viewer buffering
-    m_frameRing.resize(MAX_FRAMES); // ring buffer pre allocated
+    m_frameRing.resize(MAX_FRAMES); // ??? ring buffer pre allocated
     NumFramesToSkip = config.getSkipFrame();
 
     // load the com parameters in the l2lidar class
@@ -153,7 +184,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     // initial state of buttons and uis is L2 disconnected
     L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
-    ShowWindows();
+
+    ShowWindows(); // show windows effects all windows including point cloud window
 }
 
 //--------------------------------------------------------
@@ -161,15 +193,11 @@ MainWindow::MainWindow(QWidget* parent)
 //--------------------------------------------------------
 MainWindow::~MainWindow()
 {
-    // delete timers and window docks
-    // if(!m_diagTimer) delete m_diagTimer;
-    // if(!m_diagnosticsDock) delete m_diagnosticsDock;
-
     // Make sure live capture is stopped
     L2disconnect();
-
-   // Save current user settings
-    saveSettings();
+    // Save current user settings
+    // make sure requested reset is not cleared
+    saveSettings(GetSettingsReset());
 
     delete ui;
 }
@@ -206,14 +234,16 @@ void MainWindow::SetupGUIrefreshTimers()
     //--------------------------------------------------------
     // setup timer for point cloud updating
     //--------------------------------------------------------
-    // The cloud timer should be replaced by an
-    // onUpdatePC callback from the L2lidar class
     cloudTimer = new QTimer(this);
-    cloudTimer->setInterval(config.getPCupdateRate()); // suggest 30 Hz
+    cloudTimer->setInterval(config.getPCupdateRate()); // suggest 60 Hz
     connect(cloudTimer,
             &QTimer::timeout,
             this,
             &MainWindow::updatePointCloud);
+    //--------------------------------------------------------
+    // setup timer point cloud rendereing
+    //--------------------------------------------------------
+    // ???
 }
 
 //--------------------------------------------------------
@@ -245,10 +275,22 @@ void MainWindow::createDocksViewer()
     //  packetRateDock setup
     //--------------------------------------------------------
     m_packetRateDock = new PacketRateDock(this);
-    //--------------------------------------------------------
-    //  setup point cloud viewer GUI
-    //--------------------------------------------------------
-    pcWindow = new PointCloudWindow(this);
+}
+
+//--------------------------------------------------------
+//  closeEvent
+//--------------------------------------------------------
+void MainWindow::closeEvent(QCloseEvent* e)
+{
+    if (m_pointCloudWindow) {
+        // save window geometry and state before closing
+        m_pointCloudWindow->saveWindowState();
+        // kill window
+        m_pointCloudWindow->close();
+        delete m_pointCloudWindow;
+        m_pointCloudWindow = nullptr;
+    }
+    QMainWindow::closeEvent(e);
 }
 
 //--------------------------------------------------------
@@ -281,9 +323,6 @@ void MainWindow::AssignDocksObjectNames()
     //--------------------------------------------------------
     m_packetRateDock->setObjectName("PacketRateDock");
     //--------------------------------------------------------
-    //  setup point cloud viewer GUI
-    //--------------------------------------------------------
-    pcWindow->setObjectName("PointCloudViewer");
 }
 
 //--------------------------------------------------------
@@ -317,10 +356,6 @@ void MainWindow::AddDocksViewer()
     //--------------------------------------------------------
     m_packetRateDock->setAllowedAreas(Qt::BottomDockWidgetArea);
     addDockWidget(Qt::BottomDockWidgetArea, m_packetRateDock);
-    //--------------------------------------------------------
-    //  setup point cloud viewer GUI
-    //--------------------------------------------------------
-    setCentralWidget(pcWindow);
 }
 
 //--------------------------------------------------------
@@ -355,6 +390,9 @@ void MainWindow::ConnectDocksViewerActions()
     connect(m_controlsDock, &ControlsDock::GetVersionRequested,
             this, &MainWindow::getVersion);
 
+    connect(m_controlsDock, &ControlsDock::ResetWindowsRequested,
+            this, &MainWindow::resetWindowLayout);
+
     //--------------------------------------------------------
     //  setup dockable ACK gui (this is not timer driven)
     //  It is event driven.  ACKs are extermely low rate events
@@ -377,8 +415,8 @@ void MainWindow::ConnectDocksViewerActions()
 
     connect(this,
             &MainWindow::flattenedCloudReady,
-            pcWindow->view(),
-            &PointCloudView::setPointCloud,
+            m_pointCloudWindow,
+            &PointCloudWindow::setPointCloud,
             Qt::QueuedConnection);
 }
 
@@ -392,11 +430,9 @@ void MainWindow::applyDocksVisibilityConstraint()
     resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
     resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 
-    m_packetRateDock->setFloating(true); // Start undocked
+    m_controlsDock->setMinimumWidth(440);
+    m_controlsDock->setMinimumHeight(160);
 
-    m_controlsDock->setMinimumWidth(400);
-    m_controlsDock->setMinimumHeight(200);
-    resizeDocks({ m_controlsDock },{ 160 },Qt::Vertical);
     ShowWindows();
 }
 
@@ -410,7 +446,15 @@ void MainWindow::ShowWindows()
     m_ACKDock->setVisible(config.isACKenabled());
     m_packetRateDock->setVisible(config.isPacketRateChartEnabled());
     m_StatsDock->setVisible(config.isStatsEnabled());
-    pcWindow->setVisible(config.isPCviewerEnabled());
+
+    if(config.isPCviewerEnabled()) {
+        if (!m_pointCloudWindow) return;
+        m_pointCloudWindow->show();
+        m_pointCloudWindow->raise();
+    } else {
+        if (!m_pointCloudWindow) return;
+        m_pointCloudWindow->hide();
+    }
 }
 
 //--------------------------------------------------------
@@ -710,11 +754,24 @@ QVector<PCpoint> MainWindow::buildFlattenedCloud()
 //--------------------------------------------------------
 void MainWindow::openConfig()
 {
+    // make sure requested reset is not cleared
+    bool ResetRequested = GetSettingsReset();
+    if(ResetRequested) {
+        QMessageBox msgBox;
+        msgBox.setText("Reset of GUI requeseted");
+        msgBox.setInformativeText("exit and restart");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+        return;
+    }
+
     if (config.exec() == QDialog::Accepted) {
         l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
                                   config.getDSTip(),config.getDSTport());
         NumFramesToSkip = config.getSkipFrame();
-        saveSettings();
+        // Save current user settings
+        saveSettings(false); // do not reset
+
         ShowWindows(); // update window visibility
     }
 }
@@ -796,3 +853,14 @@ void MainWindow::getVersion()
     l2lidar.LidarGetVersion();
     return;
 }
+
+//--------------------------------------------------------
+//  resetWindowLayout
+//  request windows layout reset
+//--------------------------------------------------------
+void MainWindow::resetWindowLayout()
+{
+    SetSettingsReset(true);
+}
+
+
