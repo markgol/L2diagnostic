@@ -31,6 +31,15 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // **********************************************************************
+
+//-----------------------------------------------------------------------
+//  Additions/Corrections
+//  2026-01-21  Added MAX_3DPOINTS_PER_FRAME definition
+//              Added MAX_2DPOINTS_PER_FRAME definition
+//              Correction point array size in parseFromPacketPointCloud2D()
+//              shoudl have been MAX_2DPOINT_PER_FRAME not MAX_3DPOINTS_PER_FRAME
+//-----------------------------------------------------------------------
+
 #pragma once
 
 // modifcation for use with Qt using Qvector instead of std::vector
@@ -170,7 +179,7 @@ inline void parseFromPacketToPointCloud(
     cloud.id = 1;
     cloud.ringNum = 1;
     cloud.points.clear();
-    cloud.points.reserve(300);
+    cloud.points.reserve(MAX_3DPOINTS_PER_FRAME);
 
     // transform raw data to a pointcloud
     auto &ranges = packet.data.ranges;
@@ -265,7 +274,7 @@ inline void parseFromPacketPointCloud2D(
     cloud.id = 1;
     cloud.ringNum = 1;
     cloud.points.clear();
-    cloud.points.reserve(300);
+    cloud.points.reserve(MAX_2DPOINTS_PER_FRAME); // changed from original 300
 
     // transform raw data to a pointcloud
     auto &ranges = packet.data.ranges;

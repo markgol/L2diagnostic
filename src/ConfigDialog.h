@@ -67,7 +67,6 @@
 #include <QDialog>
 #include <QString>
 #include "ui_ConfigDialog.h"
-#include "PointCloudWindow.h"
 
 class ConfigDialog : public QDialog
 {
@@ -189,6 +188,18 @@ public:
     {
         return static_cast<bool>(ui.cbIMU->isChecked());
     }
+    //--------------------------------------------------------
+    // point cloud viewer buffering
+    //--------------------------------------------------------
+    uint32_t getMax3Dframes2Buffer()
+    {
+        return static_cast<uint32_t>(ui.spinMax3DFrames->value());
+    }
+
+    uint32_t getMax2Dframes2Buffer()
+    {
+        return static_cast<uint32_t>(ui.spinMax2DFrames->value());
+    }
 
     //--------------------------------------------------------
     // point cloud viewer settings
@@ -265,6 +276,19 @@ public:
     }
 
     //--------------------------------------------------------
+    // point cloud viewer buffering
+    //--------------------------------------------------------
+    void setMax3Dframes2Buffer(uint32_t p)
+    {
+        ui.spinMax3DFrames->setValue(p);
+    }
+
+    void setMax2Dframes2Buffer(uint32_t p)
+    {
+        ui.spinMax2DFrames->setValue(p);
+    }
+
+    //--------------------------------------------------------
     // point cloud viewer settings
     //--------------------------------------------------------
 
@@ -315,6 +339,10 @@ public:
     {
         ui.cbIMU->setChecked(p);
     }
+
+signals:
+    void requestViewReset();
+
 
 private slots:
     void ResetPCview();

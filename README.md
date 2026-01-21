@@ -56,3 +56,4 @@ Current Status
 		Add 2D point cloud capture and rendereing
 		UI for setting workmode parameters
 		Add UART commmunications
+		Add IMU orientation to point cloud position calcuation

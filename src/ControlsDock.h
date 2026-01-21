@@ -32,7 +32,7 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V0.2.6  2026-01-13  added button controls dockable dialog
-//  V0.2.8  2026-01-16  added Reset Button
+//  V0.2.8  2026-01-16  added Reset the windows Button
 //
 //--------------------------------------------------------
 #ifndef CONTROLSDOCK_H
@@ -55,6 +55,7 @@ public:
     // UI state control (called by MainWindow)
     void setConnectState(bool connected);  // true - L2 connected
                                         // false - L2 disconnected
+    bool GetConnectedState();
 
 signals:
     void startRotationRequested();
@@ -68,6 +69,8 @@ signals:
 
 private:
     Ui::ControlsDock *ui;
+
+   bool ConnectState{false};
 };
 
 #endif // CONTROLSDOCK_H

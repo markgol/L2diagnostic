@@ -698,7 +698,7 @@
      <number>30</number>
     </property>
     <property name="maximum">
-     <number>300</number>
+     <number>3200</number>
     </property>
    </widget>
    <widget class="QSpinBox" name="spinMax2DFrames">

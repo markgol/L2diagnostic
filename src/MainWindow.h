@@ -106,6 +106,9 @@
 #include "ControlsDock.h"
 #include "PacketRateDock.h"
 
+#define LIDAR_MODE_3D 0
+#define LIDAR_MODE_2D 1
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -123,6 +126,10 @@ public:
 signals:
     // used to notify Cloud viewer ui
     void flattenedCloudReady(const QVector<PCpoint>& points);
+
+public slots:
+    // this is in response to set view button in the config dialog
+    void handleResetView();
 
 private slots:
     // The slots are triggered by ControlsDock class
@@ -181,13 +188,22 @@ private:
     QTimer*         mPacketBeat; // this is heartbeat for the packet rate chart
     uint64_t        m_lastPacketCount = 0;
 
+    // L2 workmode
+    int mLidarScanMode {LIDAR_MODE_3D}; // default is 3D scanning
+
     //-----------------------------------------------------
     // Point cloud veiwer
     //-----------------------------------------------------
     PointCloudWindow* m_pointCloudWindow{nullptr};
 
+    PCsettings defaultPCsettings {10.0,145.0,20.0};
+    void SetDefaultView();
+
     // Point cloud viewer Timer
     QTimer* cloudTimer;
+
+    // Point cloud window renderer Timer
+    QTimer* RendererTimer;
 
     // close point cloud viewer
     void closeEvent(QCloseEvent* e);
@@ -204,9 +220,18 @@ private:
     QMutex m_cloudMutex;
 
     // ring storage for point cloud frames to display
+    uint32_t mMax3Dframes2Buffer {MAX_3DPOINTS_PER_FRAME}; // maximum number of 3D frames
+                                        // to buffer for display
+
+    uint32_t mMax2Dframes2Buffer {MAX_2DPOINTS_PER_FRAME}; // maximum number of 2D frames
+                                        // to buffer for display
+
     QVector<Frame> m_frameRing;   // Fixed-capacity ring
     size_t m_ringWrite = 0;       // Next write index
     size_t m_ringCount = 0;       // Number of valid frames (<= MAX_FRAMES)
+
+    // helper function for Config dialog when cancelling dialog
+    void RestoreConfigSettings(); // reset the point cloud view back to defaults
 
     //-----------------------------------------------------
     // For unitree L2 lidar hardware interaction

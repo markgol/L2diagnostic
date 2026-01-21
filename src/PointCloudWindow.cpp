@@ -36,6 +36,7 @@
 //								Dockable QT windows with OpenGL
 //								was not tractable
 //                      updated mouse actions
+//                      added default view settings
 //
 //--------------------------------------------------------
 
@@ -100,8 +101,8 @@
 //--------------------------------------------------------
 //  PointCloudWindow constructor
 //--------------------------------------------------------
-PointCloudWindow::PointCloudWindow(QWindow* parent)
-    : QOpenGLWindow(NoPartialUpdate, parent)
+PointCloudWindow::PointCloudWindow(int maxPoints, QWindow* parent)
+    : QOpenGLWindow(NoPartialUpdate, parent), m_maxPoints(maxPoints)
 {
     setTitle("Point Cloud Viewer");
     resize(640, 480);
@@ -128,6 +129,10 @@ void PointCloudWindow::closeEvent(QCloseEvent* e)
 //--------------------------------------------------------
 void PointCloudWindow::initializeGL()
 {
+    // this won't work until maxPoints, maxFrame and maxPointPerFrame are defined
+    if(m_maxPoints==0) {
+        return;
+    }
     initializeOpenGLFunctions();
 
     // ---- HARD RESET ----
@@ -175,7 +180,9 @@ void PointCloudWindow::initializeGL()
     m_vbo.bind();
 
     m_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-    m_vbo.allocate(MAX_POINTS * sizeof(GLPoint));
+    m_vbo.allocate(m_maxPoints * sizeof(GLPoint));
+
+    m_stagingBuffer.resize(m_maxPoints);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
@@ -253,6 +260,15 @@ void PointCloudWindow::updateViewMatrix()
 }
 
 //--------------------------------------------------------
+//  onRenderTick
+//--------------------------------------------------------
+void PointCloudWindow::onRenderTick()
+{
+    if (isExposed())
+        requestUpdate();
+}
+
+//--------------------------------------------------------
 //  setPointCloud
 //--------------------------------------------------------
 void PointCloudWindow::setPointCloud(const QVector<PCpoint>& pcCloud)
@@ -262,29 +278,38 @@ void PointCloudWindow::setPointCloud(const QVector<PCpoint>& pcCloud)
     if (!m_vbo.isCreated() || pcCloud.isEmpty())
         return;
 
-    QVector<GLPoint> glPoints;
-    glPoints.reserve(pcCloud.size());
+    const int count =
+        std::min(static_cast<int>(pcCloud.size()), m_maxPoints);
 
-    for (const auto& p : pcCloud)
+    for (int i = 0; i < count; ++i)
     {
+        const auto& p = pcCloud[i];
+
         float v = std::clamp(
             (p.intensity - INTENSITY_MIN) /
                 (INTENSITY_MAX - INTENSITY_MIN),
             0.0f, 1.0f);
 
-        glPoints.push_back({
+        m_stagingBuffer[i] = {
             QVector3D(p.x, p.y, p.z),
             QVector3D(v, v, v)
-        });
+        };
     }
 
     m_vbo.bind();
-    m_vbo.write(0, glPoints.constData(),
-                glPoints.size() * sizeof(GLPoint));
+    m_vbo.write(0, m_stagingBuffer.constData(),
+                count * sizeof(GLPoint));
     m_vbo.release();
 
-    m_pointCount = glPoints.size();
-    requestUpdate(); // ??? this is not correct
+    m_pointCount = count;
+}
+
+//========================================================
+//  setDefaultPCsettings
+//========================================================
+void PointCloudWindow::setDefaultPCsettings(PCsettings& settings)
+{
+    DefaultPCsettings = settings;
 }
 
 //========================================================
@@ -472,10 +497,9 @@ void PointCloudWindow::restoreWindowState(QSettings& settings)
 void PointCloudWindow::ResetView()
 {
     m_target = QVector3D(0,0,0);
-    mPCsettings.Distance = 10.0f;
-    mPCsettings.Yaw = 145.0f;
-    mPCsettings.Pitch = 20.0f;
-    resize(mPCsettings.Hsize, mPCsettings.Vsize);
+    mPCsettings.Distance = DefaultPCsettings.Distance;
+    mPCsettings.Yaw = DefaultPCsettings.Yaw;
+    mPCsettings.Pitch = DefaultPCsettings.Pitch;
 
     updateViewMatrix();
     update();
@@ -489,8 +513,6 @@ void PointCloudWindow::getPCsettings(PCsettings& settings)
     settings.Distance = mPCsettings.Distance;
     settings.Pitch = mPCsettings.Pitch;
     settings.Yaw = mPCsettings.Yaw;
-    settings.Hsize = mPCsettings.Hsize;
-    settings.Vsize = mPCsettings.Vsize;
 }
 
 //--------------------------------------------------------
@@ -501,11 +523,8 @@ void PointCloudWindow::setPCsettings(PCsettings& settings)
     mPCsettings.Distance = settings.Distance;
     mPCsettings.Pitch = settings.Pitch;
     mPCsettings.Yaw = settings.Yaw;
-    mPCsettings.Hsize = settings.Hsize;
-    mPCsettings.Vsize = settings.Vsize;
 
     m_target = QVector3D(0,0,0);
-    resize(mPCsettings.Hsize, mPCsettings.Vsize);
 
     updateViewMatrix();
     update();

@@ -38,7 +38,7 @@
 #include "ui_ControlsDock.h"
 
 //--------------------------------------------------------
-//
+//  ControlsDock constructor
 //--------------------------------------------------------
 ControlsDock::ControlsDock(QWidget *parent)
     : QDockWidget(parent)
@@ -72,14 +72,21 @@ ControlsDock::ControlsDock(QWidget *parent)
             this, &ControlsDock::ResetWindowsRequested);
 
     setConnectState(false); // L2 is disconnected at start
-
 }
 
+//--------------------------------------------------------
+//  ControlsDock destructor
+//--------------------------------------------------------
 ControlsDock::~ControlsDock()
 {
     delete ui;
 }
 
+//--------------------------------------------------------
+//  setConnectState
+//  this disables/enables various button depending on
+//  wether the L2 is connected
+//--------------------------------------------------------
 void ControlsDock::setConnectState(bool connected)
 {
     // true - L2 connected
@@ -93,4 +100,10 @@ void ControlsDock::setConnectState(bool connected)
 
     // this button is always enabled
     ui->btnConfig->setEnabled(true);
+    ConnectState = connected;
+}
+
+bool ControlsDock::GetConnectedState()
+{
+    return ConnectState;
 }

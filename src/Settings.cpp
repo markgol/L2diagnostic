@@ -82,6 +82,8 @@
 #include <QStandardPaths>
 #include <QDebug>
 
+#include "unitree_lidar_protocol.h"
+
 //--------------------------------------------------------
 //  saveSettings()
 //  save user settings in an ini file format
@@ -139,11 +141,19 @@ void MainWindow::saveSettings(bool resetRequested)
 
     // point cloud view settings
     settings.beginGroup("PCview");
-    settings.setValue("Distance",config.getPCWdistance());
-    settings.setValue("Yaw",config.getPCWyaw());
-    settings.setValue("Pitch",config.getPCWpitch());
+
+    // point cloud view settings
+
+    settings.setValue("Distance",defaultPCsettings.Distance);
+    settings.setValue("Yaw",defaultPCsettings.Yaw);
+    settings.setValue("Pitch",defaultPCsettings.Pitch);
     settings.endGroup();
 
+    // point cloud buffering settings
+    settings.beginGroup("PCbuffering");
+    settings.setValue("Max3Dframes",mMax3Dframes2Buffer);
+    settings.setValue("Max2Dframes",mMax2Dframes2Buffer);
+    settings.endGroup();
 }
 
 //--------------------------------------------------------
@@ -163,23 +173,6 @@ bool MainWindow::GetSettingsReset()
     settings.endGroup();
 
     return Reset;
-}
-
-//--------------------------------------------------------
-//  SetSettingsReset
-//  flag for settings reset on next start of application
-//--------------------------------------------------------
-void MainWindow::SetSettingsReset(bool Reset)
-{
-    QString iniPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/L2diagnostic.ini";
-    QSettings settings(iniPath, QSettings::IniFormat);
-
-    // Window geometry
-    settings.beginGroup("geometry");
-    settings.setValue("reset",Reset);
-    settings.endGroup();
-
-    return;
 }
 
 //--------------------------------------------------------
@@ -243,12 +236,45 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setPacketRateChartEnabled(settings.value("PacketRateChart", true).toBool());
         config.setStatsEnabled(settings.value("Stats", true).toBool());
     }
+    settings.endGroup();
 
     // point cloud view settings
+
     settings.beginGroup("PCview");
-    config.setPCWdistance(settings.value("Distance", 10.0).toDouble());
-    config.setPCWyaw(settings.value("Yaw", 145.0).toDouble());
-    config.setPCWpitch(settings.value("Pitch", 20.0).toDouble());
+    defaultPCsettings.Distance =settings.value("Distance", 10.0).toDouble();
+    defaultPCsettings.Yaw =settings.value("Yaw", 145.0).toDouble();
+    defaultPCsettings.Pitch = settings.value("Pitch", 20.0).toDouble();
+
+    config.setPCWdistance(defaultPCsettings.Distance);
+    config.setPCWyaw(defaultPCsettings.Yaw);
+    config.setPCWpitch(defaultPCsettings.Pitch);
+    settings.endGroup();
+
+    // point cloud buffering settings
+    settings.beginGroup("PCbuffering");
+    mMax3Dframes2Buffer=settings.value("Max3Dframes", MAX_3DPOINTS_PER_FRAME).toUInt();
+    mMax2Dframes2Buffer=settings.value("Max2Dframes", MAX_2DPOINTS_PER_FRAME).toUInt();
+    config.setMax3Dframes2Buffer(mMax3Dframes2Buffer);
+    config.setMax2Dframes2Buffer(mMax2Dframes2Buffer);
+
     settings.endGroup();
 
 }
+
+//--------------------------------------------------------
+//  SetSettingsReset
+//  flag for settings reset on next start of application
+//--------------------------------------------------------
+void MainWindow::SetSettingsReset(bool Reset)
+{
+    QString iniPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/L2diagnostic.ini";
+    QSettings settings(iniPath, QSettings::IniFormat);
+
+    // Window geometry
+    settings.beginGroup("geometry");
+    settings.setValue("reset",Reset);
+    settings.endGroup();
+
+    return;
+}
+

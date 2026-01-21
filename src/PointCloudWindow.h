@@ -35,6 +35,8 @@
 //								into regular OpenGL window
 //								Dockable QT windows with OpenGL
 //								was not tractable
+//                      updated mouse actions
+//                      added default view settings
 //
 //--------------------------------------------------------
 
@@ -119,22 +121,11 @@ typedef struct
     float Distance;
     float Yaw;
     float Pitch;
-    uint32_t Hsize;
-    uint32_t Vsize;
 } PCsettings;
 
 // L2 lidar point has a min intensity of 0 and a max of 255
 constexpr float INTENSITY_MIN = 0.0f;
 constexpr float INTENSITY_MAX = 255.0f;
-
-// max number of points L2 can return in a packet (frame)
-// This is fixed by L2 firmware and is not adjustable
-static constexpr int POINTS_PER_FRAME = 300;
-
-// maximum number of point cloud frames to be displayed
-static constexpr int MAX_FRAMES       = 3000;
-// maximum number of cloud points to display
-static constexpr int MAX_POINTS       = MAX_FRAMES * POINTS_PER_FRAME;
 
 // class PointCloudWindow
 
@@ -143,7 +134,7 @@ class PointCloudWindow final
     , protected QOpenGLFunctions_3_3_Core
 {
 public:
-    explicit PointCloudWindow(QWindow* parent = nullptr);
+    explicit PointCloudWindow(int maxPoints, QWindow* parent = nullptr);
     ~PointCloudWindow() override;
 
     // Explicit persistence API
@@ -158,8 +149,12 @@ public:
     void setPointCloud(const QVector<PCpoint>& points);
 
     // settings for point cloud viewer
-    void getPCsettings(PCsettings& settings);
-    void setPCsettings(PCsettings& settings);
+    void getPCsettings(PCsettings& settings); // current settings
+    void setPCsettings(PCsettings& settings); // current settings
+    void setDefaultPCsettings(PCsettings& settings);
+
+public slots:
+    void onRenderTick(); // timer driven renderer
 
 protected:
     void initializeGL() override;
@@ -186,6 +181,10 @@ private:
     QVector<PCpoint> m_lastCloud;
     int m_pointCount{0};
 
+    // buffering
+    const int m_maxPoints;
+    QVector<GLPoint> m_stagingBuffer;
+
     // =====================
     // Orbit camera state
     // =====================
@@ -195,7 +194,9 @@ private:
     // Up      = +Z = ( 0, 0, 1 )
 
     QVector3D m_target { 0.0f, 0.0f, 0.0f };
-    PCsettings mPCsettings {10.0,145.0,20.0, 640,480};
+    PCsettings mPCsettings {10.0,145.0,20.0};
+
+    PCsettings DefaultPCsettings {10.0,145.0,20.0};
 
     float m_minDistance = 0.1f; // closest distance (M)
     float m_maxDistance = 1000.0f; // farthest distance (M)

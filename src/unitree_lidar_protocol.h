@@ -54,6 +54,8 @@
 //              excluding header and tail
 //          Added workmode bit definitions
 //          Added set workmode cmd type 2002
+//          Added MAX_3DPOINTS_PER_FRAME
+//          Added MAX_2DPOINTS_PER_FRAME
 //      Added LidarTimeStampData structure to be consistent
 //          with other data packet structures
 //
@@ -123,7 +125,9 @@
 #define WORK_MODE_STARTUP_WAIT  16 // 0: Power on and start automatically,
                                    // 1: Power on and wait for start command without rotation
 
-
+// buffer sizea
+#define MAX_3DPOINTS_PER_FRAME  300
+#define MAX_2DPOINTS_PER_FRAME  1800
 ///////////////////////////////////////////////////////////////////////////////
 // FRAME HEADER & FRAME TAIL
 ///////////////////////////////////////////////////////////////////////////////
@@ -236,8 +240,8 @@ typedef struct
     float angle_increment;              // Angle Step [rad]
     float time_increment;               // Time step [second]
     uint32_t point_num;                 // Point Number
-    uint16_t ranges[300];               // Point Distance [mm]
-    uint8_t intensities[300];           // Point Reflect [0-255]
+    uint16_t ranges[MAX_3DPOINTS_PER_FRAME];      // Point Distance [mm]
+    uint8_t intensities[MAX_3DPOINTS_PER_FRAME];  // Point Reflect [0-255]
 }LidarPointData;
 
 /**
@@ -278,8 +282,8 @@ typedef struct
     float angle_increment;              // Angle Step [rad]
     float time_increment;               // point time step
     uint32_t point_num;                 // Point Number
-    uint16_t ranges[1800];              // Point Distance Data
-    uint8_t intensities[1800];          // Point Reflect Data
+    uint16_t ranges[MAX_2DPOINTS_PER_FRAME];     // Point Distance Data
+    uint8_t intensities[MAX_2DPOINTS_PER_FRAME]; // Point Reflect Data
 }Lidar2DPointData;
 
 /**

@@ -62,7 +62,9 @@
 //  V0.2.8  2026-01-16  Changed point cloud viewer to dockable window
 //  V0.3.0  2026-01-18  Changed point cloud veiwer to OpenGL window
 //                      PC viewer as dockable window intractable
-//
+//                      Added point cloud view parameters and controls
+//                      to configuration dialog
+//                      Added separate renderer timer
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -105,7 +107,7 @@
 //      MainWindow:flattenedCloudReady() signals next step
 //          |
 //      PointCloudWindow::setPointCloud()
-//          |              push flattened cloud to viewer
+//          |              push flattened cloud to viewer window
 //          |
 //      PointCloudWindow::update()
 //                         repaint window
@@ -143,7 +145,6 @@
 //--------------------------------------------------------
 //  Project specific includes not part of MainWindow.h
 //--------------------------------------------------------
-// #include "ConfigDialog.h"
 
 //--------------------------------------------------------
 //  MainWIndow class constructor
@@ -160,13 +161,23 @@ MainWindow::MainWindow(QWidget* parent)
 
     // create cloud viewer window
     // This is not a Qt window but a OpenGL managed window
-    m_pointCloudWindow = new PointCloudWindow();
+    int maxPoints;
+    if(mLidarScanMode==LIDAR_MODE_3D) {
+        maxPoints =  MAX_3DPOINTS_PER_FRAME * mMax3Dframes2Buffer;
+    } else {
+        maxPoints =  MAX_2DPOINTS_PER_FRAME * mMax2Dframes2Buffer;
+    }
+    m_pointCloudWindow = new PointCloudWindow(maxPoints);
     m_pointCloudWindow->setTransientParent(windowHandle());
     m_pointCloudWindow->setFlag(Qt::Window);
 
     // Load previously saved user settings
     loadSettings(GetSettingsReset());
     SetSettingsReset(false);
+
+    // set default view settings
+    SetDefaultView();
+    m_pointCloudWindow->ResetView();
 
     SetupGUIrefreshTimers();
     ConnectDocksViewerActions();
@@ -175,7 +186,7 @@ MainWindow::MainWindow(QWidget* parent)
     applyDocksVisibilityConstraint();
 
     // 3D point cloud viewer buffering
-    m_frameRing.resize(MAX_FRAMES); // ??? ring buffer pre allocated
+    m_frameRing.resize(mMax3Dframes2Buffer); // ring buffer pre allocated
     NumFramesToSkip = config.getSkipFrame();
 
     // load the com parameters in the l2lidar class
@@ -184,6 +195,10 @@ MainWindow::MainWindow(QWidget* parent)
 
     // initial state of buttons and uis is L2 disconnected
     L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
+
+    // connect config request from set view button
+    connect(&config, &ConfigDialog::requestViewReset,
+            this, &MainWindow::handleResetView);
 
     ShowWindows(); // show windows effects all windows including point cloud window
 }
@@ -207,6 +222,16 @@ MainWindow::~MainWindow()
 //========================================================
 
 //--------------------------------------------------------
+// SetDefaultView
+//--------------------------------------------------------
+void MainWindow::SetDefaultView() {
+    defaultPCsettings.Distance = config.getPCWdistance();
+    defaultPCsettings.Yaw = config.getPCWyaw();
+    defaultPCsettings.Pitch = config.getPCWpitch();
+    m_pointCloudWindow->setDefaultPCsettings(defaultPCsettings);
+}
+
+//--------------------------------------------------------
 // SetupGUIrefreshTimers
 //--------------------------------------------------------
 void MainWindow::SetupGUIrefreshTimers()
@@ -216,7 +241,7 @@ void MainWindow::SetupGUIrefreshTimers()
     //  for Diagnostics, IMU and Stats
     //--------------------------------------------------------
     mHeartBeat = new QTimer(this);
-    mHeartBeat->setInterval(config.getDiagUpdateRate()); // suggest 4 Hz
+    mHeartBeat->setInterval(config.getDiagUpdateRate());
     connect(mHeartBeat, &QTimer::timeout, this, &MainWindow::HeartbeatFire);
 
     //--------------------------------------------------------
@@ -224,7 +249,7 @@ void MainWindow::SetupGUIrefreshTimers()
     //  for packet rate chart update
     //--------------------------------------------------------
     mPacketBeat = new QTimer(this);
-    mPacketBeat->setInterval(config.getPacketUpdateRate()); // suggest 10 Hz
+    mPacketBeat->setInterval(config.getPacketUpdateRate());
     connect(mPacketBeat, &QTimer::timeout, this, &MainWindow::updatePacketRate);
     // The elpased timer is used for calculating the packet rate/sec
     // It does not tigger and signals
@@ -235,15 +260,21 @@ void MainWindow::SetupGUIrefreshTimers()
     // setup timer for point cloud updating
     //--------------------------------------------------------
     cloudTimer = new QTimer(this);
-    cloudTimer->setInterval(config.getPCupdateRate()); // suggest 60 Hz
+    cloudTimer->setInterval(config.getPCupdateRate());
     connect(cloudTimer,
             &QTimer::timeout,
             this,
             &MainWindow::updatePointCloud);
     //--------------------------------------------------------
-    // setup timer point cloud rendereing
+    // setup timer point cloud renderering
     //--------------------------------------------------------
-    // ???
+    RendererTimer = new QTimer(this);
+    RendererTimer->setInterval(config.getRenderRate());
+    connect(RendererTimer,
+            &QTimer::timeout,
+            m_pointCloudWindow,
+            &PointCloudWindow::onRenderTick);
+    RendererTimer->stop(); // started in L2 connect
 }
 
 //--------------------------------------------------------
@@ -291,6 +322,19 @@ void MainWindow::closeEvent(QCloseEvent* e)
         m_pointCloudWindow = nullptr;
     }
     QMainWindow::closeEvent(e);
+}
+
+//--------------------------------------------------------
+//  handleResetView from config dialog set view button
+//  changes aren't permanent till okay button is pressed
+//--------------------------------------------------------
+void MainWindow::handleResetView()
+{
+    defaultPCsettings.Distance = config.getPCWdistance();
+    defaultPCsettings.Yaw = config.getPCWyaw();
+    defaultPCsettings.Pitch = config.getPCWpitch();
+
+    m_pointCloudWindow->setPCsettings(defaultPCsettings);
 }
 
 //--------------------------------------------------------
@@ -465,7 +509,7 @@ void MainWindow::L2ConnectedButtonsUIs()
     // disable start, enable stop
     m_controlsDock->setConnectState(true);
 
-    mHeartBeat->start();
+    mHeartBeat->start(); // for the stats windows
 
     StartPacketChart();
     StartPointCloudViewer();
@@ -507,6 +551,7 @@ void  MainWindow::StopPacketChart()
 //--------------------------------------------------------
 void MainWindow::StartPointCloudViewer()
 {
+    RendererTimer->start();
     cloudTimer->start();
 }
 
@@ -516,15 +561,16 @@ void MainWindow::StartPointCloudViewer()
 void MainWindow::StopPointCloudViewer()
 {
     cloudTimer->stop();
+    RendererTimer->stop();
 }
 
-//--------------------------------------------------------
+//========================================================
 //
 //  Dockable windows
 //
 //  timer driven separate GUI windows from main GUI window
 //
-//--------------------------------------------------------
+//========================================================
 
 void MainWindow::HeartbeatFire()
 {
@@ -617,13 +663,13 @@ void MainWindow::updateACK()
     return;
 }
 
-//--------------------------------------------------------
+//========================================================
 //
 //  Point cloud viewer data generator
 //
 //  timer driven separate GUI window from main GUI window
 //
-//--------------------------------------------------------
+//========================================================
 
 //--------------------------------------------------------
 //  onNewLidarFrame()
@@ -655,6 +701,8 @@ void MainWindow::onNewLidarFrame()
     // Retrieve packet
     auto packet = l2lidar.Pcl3Dpacket();
 
+    // move this to l2lidar class ???
+    // to containerise the unitree code
     unilidar_sdk2::PointCloudUnitree cloud;
     unilidar_sdk2::parseFromPacketToPointCloud(
         cloud, packet, false, 0, 100);
@@ -680,8 +728,8 @@ void MainWindow::onNewLidarFrame()
     // Overwrite oldest frame in-place
     m_frameRing[m_ringWrite] = std::move(frame);
 
-    m_ringWrite = (m_ringWrite + 1) % MAX_FRAMES;
-    if (m_ringCount < MAX_FRAMES)
+    m_ringWrite = (m_ringWrite + 1) % mMax3Dframes2Buffer;
+    if (m_ringCount < mMax3Dframes2Buffer)
         ++m_ringCount;
 }
 
@@ -716,11 +764,11 @@ QVector<PCpoint> MainWindow::buildFlattenedCloud()
             return {};
 
         const size_t oldest =
-            (m_ringWrite + MAX_FRAMES - m_ringCount) % MAX_FRAMES;
+            (m_ringWrite + mMax3Dframes2Buffer - m_ringCount) % mMax3Dframes2Buffer;
 
         localFrames.reserve(m_ringCount);
         for (size_t i = 0; i < m_ringCount; ++i) {
-            size_t idx = (oldest + i) % MAX_FRAMES;
+            size_t idx = (oldest + i) % mMax3Dframes2Buffer;
             localFrames.push_back(m_frameRing[idx]); // shallow copy
         }
     } // mutex released here
@@ -769,11 +817,65 @@ void MainWindow::openConfig()
         l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
                                   config.getDSTip(),config.getDSTport());
         NumFramesToSkip = config.getSkipFrame();
-        // Save current user settings
-        saveSettings(false); // do not reset
+        // check if buffering has changed
+        if(mMax3Dframes2Buffer!=config.getMax3Dframes2Buffer() ||
+            mMax2Dframes2Buffer!= config.getMax2Dframes2Buffer()) {
+            //ask user if they reaaly want to changes settings
+            QMessageBox msgBox;
+            msgBox.setText("Critical buffering paramters changed\nThe app must exit\nAre you sure you want to proceed?");
+            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            msgBox.setDefaultButton(QMessageBox::No);
+            // Show the dialog and wait for user response
+            int ret = msgBox.exec();
+            if (ret == QMessageBox::Yes) {
+                // User clicked Yes
+                mMax3Dframes2Buffer = config.getMax3Dframes2Buffer();
+                mMax2Dframes2Buffer = config.getMax2Dframes2Buffer();
+                saveSettings(false); // do not reset window geometries
+                QApplication::quit();
+                return;
+            } else {
+                // User clicked No
+                RestoreConfigSettings();
+                return;
+            }
+        }
 
+        if(m_controlsDock->GetConnectedState()) {
+            if(config.getDiagUpdateRate()!=mHeartBeat->interval() ||
+                config.getDiagUpdateRate()!=mPacketBeat->interval() ||
+                config.getPCupdateRate()!=cloudTimer->interval() ||
+                config.getRenderRate()!=RendererTimer->interval() ){
+                // of any timer changes then stop all, reset all, restart
+                L2DisconnectedButtonsUIs(); // this stops everything
+                mHeartBeat->setInterval(config.getDiagUpdateRate());
+                mPacketBeat->setInterval(config.getPacketUpdateRate());
+                cloudTimer->setInterval(config.getPCupdateRate());
+                RendererTimer->setInterval(config.getRenderRate());
+                L2DisconnectedButtonsUIs(); // this restarts everything
+            }
+        }
+
+        // Save current user settings
+        saveSettings(false); // do not reset window geometries
+        SetDefaultView(); // saves the default point cloud view
         ShowWindows(); // update window visibility
+
+    } else {
+        // reset the point cloud view back to defaults
+        RestoreConfigSettings();
     }
+}
+
+void MainWindow::RestoreConfigSettings()
+{
+    // reset the point cloud view back to defaults
+    config.setPCWdistance(defaultPCsettings.Distance);
+    config.setPCWyaw(defaultPCsettings.Yaw);
+    config.setPCWpitch(defaultPCsettings.Pitch);
+    // reset the point cloud buffering back to current setting
+    config.setMax3Dframes2Buffer(mMax3Dframes2Buffer);
+    config.setMax2Dframes2Buffer(mMax2Dframes2Buffer);
 }
 
 //--------------------------------------------------------
