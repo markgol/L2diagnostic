@@ -67,6 +67,9 @@ signals:
     void L2disconnectRequested();
     void ResetWindowsRequested();
 
+protected:
+    void closeEvent(QCloseEvent* event) override;
+
 private:
     Ui::ControlsDock *ui;
 

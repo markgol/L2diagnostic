@@ -40,6 +40,7 @@ void PacketRateDock::reset()
 {
     m_series->clear();
     m_sampleIndex = 0;
+    m_axisX->setRange(0,MAX_SAMPLES);
 }
 
 void PacketRateDock::addSample(double packetsPerSecond)

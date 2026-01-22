@@ -37,6 +37,7 @@
 //								was not tractable
 //                      updated mouse actions
 //                      added default view settings
+//  V0.3.2  2026-01-22  New renderer architecture
 //
 //--------------------------------------------------------
 
@@ -72,19 +73,16 @@
 //      MainWindow:onNewLidarFrame()  this operates at L2 point cloud
 //          |              packet rate ~200-250 packets/sec
 //          |
-//      throttling         fifo, save only every nth PCpoint
+//      throttling         fifo, save only every nth PC framet
 //          |
-//      MainWindow:updatePointCloud() create flattened point cloud
-//          |              cloudTimer Timer driven 60Hz
+//      PointCloudWindow::appendFrame()
 //          |
-//      MainWindow:flattenedCloudReady() signals next step
+//      VBO sub-write (or stage CPU buffer)
 //          |
-//      PointCloudWindow::setPointCloud()
-//          |              push flattened cloud to viewer
+//      requestUpdate->renderer
 //          |
-//      PointCloudWindow::Update()
-//                         repaint window
-//                         This is timer driven at 30Hz
+//          |
+//      QOpenGLWindow::paintGL()
 //
 //--------------------------------------------------------
 
@@ -108,6 +106,8 @@ PointCloudWindow::PointCloudWindow(int maxPoints, QWindow* parent)
     resize(640, 480);
     setFlags(flags() | Qt::Window);
     setProperty("_q_deleteOnClose", true);
+
+    m_accumulatedPoints.reserve(m_maxPoints);
 }
 
 //--------------------------------------------------------
@@ -148,25 +148,65 @@ void PointCloudWindow::initializeGL()
 
     // ---- Shaders ----
     m_program.addShaderFromSourceCode(QOpenGLShader::Vertex,
-                                      "#version 330 core\n"
-                                      "layout(location = 0) in vec3 inPos;\n"
-                                      "layout(location = 1) in vec3 inColor;\n"
-                                      "uniform mat4 mvp;\n"
-                                      "out vec3 fragColor;\n"
-                                      "void main() {\n"
-                                      "  fragColor = inColor;\n"
-                                      "  gl_Position = mvp * vec4(inPos, 1.0);\n"
-                                      "  gl_PointSize = 2.0;\n"
-                                      "}\n"
+        "#version 330 core\n"
+
+            "layout(location = 0) in vec3 inPos;\n"
+            "layout(location = 1) in float inIntensity;\n"
+
+            "uniform mat4 mvp;\n"
+
+            "uniform float uMinRange;\n"
+            "uniform float uMaxRange;\n"
+            "uniform float uMinIntensity;\n"
+            "uniform float uMaxIntensity;\n"
+
+            "out float vRangeNorm;\n"
+            "out float vIntensityNorm;\n"
+
+            "void main()\n"
+            "{\n"
+            "   float range = length(inPos);\n"
+
+            "   vRangeNorm = clamp("
+            "           (range - uMinRange) / (uMaxRange - uMinRange),"
+            "           0.0, 1.0"
+            "           );\n"
+
+            "   vIntensityNorm = clamp("
+            "          (inIntensity - uMinIntensity) / (uMaxIntensity - uMinIntensity),"
+            "          0.0, 1.0"
+            "          );\n"
+
+            "   gl_Position = mvp * vec4(inPos, 1.0);\n"
+            "   gl_PointSize = 2.0;\n"
+        "}\n"
                                       );
 
+
     m_program.addShaderFromSourceCode(QOpenGLShader::Fragment,
-                                      "#version 330 core\n"
-                                      "in vec3 fragColor;\n"
-                                      "out vec4 outColor;\n"
-                                      "void main() {\n"
-                                      "  outColor = vec4(fragColor, 1.0);\n"
-                                      "}\n"
+    "#version 330 core\n"
+
+        "in float vRangeNorm;\n"
+        "in float vIntensityNorm;\n"
+
+        "out vec4 outColor;\n"
+
+        "vec3 hsv2rgb(vec3 c)\n"
+        "{\n"
+        "   vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);\n"
+        "   vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);\n"
+        "   return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);\n"
+        "}\n"
+
+        "void main()\n"
+        "{\n"
+        "   float hue = (1.0 - vRangeNorm) * 0.66; // blue → red\n"
+        "   float saturation = 1.0;\n"
+        "   float value = mix(0.2, 1.0, vIntensityNorm);\n"
+
+        "   vec3 rgb = hsv2rgb(vec3(hue, saturation, value));\n"
+        "   outColor = vec4(rgb, 1.0);\n"
+        "}\n"
                                       );
 
     if (!m_program.link())
@@ -182,17 +222,15 @@ void PointCloudWindow::initializeGL()
     m_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
     m_vbo.allocate(m_maxPoints * sizeof(GLPoint));
 
-    m_stagingBuffer.resize(m_maxPoints);
-
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                           sizeof(GLPoint),
                           reinterpret_cast<void*>(offsetof(GLPoint, pos)));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE,
                           sizeof(GLPoint),
-                          reinterpret_cast<void*>(offsetof(GLPoint, color)));
+                          reinterpret_cast<void*>(offsetof(GLPoint, intensity)));
 
     m_vbo.release();
     m_vao.release();
@@ -200,8 +238,6 @@ void PointCloudWindow::initializeGL()
     m_axisGrid.initialize();
     updateViewMatrix();
 
-    if (!m_lastCloud.isEmpty())
-        setPointCloud(m_lastCloud);
 }
 
 //--------------------------------------------------------
@@ -229,6 +265,12 @@ void PointCloudWindow::paintGL()
         return;
 
     m_program.bind();
+
+    m_program.setUniformValue("uMinRange", m_minRange);
+    m_program.setUniformValue("uMaxRange", m_maxRange);
+    m_program.setUniformValue("uMinIntensity", m_minIntensity);
+    m_program.setUniformValue("uMaxIntensity", m_maxIntensity);
+
     m_program.setUniformValue("mvp", mvp);
 
     m_vao.bind();
@@ -265,43 +307,70 @@ void PointCloudWindow::updateViewMatrix()
 void PointCloudWindow::onRenderTick()
 {
     if (isExposed())
+        if (!m_accumulatedPoints.isEmpty()) {
+            uploadAccumulatedPoints();
+        }
         requestUpdate();
 }
 
 //--------------------------------------------------------
-//  setPointCloud
+//  uploadAccumulatedPoints
 //--------------------------------------------------------
-void PointCloudWindow::setPointCloud(const QVector<PCpoint>& pcCloud)
+void PointCloudWindow::uploadAccumulatedPoints()
 {
-    m_lastCloud = pcCloud;
+    // ??? if (!m_glInitialized || !m_glValid)
+    //     return;
 
-    if (!m_vbo.isCreated() || pcCloud.isEmpty())
+    makeCurrent();
+
+    if (!m_vbo.isCreated()) {
+        qWarning() << "VBO not created";
+        doneCurrent();
         return;
-
-    const int count =
-        std::min(static_cast<int>(pcCloud.size()), m_maxPoints);
-
-    for (int i = 0; i < count; ++i)
-    {
-        const auto& p = pcCloud[i];
-
-        float v = std::clamp(
-            (p.intensity - INTENSITY_MIN) /
-                (INTENSITY_MAX - INTENSITY_MIN),
-            0.0f, 1.0f);
-
-        m_stagingBuffer[i] = {
-            QVector3D(p.x, p.y, p.z),
-            QVector3D(v, v, v)
-        };
     }
 
     m_vbo.bind();
-    m_vbo.write(0, m_stagingBuffer.constData(),
-                count * sizeof(GLPoint));
-    m_vbo.release();
 
-    m_pointCount = count;
+    const int byteSize = m_accumulatedPoints.size() * sizeof(GLPoint);
+
+    if (byteSize > 0) {
+        m_vbo.allocate(m_accumulatedPoints.constData(), byteSize);
+    }
+
+    m_vbo.release();
+    doneCurrent();
+    m_pointCount = m_accumulatedPoints.size();
+}
+
+//--------------------------------------------------------
+//  appendFrame
+//--------------------------------------------------------
+void PointCloudWindow::appendFrame(const Frame& frame)
+{
+    if (!m_vbo.isCreated() || frame.isEmpty())
+        return;
+
+    // qDebug() << "appendFrame(): incoming =" << frame.size()
+    //          << " total before =" << m_accumulatedPoints.size();
+
+    for (const auto& p : frame) {
+        GLPoint gp;
+        gp.pos = QVector3D(p.x, p.y, p.z);
+        gp.intensity = p.intensity;
+
+        m_accumulatedPoints.push_back(gp);
+    }
+
+    // Trim oldest points if exceeding capacity
+    if (m_accumulatedPoints.size() > m_maxPoints) {
+        const int excess = m_accumulatedPoints.size() - m_maxPoints;
+        m_accumulatedPoints.erase(
+            m_accumulatedPoints.begin(),
+            m_accumulatedPoints.begin() + excess);
+    }
+
+    uploadAccumulatedPoints();
+    update();
 }
 
 //========================================================

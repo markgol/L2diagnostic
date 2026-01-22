@@ -65,6 +65,7 @@
 //                      Added point cloud view parameters and controls
 //                      to configuration dialog
 //                      Added separate renderer timer
+//  V0.3.2  2026-01-22  New renderer architecture
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -99,19 +100,16 @@
 //      MainWindow:onNewLidarFrame()  this operates at L2 point cloud
 //          |              packet rate ~200-250 packets/sec
 //          |
-//      throttling         fifo, save only every nth PCpoint
+//      throttling         fifo, save only every nth PC framet
 //          |
-//      MainWindow:updatePointCloud() create flattened point cloud
-//          |              cloudTimer Timer driven
+//      PointCloudWindow::appendFrame()
 //          |
-//      MainWindow:flattenedCloudReady() signals next step
+//      VBO sub-write (or stage CPU buffer)
 //          |
-//      PointCloudWindow::setPointCloud()
-//          |              push flattened cloud to viewer window
+//      requestUpdate->renderer
 //          |
-//      PointCloudWindow::update()
-//                         repaint window
-//                         renderTimer Timer driven
+//          |
+//      QOpenGLWindow::paintGL()
 //
 //--------------------------------------------------------
 
@@ -159,21 +157,24 @@ MainWindow::MainWindow(QWidget* parent)
     AssignDocksObjectNames();
     AddDocksViewer();
 
-    // create cloud viewer window
-    // This is not a Qt window but a OpenGL managed window
-    int maxPoints;
-    if(mLidarScanMode==LIDAR_MODE_3D) {
-        maxPoints =  MAX_3DPOINTS_PER_FRAME * mMax3Dframes2Buffer;
-    } else {
-        maxPoints =  MAX_2DPOINTS_PER_FRAME * mMax2Dframes2Buffer;
-    }
-    m_pointCloudWindow = new PointCloudWindow(maxPoints);
-    m_pointCloudWindow->setTransientParent(windowHandle());
-    m_pointCloudWindow->setFlag(Qt::Window);
-
     // Load previously saved user settings
     loadSettings(GetSettingsReset());
     SetSettingsReset(false);
+
+    // create cloud viewer window
+    // This is not a Qt window but a OpenGL managed window
+    if(mLidarScanMode==LIDAR_MODE_3D) {
+        mmaxPoints =  MAX_3DPOINTS_PER_FRAME * mMax3Dframes2Buffer;
+        mmaxFrames = mMax3Dframes2Buffer;
+    } else {
+        mmaxPoints =  MAX_2DPOINTS_PER_FRAME * mMax2Dframes2Buffer;
+        mmaxFrames = mMax2Dframes2Buffer;
+    }
+    m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
+    m_pointCloudWindow->setTransientParent(windowHandle());
+    m_pointCloudWindow->setFlag(Qt::Window);
+    // Window geometry and state for point cloud window
+    m_pointCloudWindow->restoreWindowState();
 
     // set default view settings
     SetDefaultView();
@@ -185,8 +186,13 @@ MainWindow::MainWindow(QWidget* parent)
     // these are only done after loadsettings()
     applyDocksVisibilityConstraint();
 
-    // 3D point cloud viewer buffering
-    m_frameRing.resize(mMax3Dframes2Buffer); // ring buffer pre allocated
+    // point cloud viewer buffering
+    if(mLidarScanMode==LIDAR_MODE_3D) {
+        m_frameRing.resize(mMax3Dframes2Buffer); // ring buffer pre allocated
+    } else {
+        m_frameRing.resize(mMax2Dframes2Buffer); // ring buffer pre allocated
+    }
+
     NumFramesToSkip = config.getSkipFrame();
 
     // load the com parameters in the l2lidar class
@@ -256,15 +262,6 @@ void MainWindow::SetupGUIrefreshTimers()
     m_rateTimer = new QElapsedTimer;
     m_rateTimer->restart();
 
-    //--------------------------------------------------------
-    // setup timer for point cloud updating
-    //--------------------------------------------------------
-    cloudTimer = new QTimer(this);
-    cloudTimer->setInterval(config.getPCupdateRate());
-    connect(cloudTimer,
-            &QTimer::timeout,
-            this,
-            &MainWindow::updatePointCloud);
     //--------------------------------------------------------
     // setup timer point cloud renderering
     //--------------------------------------------------------
@@ -386,6 +383,7 @@ void MainWindow::AddDocksViewer()
     //--------------------------------------------------------
     //  setup dockable Controls gui
     //--------------------------------------------------------
+    m_controlsDock->setAllowedAreas(Qt::LeftDockWidgetArea);
     addDockWidget(Qt::LeftDockWidgetArea, m_controlsDock);
     //--------------------------------------------------------
     //  setup dockable packet Stats gui
@@ -456,13 +454,7 @@ void MainWindow::ConnectDocksViewerActions()
             this,
             &MainWindow::onNewLidarFrame,
             Qt::QueuedConnection);
-
-    connect(this,
-            &MainWindow::flattenedCloudReady,
-            m_pointCloudWindow,
-            &PointCloudWindow::setPointCloud,
-            Qt::QueuedConnection);
-}
+   }
 
 //--------------------------------------------------------
 // applyDocksVisibilityConstraint
@@ -474,9 +466,13 @@ void MainWindow::applyDocksVisibilityConstraint()
     resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
     resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 
-    m_controlsDock->setMinimumWidth(440);
+    m_controlsDock->setMinimumWidth(480);
     m_controlsDock->setMinimumHeight(160);
-
+    m_controlsDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // can not float or move
+    // This would let it float or move but X will not close it
+    // m_controlsDock->setFeatures(QDockWidget::DockWidgetMovable |
+    //                             QDockWidget::DockWidgetFloatable);
+    m_controlsDock->setContextMenuPolicy(Qt::PreventContextMenu); // do not allow context menu close
     ShowWindows();
 }
 
@@ -499,6 +495,9 @@ void MainWindow::ShowWindows()
         if (!m_pointCloudWindow) return;
         m_pointCloudWindow->hide();
     }
+
+    m_controlsDock->show(); // always show controls
+    m_controlsDock->raise();
 }
 
 //--------------------------------------------------------
@@ -552,7 +551,6 @@ void  MainWindow::StopPacketChart()
 void MainWindow::StartPointCloudViewer()
 {
     RendererTimer->start();
-    cloudTimer->start();
 }
 
 //--------------------------------------------------------
@@ -560,7 +558,6 @@ void MainWindow::StartPointCloudViewer()
 //--------------------------------------------------------
 void MainWindow::StopPointCloudViewer()
 {
-    cloudTimer->stop();
     RendererTimer->stop();
 }
 
@@ -731,59 +728,19 @@ void MainWindow::onNewLidarFrame()
     m_ringWrite = (m_ringWrite + 1) % mMax3Dframes2Buffer;
     if (m_ringCount < mMax3Dframes2Buffer)
         ++m_ringCount;
-}
 
-//--------------------------------------------------------
-//  updatePointCloud()
-//  timer driven emitter for point cloud viewer
-//  The acculated frames are flattened and sent
-//  to the viewer at the viewer display rate
-//  This timer set and started in L2connect()
-//--------------------------------------------------------
-void MainWindow::updatePointCloud()
-{
-    auto cloud = buildFlattenedCloud();
-    if (!cloud.isEmpty())
-        emit flattenedCloudReady(cloud);
-}
+    if (m_pointCloudWindow) {
+        Frame frameCopy =
+            m_frameRing[(m_ringWrite + mmaxFrames - 1) % mmaxFrames];
 
-
-//--------------------------------------------------------
-//  buildFlattenedCloud()
-//  help function that converts the frame fifo
-//  into a flattened point cloud array
-//--------------------------------------------------------
-QVector<PCpoint> MainWindow::buildFlattenedCloud()
-{
-    QVector<Frame> localFrames;
-
-    {
-        QMutexLocker lock(&m_cloudMutex);
-
-        if (m_ringCount == 0)
-            return {};
-
-        const size_t oldest =
-            (m_ringWrite + mMax3Dframes2Buffer - m_ringCount) % mMax3Dframes2Buffer;
-
-        localFrames.reserve(m_ringCount);
-        for (size_t i = 0; i < m_ringCount; ++i) {
-            size_t idx = (oldest + i) % mMax3Dframes2Buffer;
-            localFrames.push_back(m_frameRing[idx]); // shallow copy
-        }
-    } // mutex released here
-
-    // Now flatten WITHOUT holding the mutex
-    QVector<PCpoint> PCcloud;
-    size_t totalPoints = 0;
-    for (const auto& f : localFrames)
-        totalPoints += f.size();
-
-    PCcloud.reserve(totalPoints);
-    for (const auto& f : localFrames)
-        PCcloud += f;
-
-    return PCcloud;
+        QMetaObject::invokeMethod(
+            m_pointCloudWindow,
+            [this, frameCopy]() {
+                m_pointCloudWindow->appendFrame(frameCopy);
+            },
+            Qt::QueuedConnection
+            );
+    }
 }
 
 //--------------------------------------------------------
@@ -814,9 +771,13 @@ void MainWindow::openConfig()
     }
 
     if (config.exec() == QDialog::Accepted) {
+        // update the L2 UDP connection
         l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
                                   config.getDSTip(),config.getDSTport());
+
+        // update frames to skip
         NumFramesToSkip = config.getSkipFrame();
+
         // check if buffering has changed
         if(mMax3Dframes2Buffer!=config.getMax3Dframes2Buffer() ||
             mMax2Dframes2Buffer!= config.getMax2Dframes2Buffer()) {
@@ -843,16 +804,15 @@ void MainWindow::openConfig()
 
         if(m_controlsDock->GetConnectedState()) {
             if(config.getDiagUpdateRate()!=mHeartBeat->interval() ||
-                config.getDiagUpdateRate()!=mPacketBeat->interval() ||
-                config.getPCupdateRate()!=cloudTimer->interval() ||
+                config.getPacketUpdateRate()!=mPacketBeat->interval() ||
                 config.getRenderRate()!=RendererTimer->interval() ){
+
                 // of any timer changes then stop all, reset all, restart
                 L2DisconnectedButtonsUIs(); // this stops everything
                 mHeartBeat->setInterval(config.getDiagUpdateRate());
                 mPacketBeat->setInterval(config.getPacketUpdateRate());
-                cloudTimer->setInterval(config.getPCupdateRate());
                 RendererTimer->setInterval(config.getRenderRate());
-                L2DisconnectedButtonsUIs(); // this restarts everything
+                L2ConnectedButtonsUIs(); // this restarts everything
             }
         }
 
@@ -867,6 +827,10 @@ void MainWindow::openConfig()
     }
 }
 
+//--------------------------------------------------------
+//  RestoreConfigSettings
+//  when Config dialog is cancelled
+//--------------------------------------------------------
 void MainWindow::RestoreConfigSettings()
 {
     // reset the point cloud view back to defaults

@@ -37,6 +37,11 @@
 //                      separate source file: Settings.cpp
 //  V0.2.8  2026-01-16  Added reset flag for resetting
 //                      the geometry, state and visibility
+//  V0.3.2  2026-01-22  Updated defaults for various settings
+//                      deleted unused older settings
+//                      added settings for saving all window geometry
+//                      and state
+//                      Completed most display/renderer controlls
 //
 //--------------------------------------------------------
 
@@ -123,7 +128,6 @@ void MainWindow::saveSettings(bool resetRequested)
     settings.setValue("NumFramesToSkip", config.getSkipFrame());
     settings.setValue("PacketUpdateRate", config.getPacketUpdateRate());
     settings.setValue("DiagUpdateRate", config.getDiagUpdateRate());
-    settings.setValue("PCupdateRate", config.getPCupdateRate());
     settings.setValue("RendererUpdateRate",config.getRenderRate());
     settings.endGroup();
 
@@ -153,26 +157,8 @@ void MainWindow::saveSettings(bool resetRequested)
     settings.beginGroup("PCbuffering");
     settings.setValue("Max3Dframes",mMax3Dframes2Buffer);
     settings.setValue("Max2Dframes",mMax2Dframes2Buffer);
+    settings.setValue("IMUadjust",config.isIMUadjustEnabled());
     settings.endGroup();
-}
-
-//--------------------------------------------------------
-//  GetSettingsReset
-//  flag for settings reset on next start of application
-//--------------------------------------------------------
-bool MainWindow::GetSettingsReset()
-{
-    QString iniPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/L2diagnostic.ini";
-    QSettings settings(iniPath, QSettings::IniFormat);
-
-    bool Reset{false};
-    // Window geometry
-
-    settings.beginGroup("geometry");
-    Reset = settings.value("reset", false).toBool();
-    settings.endGroup();
-
-    return Reset;
 }
 
 //--------------------------------------------------------
@@ -198,30 +184,30 @@ void MainWindow::loadSettings(bool resetRequested)
 
     // Window geometry and state for point cloud window
     if(!resetRequested) {
-        m_pointCloudWindow->restoreWindowState();
+        if(m_pointCloudWindow)
+            m_pointCloudWindow->restoreWindowState();
     }
 
     // Network
     settings.beginGroup("net");
-    config.setSRCip(settings.value("srcIP", "192.168.1.2").toString());
-    config.setDSTip(settings.value("dstIP", "192.168.1.62").toString());
-    config.setSRCport(settings.value("srcPort", 6201).toUInt());
-    config.setDSTport(settings.value("dstPort", 6101).toUInt());
+    config.setSRCip(settings.value("srcIP", "192.168.1.2").toString()); // factory default
+    config.setDSTip(settings.value("dstIP", "192.168.1.62").toString()); // factory default
+    config.setSRCport(settings.value("srcPort", 6201).toUInt()); // factory default
+    config.setDSTport(settings.value("dstPort", 6101).toUInt()); // factory default
     settings.endGroup();
 
     // throttling
     settings.beginGroup("throttling");
-    config.setSkipFrame(settings.value("NumFramesToSkip", 4).toUInt());
-    config.setPacketUpdateRate(settings.value("PacketUpdateRate", 100).toUInt());
-    config.setDiagUpdateRate(settings.value("DiagUpdateRate", 250).toUInt());
-    config.setPCupdateRate(settings.value("PCupdateRate", 16).toUInt());
-    config.setRenderRate(settings.value("RendererUpdateRate", 33).toUInt());
+    config.setSkipFrame(settings.value("NumFramesToSkip", 1).toUInt());
+    config.setPacketUpdateRate(settings.value("PacketUpdateRate", 100).toUInt()); // 10Hz
+    config.setDiagUpdateRate(settings.value("DiagUpdateRate", 200).toUInt());   // 5Hz
+    config.setRenderRate(settings.value("RendererUpdateRate", 33).toUInt());    // 30Hz
     settings.endGroup();
 
     // windows visibility
     settings.beginGroup("visibility");
-    if(resetRequested){
-        // reset settings to initial state
+    if(resetRequested){  // check if reset to the windows has been requested
+        // reset settings to initial state, ignore past settings
         config.setPCviewerEnabled(true);
         config.setACKenabled(true);
         config.setDiagEnabled(true);
@@ -252,13 +238,33 @@ void MainWindow::loadSettings(bool resetRequested)
 
     // point cloud buffering settings
     settings.beginGroup("PCbuffering");
-    mMax3Dframes2Buffer=settings.value("Max3Dframes", MAX_3DPOINTS_PER_FRAME).toUInt();
-    mMax2Dframes2Buffer=settings.value("Max2Dframes", MAX_2DPOINTS_PER_FRAME).toUInt();
+    mMax3Dframes2Buffer=settings.value("Max3Dframes", 1800).toUInt(); // 3D PC frame is 300 points
+    mMax2Dframes2Buffer=settings.value("Max2Dframes", 300).toUInt();  // 2D PC frame is 1800 points
     config.setMax3Dframes2Buffer(mMax3Dframes2Buffer);
     config.setMax2Dframes2Buffer(mMax2Dframes2Buffer);
+    config.setIMUadjustEnabled(settings.value("IMUadjust", false).toBool());
 
     settings.endGroup();
 
+}
+
+//--------------------------------------------------------
+//  GetSettingsReset
+//  flag for settings reset on next start of application
+//--------------------------------------------------------
+bool MainWindow::GetSettingsReset()
+{
+    QString iniPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/L2diagnostic.ini";
+    QSettings settings(iniPath, QSettings::IniFormat);
+
+    bool Reset{false};
+    // Window geometry
+
+    settings.beginGroup("geometry");
+    Reset = settings.value("reset", false).toBool();
+    settings.endGroup();
+
+    return Reset;
 }
 
 //--------------------------------------------------------

@@ -17,9 +17,9 @@
    <widget class="QPushButton" name="btnL2Disconnect">
     <property name="geometry">
      <rect>
-      <x>120</x>
+      <x>110</x>
       <y>10</y>
-      <width>81</width>
+      <width>101</width>
       <height>31</height>
      </rect>
     </property>
@@ -30,7 +30,7 @@
    <widget class="QPushButton" name="btnVersion">
     <property name="geometry">
      <rect>
-      <x>350</x>
+      <x>360</x>
       <y>60</y>
       <width>81</width>
       <height>31</height>
@@ -43,7 +43,7 @@
    <widget class="QPushButton" name="btnConfig">
     <property name="geometry">
      <rect>
-      <x>350</x>
+      <x>360</x>
       <y>10</y>
       <width>81</width>
       <height>31</height>
@@ -108,7 +108,7 @@
    <widget class="QPushButton" name="btnResetWindows">
     <property name="geometry">
      <rect>
-      <x>230</x>
+      <x>240</x>
       <y>10</y>
       <width>91</width>
       <height>31</height>

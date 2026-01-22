@@ -141,11 +141,6 @@ public:
         return static_cast<uint32_t>(ui.spinDiagrate->value());
     }
 
-    uint32_t getPCupdateRate() const
-    {
-        return static_cast<uint32_t>(ui.spinPCrate->value());
-    }
-
      uint32_t getPacketUpdateRate() const
     {
         return static_cast<uint32_t>(ui.spinPacketrate->value());
@@ -199,6 +194,10 @@ public:
     uint32_t getMax2Dframes2Buffer()
     {
         return static_cast<uint32_t>(ui.spinMax2DFrames->value());
+    }
+    bool isIMUadjustEnabled()
+    {
+        return static_cast<bool>(ui.cbIMUadjust->isChecked());
     }
 
     //--------------------------------------------------------
@@ -260,11 +259,6 @@ public:
         ui.spinDiagrate->setValue(p);
     }
 
-    void setPCupdateRate(uint16_t p) const
-    {
-        ui.spinPCrate->setValue(p);
-    }
-
     void setPacketUpdateRate(uint16_t p) const
     {
         ui.spinPacketrate->setValue(p);
@@ -305,6 +299,11 @@ public:
     void setPCWpitch(float p) const
     {
         ui.spinPitch->setValue(p);
+    }
+
+    void setIMUadjustEnabled(bool p)
+    {
+        ui.cbIMUadjust->setChecked(p);
     }
 
     //--------------------------------------------------------

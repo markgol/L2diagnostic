@@ -35,6 +35,9 @@
 //
 //--------------------------------------------------------
 #include "ControlsDock.h"
+
+#include <QCloseEvent>
+
 #include "ui_ControlsDock.h"
 
 //--------------------------------------------------------
@@ -107,3 +110,9 @@ bool ControlsDock::GetConnectedState()
 {
     return ConnectState;
 }
+
+void ControlsDock::closeEvent(QCloseEvent* event)
+{
+    event->ignore();
+}
+

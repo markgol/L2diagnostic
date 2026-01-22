@@ -49,6 +49,7 @@
 //                          packet rate chart
 //  V0.2.8  2026-01-16  Changed point cloud viewer to dockable window
 //                      Added reset of layout
+//  V0.3.2  2026-01-22  New renderer architecture
 //
 //--------------------------------------------------------
 
@@ -123,10 +124,6 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-signals:
-    // used to notify Cloud viewer ui
-    void flattenedCloudReady(const QVector<PCpoint>& points);
-
 public slots:
     // this is in response to set view button in the config dialog
     void handleResetView();
@@ -171,7 +168,6 @@ private:
                             // diagnostics data to diagnostic dock
     void updateIMU();
     void updateStats();
-    void updatePointCloud();
     void updatePacketRate();
 
 
@@ -199,17 +195,13 @@ private:
     PCsettings defaultPCsettings {10.0,145.0,20.0};
     void SetDefaultView();
 
-    // Point cloud viewer Timer
-    QTimer* cloudTimer;
-
     // Point cloud window renderer Timer
     QTimer* RendererTimer;
 
     // close point cloud viewer
     void closeEvent(QCloseEvent* e);
 
-    // flatten the cloud points from latest frame
-    QVector<PCpoint> buildFlattenedCloud();
+    // sends last frame received to renderer
     void onNewLidarFrame();
 
     // throttle for point cloud viewer
@@ -225,6 +217,8 @@ private:
 
     uint32_t mMax2Dframes2Buffer {MAX_2DPOINTS_PER_FRAME}; // maximum number of 2D frames
                                         // to buffer for display
+    int mmaxFrames{0};  // maximum number of frames for current scan mode
+    int mmaxPoints{0}; // computed maximum number of points
 
     QVector<Frame> m_frameRing;   // Fixed-capacity ring
     size_t m_ringWrite = 0;       // Next write index

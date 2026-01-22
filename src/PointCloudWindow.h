@@ -37,6 +37,7 @@
 //								was not tractable
 //                      updated mouse actions
 //                      added default view settings
+//  V0.3.2  2026-01-22  New renderer architecture
 //
 //--------------------------------------------------------
 
@@ -72,18 +73,16 @@
 //      MainWindow:onNewLidarFrame()  this operates at L2 point cloud
 //          |              packet rate ~200-250 packets/sec
 //          |
-//      throttling         fifo, save only every nth PCpoint
+//      throttling         fifo, save only every nth PC framet
 //          |
-//      MainWindow:updatePointCloud() create flattened point cloud
-//          |              cloudTimer Timer driven
+//      PointCloudWindow::appendFrame()
 //          |
-//      MainWindow:flattenedCloudReady() signals next step
+//      VBO sub-write (or stage CPU buffer)
 //          |
-//      PointCloudWindow::setPointCloud()
-//          |              push flattened cloud to viewer
+//      requestUpdate->renderer
 //          |
-//      PointCloudWindow::requestUpdate()
-//                         repaint window
+//          |
+//      QOpenGLWindow::paintGL()
 //
 //--------------------------------------------------------
 #pragma once
@@ -112,7 +111,7 @@ struct PCpoint
 struct GLPoint
 {
     QVector3D pos;
-    QVector3D color;
+    float intensity;
 };
 
 // struct for the point cloud viewer state
@@ -126,6 +125,8 @@ typedef struct
 // L2 lidar point has a min intensity of 0 and a max of 255
 constexpr float INTENSITY_MIN = 0.0f;
 constexpr float INTENSITY_MAX = 255.0f;
+
+using Frame = QVector<PCpoint>;
 
 // class PointCloudWindow
 
@@ -146,7 +147,8 @@ public:
 
     void ResetView();
 
-    void setPointCloud(const QVector<PCpoint>& points);
+    // push frame from mainwindow to pointcloudwindow
+    void appendFrame(const Frame& frame);
 
     // settings for point cloud viewer
     void getPCsettings(PCsettings& settings); // current settings
@@ -170,6 +172,7 @@ private:
     void ensureVisibleOnScreen(QRect& geom) const;
     QVector3D cameraPosition() const;
     void closeEvent(QCloseEvent* e) override;
+    void uploadAccumulatedPoints();
 
 private:
     QOpenGLShaderProgram m_program;
@@ -178,12 +181,11 @@ private:
 
     AxisGridRenderer m_axisGrid;
 
-    QVector<PCpoint> m_lastCloud;
-    int m_pointCount{0};
-
     // buffering
-    const int m_maxPoints;
-    QVector<GLPoint> m_stagingBuffer;
+    QVector<GLPoint> m_accumulatedPoints;
+    int m_pointCount{0};
+    const int m_maxPoints;  // maximum number of points
+                            // passed as argument in constructor
 
     // =====================
     // Orbit camera state
@@ -209,6 +211,12 @@ private:
     float m_fov       = 60.0f;
     float m_nearPlane = 0.01f;
     float m_farPlane  = 1000.0f;
+
+    // coloring limits
+    float m_minRange {0.1};
+    float m_maxRange = 4.0f;        // lidar-dependent
+    float m_minIntensity = 0.0f;
+    float m_maxIntensity = 255.0f;
 
     // ---- Matrices ----
     QMatrix4x4 m_view;

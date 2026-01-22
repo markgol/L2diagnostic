@@ -42,6 +42,7 @@ Current Status
 	shift+left+rightbuttons+movement -> resets view to default
 	
 	DOCKED WINDOWS
+	The controls window (button to do things) is permanently docked
 	All other windows are dockable and default to docked
 	If you want to see the packet rate chart window in more detail you would undock
 	and resize that window.  Once undocked the packet rate window can only
@@ -50,10 +51,27 @@ Current Status
 	
 	VISIBILITY OF WINDOWS
 	Use the config dialog to control visibility of windows
+	if you close a window you may need to go into the Config dialog, uncheck the window, click ok
+	then use the Config dialog again and renable the windows cna click okay
 	
 	Still to do:
-		Point cloud Renderer performance improvements
+		Packet rate chart window needs updating
 		Add 2D point cloud capture and rendereing
 		UI for setting workmode parameters
 		Add UART commmunications
 		Add IMU orientation to point cloud position calcuation
+		build a release package installer
+		test other target builds
+		
+Using in Qt 6.10.x
+	The project has been devleoped using Qt Creator 18.0.1  Qt 6.10.1.
+	Using MSVC 2022, x86_64
+	I have not tested it for other targets.
+	The this a CmakeList.txt project.  I have tried to keep things compatible to other targets.
+	If you are copying the project then copy it using the existing folder structure to whatever
+	folder will be your project folder.
+	When you open Qt Creator -> File -> Open file or project
+			Select the CmakeList.txt file and select open
+	Qt will ask you to select a configuration. I selected Desktop Qt 6.10.1 MSVC2022 64bit
+	This selection will only show up if you have MSVC 2022 already installed
+	ctrl+b will build the project, f5 will run it.
