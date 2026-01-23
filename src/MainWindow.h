@@ -105,6 +105,7 @@
 #include "StatsDock.h"
 #include "ACKDock.h"
 #include "ControlsDock.h"
+#include "WorkmodeDialog.h"
 #include "PacketRateDock.h"
 
 #define LIDAR_MODE_3D 0
@@ -135,6 +136,7 @@ private slots:
     void L2connect();
     void L2disconnect();
     void openConfig();
+    void openWorkmode();
 
     // L2 commands
     void startRotation();
@@ -234,6 +236,9 @@ private:
 
     // configuration dialog
     ConfigDialog config;
+
+    // workmode dialog
+    WorkmodeDialog WorkMode;
 
     // helper functions
     void L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected

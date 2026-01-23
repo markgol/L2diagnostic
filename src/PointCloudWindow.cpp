@@ -38,6 +38,7 @@
 //                      updated mouse actions
 //                      added default view settings
 //  V0.3.2  2026-01-22  New renderer architecture
+//  V0.3.3  2026-01-23  New renderer architecture completed
 //
 //--------------------------------------------------------
 
@@ -266,15 +267,27 @@ void PointCloudWindow::paintGL()
 
     m_program.bind();
 
+    m_program.setUniformValue("mvp", mvp);
     m_program.setUniformValue("uMinRange", m_minRange);
     m_program.setUniformValue("uMaxRange", m_maxRange);
     m_program.setUniformValue("uMinIntensity", m_minIntensity);
     m_program.setUniformValue("uMaxIntensity", m_maxIntensity);
+    // m_program.setUniformValue("pointSize", m_pointSize); // ??? future update
+    //
 
-    m_program.setUniformValue("mvp", mvp);
 
     m_vao.bind();
-    glDrawArrays(GL_POINTS, 0, m_pointCount);
+    if (!m_wrapped) {
+        glDrawArrays(GL_POINTS, 0, m_pointCount);
+    } else {
+        glDrawArrays(GL_POINTS,
+                     m_writeOffset,
+                     m_maxPoints - m_writeOffset);
+
+        glDrawArrays(GL_POINTS,
+                     0,
+                     m_writeOffset);
+    }
     m_vao.release();
 
     m_program.release();
@@ -306,40 +319,53 @@ void PointCloudWindow::updateViewMatrix()
 //--------------------------------------------------------
 void PointCloudWindow::onRenderTick()
 {
-    if (isExposed())
-        if (!m_accumulatedPoints.isEmpty()) {
-            uploadAccumulatedPoints();
-        }
-        requestUpdate();
+    if (!isExposed())
+        return;
+
+    if (!m_accumulatedPoints.isEmpty()) {
+        uploadAccumulatedPoints();   // GPU sync only
+    }
+
+    requestUpdate(); // schedules paintGL()
 }
+
 
 //--------------------------------------------------------
 //  uploadAccumulatedPoints
 //--------------------------------------------------------
 void PointCloudWindow::uploadAccumulatedPoints()
 {
-    // ??? if (!m_glInitialized || !m_glValid)
-    //     return;
-
-    makeCurrent();
-
-    if (!m_vbo.isCreated()) {
-        qWarning() << "VBO not created";
-        doneCurrent();
+    if (m_accumulatedPoints.isEmpty())
         return;
-    }
 
     m_vbo.bind();
 
-    const int byteSize = m_accumulatedPoints.size() * sizeof(GLPoint);
+    GLPoint* dst = static_cast<GLPoint*>(
+        m_vbo.map(QOpenGLBuffer::WriteOnly)
+        );
 
-    if (byteSize > 0) {
-        m_vbo.allocate(m_accumulatedPoints.constData(), byteSize);
+    if (!dst) {
+        m_vbo.release();
+        return;
     }
 
+    for (const GLPoint& p : std::as_const(m_accumulatedPoints)) {
+        dst[m_writeOffset] = p;
+
+        m_writeOffset++;
+        if (m_writeOffset >= m_maxPoints) {
+            m_writeOffset = 0;
+            m_wrapped = true;
+        }
+    }
+
+    m_vbo.unmap();
     m_vbo.release();
-    doneCurrent();
-    m_pointCount = m_accumulatedPoints.size();
+
+    m_pointCount = m_wrapped ? m_maxPoints : m_writeOffset;
+
+    m_accumulatedPoints.clear();
+
 }
 
 //--------------------------------------------------------
@@ -347,30 +373,21 @@ void PointCloudWindow::uploadAccumulatedPoints()
 //--------------------------------------------------------
 void PointCloudWindow::appendFrame(const Frame& frame)
 {
-    if (!m_vbo.isCreated() || frame.isEmpty())
+    if (frame.isEmpty())
         return;
 
-    // qDebug() << "appendFrame(): incoming =" << frame.size()
-    //          << " total before =" << m_accumulatedPoints.size();
+    QVector<GLPoint> converted;
+    converted.reserve(frame.size());
 
     for (const auto& p : frame) {
-        GLPoint gp;
-        gp.pos = QVector3D(p.x, p.y, p.z);
-        gp.intensity = p.intensity;
-
-        m_accumulatedPoints.push_back(gp);
+        converted.push_back({
+            QVector3D(p.x, p.y, p.z),
+            p.intensity
+        });
     }
 
-    // Trim oldest points if exceeding capacity
-    if (m_accumulatedPoints.size() > m_maxPoints) {
-        const int excess = m_accumulatedPoints.size() - m_maxPoints;
-        m_accumulatedPoints.erase(
-            m_accumulatedPoints.begin(),
-            m_accumulatedPoints.begin() + excess);
-    }
-
-    uploadAccumulatedPoints();
-    update();
+    // Stage for GPU upload
+    m_accumulatedPoints += converted;
 }
 
 //========================================================

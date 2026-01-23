@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>140</width>
-    <height>390</height>
+    <width>191</width>
+    <height>417</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,9 +16,9 @@
   <widget class="QGroupBox" name="gbFOV">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>40</y>
-     <width>111</width>
+     <width>151</width>
      <height>41</height>
     </rect>
    </property>
@@ -28,10 +28,10 @@
    <widget class="QRadioButton" name="chkWideFOV">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>90</x>
       <y>20</y>
-      <width>41</width>
-      <height>16</height>
+      <width>61</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -41,10 +41,10 @@
    <widget class="QRadioButton" name="chkStdFOV">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>10</x>
       <y>20</y>
-      <width>31</width>
-      <height>16</height>
+      <width>61</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -55,9 +55,9 @@
   <widget class="QGroupBox" name="gbPC">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>90</y>
-     <width>111</width>
+     <width>151</width>
      <height>41</height>
     </rect>
    </property>
@@ -69,8 +69,8 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>31</width>
-      <height>16</height>
+      <width>61</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -80,10 +80,10 @@
    <widget class="QRadioButton" name="chk2D">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>80</x>
       <y>20</y>
-      <width>31</width>
-      <height>16</height>
+      <width>71</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -94,9 +94,9 @@
   <widget class="QGroupBox" name="gbIMU">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>140</y>
-     <width>111</width>
+     <width>151</width>
      <height>41</height>
     </rect>
    </property>
@@ -108,8 +108,8 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>31</width>
-      <height>16</height>
+      <width>61</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -119,10 +119,10 @@
    <widget class="QRadioButton" name="chkIMUoff">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>80</x>
       <y>20</y>
-      <width>31</width>
-      <height>16</height>
+      <width>51</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -133,9 +133,9 @@
   <widget class="QGroupBox" name="gbCOM">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>190</y>
-     <width>111</width>
+     <width>151</width>
      <height>41</height>
     </rect>
    </property>
@@ -147,8 +147,8 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>31</width>
-      <height>16</height>
+      <width>61</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -158,10 +158,10 @@
    <widget class="QRadioButton" name="chkSerial">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>80</x>
       <y>20</y>
-      <width>41</width>
-      <height>16</height>
+      <width>61</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -172,9 +172,9 @@
   <widget class="QGroupBox" name="gbPWR">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>250</y>
-     <width>111</width>
+     <x>20</x>
+     <y>240</y>
+     <width>151</width>
      <height>41</height>
     </rect>
    </property>
@@ -186,8 +186,8 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>31</width>
-      <height>16</height>
+      <width>61</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -197,10 +197,10 @@
    <widget class="QRadioButton" name="chkPWRstdby">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>80</x>
       <y>20</y>
-      <width>51</width>
-      <height>16</height>
+      <width>71</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -211,23 +211,26 @@
   <widget class="QPushButton" name="btnResetL2">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>330</y>
-     <width>101</width>
-     <height>20</height>
+     <x>40</x>
+     <y>340</y>
+     <width>111</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>  Reset L2 and exit app</string>
+    <string>  Reset L2</string>
    </property>
   </widget>
   <widget class="QPushButton" name="btnGetWM">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>40</x>
      <y>10</y>
-     <width>71</width>
-     <height>20</height>
+     <width>111</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -237,10 +240,10 @@
   <widget class="QPushButton" name="btnSetWM">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>40</x>
      <y>300</y>
-     <width>71</width>
-     <height>20</height>
+     <width>111</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -250,10 +253,10 @@
   <widget class="QPushButton" name="btnClose">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>360</y>
+     <x>70</x>
+     <y>380</y>
      <width>56</width>
-     <height>18</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -262,6 +265,7 @@
   </widget>
  </widget>
  <tabstops>
+  <tabstop>btnGetWM</tabstop>
   <tabstop>chkWideFOV</tabstop>
   <tabstop>chkStdFOV</tabstop>
   <tabstop>chk3D</tabstop>
@@ -272,6 +276,9 @@
   <tabstop>chkSerial</tabstop>
   <tabstop>chkPWRon</tabstop>
   <tabstop>chkPWRstdby</tabstop>
+  <tabstop>btnSetWM</tabstop>
+  <tabstop>btnResetL2</tabstop>
+  <tabstop>btnClose</tabstop>
  </tabstops>
  <resources/>
  <connections/>

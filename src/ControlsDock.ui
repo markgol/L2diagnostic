@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>461</width>
-    <height>120</height>
+    <height>178</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -116,6 +116,19 @@
     </property>
     <property name="text">
      <string>Reset windows</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnWorkmode">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>110</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Workmode</string>
     </property>
    </widget>
   </widget>

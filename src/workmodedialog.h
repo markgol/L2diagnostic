@@ -31,7 +31,8 @@
 //  error detection for bad packets (lost), display subsample
 //  of packets and optionally saves them to a CSV file.
 //
-//  V0.2.6  20260-01-13 Add WorkMode dialog
+//  V0.2.6  2026-01-13 Add WorkMode dialog
+//  V0.3.3  2026-01-22 Implement WorkMode dialog
 //
 //--------------------------------------------------------
 
@@ -61,28 +62,56 @@
 // You should have received a copy of the GNU General Public License along with L2diagnsotic.
 // If not, see < https://www.gnu.org/licenses/>.
 //--------------------------------------------------------
-
-#ifndef WORKMODEDIALOG_H
-#define WORKMODEDIALOG_H
+#pragma once
 
 #include <QDialog>
-
-namespace Ui {
-class WorkmodeDialog;
-}
+#include <QString>
+#include "ui_WorkModeDialog.h"
 
 class WorkmodeDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit WorkmodeDialog(QWidget *parent = nullptr);
-    ~WorkmodeDialog();
+    explicit WorkmodeDialog(QWidget* parent = nullptr)
+        : QDialog(parent)
+    {
+        ui.setupUi(this);
+
+        // connect the butttons
+
+        // OK / Cancel wiring
+        connect(ui.btnClose, &QPushButton::clicked,
+                this, &QDialog::close);
+
+        // connect(ui.btnSetWM, &QPushButton::clicked,
+        //         this, &WorkmodeDialog::RequestSetL2workmode);
+
+        // Reset View button
+        // connect(ui.btnSetView, &QPushButton::clicked,
+        //         this, &ConfigDialog::ResetPCview);
+        SetWorkmode(0);
+    }
+
+
+    uint GetFOVmode();
+    uint GetPCmode();
+    uint GetIMUenabled();
+    uint GetComMode();
+    uint GetPwrOnMode();
+    uint GetWorkmode();
+
+    void SetFOVmode(int mode);
+    void SetPCmode(int mode);
+    void SetIMUenabled(int enable);
+    void SetComMode(int mode);
+    void SetPwrOnMode(int mode);
+    void SetWorkmode(int mode);
+
 
 private:
-    Ui::WorkmodeDialog *ui;
+    Ui::WorkmodeDialog ui;
 
     uint32_t mCurrentWorkMode{0};
 };
 
-#endif // WORKMODEDIALOG_H

@@ -50,27 +50,40 @@ ControlsDock::ControlsDock(QWidget *parent)
     ui->setupUi(this);
 
     //connections to the buttons to signals
+
+    // start rotation button
     connect(ui->btnStart, &QPushButton::clicked,
             this, &ControlsDock::startRotationRequested);
 
+    // stop rotation button
     connect(ui->btnStop, &QPushButton::clicked,
             this, &ControlsDock::stopRotationRequested);
 
+    // reset window button
     connect(ui->btnReset, &QPushButton::clicked,
             this, &ControlsDock::L2resetRequested);
 
+    // get version button
     connect(ui->btnVersion, &QPushButton::clicked,
             this, &ControlsDock::GetVersionRequested);
 
+    // config button
     connect(ui->btnConfig, &QPushButton::clicked,
             this, &ControlsDock::ConfigRequested);
 
+    // workmode button
+    connect(ui->btnWorkmode, &QPushButton::clicked,
+            this, &ControlsDock::WorkmodeRequested);
+
+    // l2 connect button
     connect(ui->btnL2Connect, &QPushButton::clicked,
             this, &ControlsDock::L2connectRequested);
 
+    // l2 disconnect button
     connect(ui->btnL2Disconnect, &QPushButton::clicked,
             this, &ControlsDock::L2disconnectRequested);
 
+    // reset window geometry and state button
     connect(ui->btnResetWindows, &QPushButton::clicked,
             this, &ControlsDock::ResetWindowsRequested);
 

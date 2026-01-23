@@ -38,7 +38,7 @@
 //                      updated mouse actions
 //                      added default view settings
 //  V0.3.2  2026-01-22  New renderer architecture
-//
+//  V0.3.3  2026-01-23  New renderer architecture completed
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -186,6 +186,8 @@ private:
     int m_pointCount{0};
     const int m_maxPoints;  // maximum number of points
                             // passed as argument in constructor
+    int m_writeOffset {0};
+    bool m_wrapped{false};
 
     // =====================
     // Orbit camera state

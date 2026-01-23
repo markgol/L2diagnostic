@@ -420,6 +420,9 @@ void MainWindow::ConnectDocksViewerActions()
     connect(m_controlsDock, &ControlsDock::ConfigRequested,
             this, &MainWindow::openConfig);
 
+    connect(m_controlsDock, &ControlsDock::WorkmodeRequested,
+            this, &MainWindow::openWorkmode);
+
     connect(m_controlsDock, &ControlsDock::startRotationRequested,
             this, &MainWindow::startRotation);
 
@@ -429,11 +432,16 @@ void MainWindow::ConnectDocksViewerActions()
     connect(m_controlsDock, &ControlsDock::L2resetRequested,
             this, &MainWindow::sendReset);
 
+    // dialogs connections (will open a dialog)
     connect(m_controlsDock, &ControlsDock::GetVersionRequested,
             this, &MainWindow::getVersion);
 
+    // reset windows button in ControlsDock window
     connect(m_controlsDock, &ControlsDock::ResetWindowsRequested,
             this, &MainWindow::resetWindowLayout);
+
+    // WorkmodeDialog
+
 
     //--------------------------------------------------------
     //  setup dockable ACK gui (this is not timer driven)
@@ -467,7 +475,7 @@ void MainWindow::applyDocksVisibilityConstraint()
     resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 
     m_controlsDock->setMinimumWidth(480);
-    m_controlsDock->setMinimumHeight(160);
+    m_controlsDock->setMinimumHeight(200);
     m_controlsDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // can not float or move
     // This would let it float or move but X will not close it
     // m_controlsDock->setFeatures(QDockWidget::DockWidgetMovable |
@@ -749,6 +757,13 @@ void MainWindow::onNewLidarFrame()
 //  button presses
 //
 //--------------------------------------------------------
+
+//--------------------------------------------------------
+void MainWindow::openWorkmode()
+{
+    WorkMode.exec();
+    WorkMode.GetWorkmode();
+}
 
 //--------------------------------------------------------
 //  openConfig

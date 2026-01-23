@@ -32,6 +32,7 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V0.2.6  20260-01-13 Add WorkMode dialog
+//  V0.3.3  2026-01-22 Implement WorkMode dialog
 //
 //--------------------------------------------------------
 
@@ -63,23 +64,175 @@
 //--------------------------------------------------------
 
 //--------------------------------------------------------
-//
-//
-//
+// Workmode dialog
 //--------------------------------------------------------
 
 #include "WorkModeDialog.h"
 #include "ui_WorkModeDialog.h"
+#include "unitree_lidar_protocol.h"
 
-WorkmodeDialog::WorkmodeDialog(QWidget *parent)
-    : QDialog(parent)
-    , ui(new Ui::WorkmodeDialog)
+//--------------------------------------------------------
+//  SetWorkmode
+//--------------------------------------------------------
+void WorkmodeDialog::SetWorkmode(int workmode)
 {
-    ui->setupUi(this);
+    mCurrentWorkMode = workmode;
+    SetFOVmode(workmode);
+    SetPCmode(workmode);
+    SetIMUenabled(workmode);
+    SetComMode(workmode);
+    SetPwrOnMode(workmode);
 }
 
-WorkmodeDialog::~WorkmodeDialog()
+//--------------------------------------------------------
+//  GetWorkmode
+//--------------------------------------------------------
+uint WorkmodeDialog::GetWorkmode()
 {
-    delete ui;
+    int workmode {0};
+
+    workmode =  GetFOVmode() |
+                GetPCmode()|
+                GetIMUenabled() |
+                GetComMode() |
+                GetPwrOnMode();
+
+    mCurrentWorkMode = workmode;
+    return workmode;
+}
+
+//--------------------------------------------------------
+//  GetFOVmode
+//--------------------------------------------------------
+uint WorkmodeDialog::GetFOVmode()
+{
+    // WORK_MODE_WFOV
+    if(ui.chkWideFOV->isChecked()) {
+        return WORK_MODE_WFOV;  // bit field value
+    }
+
+    return 0; // STD FOV is 0
+}
+
+//--------------------------------------------------------
+//  GetPCmode
+//--------------------------------------------------------
+uint WorkmodeDialog::GetPCmode()
+{
+    // WORK_MODE_2D
+    if(ui.chk2D->isChecked()) {
+        return WORK_MODE_2D; // bit field value
+    }
+
+    return 0; // 3D mode is 0
+}
+
+//--------------------------------------------------------
+//  GetIMUenabled
+//--------------------------------------------------------
+uint WorkmodeDialog::GetIMUenabled()
+{
+    // WORK_MODE_IMU_DISABLE
+    if(ui.chkIMUoff->isChecked()) {
+        return WORK_MODE_IMU_DISABLE; // bit field value
+    }
+
+    return 0; // IMU on is 0
+}
+
+//--------------------------------------------------------
+//  GetComMode
+//--------------------------------------------------------
+uint WorkmodeDialog::GetComMode()
+{
+    // WORK_MODE_SERIAL
+    if(ui.chkSerial->isChecked()) {
+        return WORK_MODE_SERIAL; // bit field value
+    }
+
+    return 0; // UDP mode is 0
+}
+
+//--------------------------------------------------------
+//  GetPwrOnMode
+//--------------------------------------------------------
+uint WorkmodeDialog::GetPwrOnMode()
+{
+    // WORK_MODE_STARTUP_WAIT
+    if(ui.chkPWRstdby->isChecked()) {
+        return WORK_MODE_STARTUP_WAIT; // bit field value
+    }
+
+    return 0; // Power on is 0
+}
+
+//--------------------------------------------------------
+//  SetFOVmode
+//--------------------------------------------------------
+void WorkmodeDialog::SetFOVmode(int mode)
+{
+    // mode is the workmode integer (bitfield)
+    // WORK_MODE_WFOV
+    if((mode & WORK_MODE_WFOV)==0) {
+        ui.chkStdFOV->setChecked(true);
+    } else {
+        ui.chkWideFOV->setChecked(true);
+    }
+}
+
+//--------------------------------------------------------
+//  SetPCmode
+//--------------------------------------------------------
+void WorkmodeDialog::SetPCmode(int mode)
+{
+    // mode is the workmode integer (bitfield)
+    // WORK_MODE_2D
+    if((mode & WORK_MODE_2D)==0) {
+        ui.chk3D->setChecked(true);
+    } else {
+        ui.chk2D->setChecked(true);
+    }
+}
+
+//--------------------------------------------------------
+//  SetIMUenabled
+//--------------------------------------------------------
+void WorkmodeDialog::SetIMUenabled(int mode)
+{
+    // mode is the workmode integer (bitfield)
+    // WORK_MODE_IMU_DISABLE
+    if((mode & WORK_MODE_IMU_DISABLE)==0) {
+        ui.chkIMUon->setChecked(true);
+    } else {
+        ui.chkIMUoff->setChecked(true);
+    }
+}
+
+//--------------------------------------------------------
+//  SetComMode
+//--------------------------------------------------------
+void WorkmodeDialog::SetComMode(int mode)
+{
+    // mode is the workmode integer (bitfield)
+    // WORK_MODE_SERIAL
+    if((mode & WORK_MODE_SERIAL)==0) {
+        ui.chkUDP->setChecked(true);
+    } else {
+        ui.chkSerial->setChecked(true);
+    }
+}
+
+//--------------------------------------------------------
+//  SetPwrOnMode
+//--------------------------------------------------------
+void WorkmodeDialog::SetPwrOnMode(int mode)
+{
+    // mode is the workmode integer (bitfield)
+    // WORK_MODE_STARTUP_WAIT
+     if((mode & WORK_MODE_STARTUP_WAIT)==0) {
+        ui.chkPWRon->setChecked(true);
+    } else {
+        ui.chkPWRstdby->setChecked(true);
+    }
 }
 

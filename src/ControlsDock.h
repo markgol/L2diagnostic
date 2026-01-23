@@ -33,6 +33,7 @@
 //
 //  V0.2.6  2026-01-13  added button controls dockable dialog
 //  V0.2.8  2026-01-16  added Reset the windows Button
+//  V0.3.3  2026-01-22  Added Workmode button
 //
 //--------------------------------------------------------
 #ifndef CONTROLSDOCK_H
@@ -66,6 +67,7 @@ signals:
     void L2connectRequested();
     void L2disconnectRequested();
     void ResetWindowsRequested();
+    void WorkmodeRequested();
 
 protected:
     void closeEvent(QCloseEvent* event) override;

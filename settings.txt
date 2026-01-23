@@ -123,18 +123,6 @@ void MainWindow::saveSettings(bool resetRequested)
     settings.setValue("dstPort", config.getDSTport());
     settings.endGroup();
 
-    // L2 setup
-    settings.beginGroup("L2");
-    uint mode =WorkMode.GetWorkmode();
-    settings.setValue("workmode", mode);
-
-    // maybe later if we read back UDP config
-    //settings.setValue("srcIP", config.getSRCip());
-    //settings.setValue("dstIP", config.getDSTip());
-    //settings.setValue("srcPort", config.getSRCport());
-    //settings.setValue("dstPort", config.getDSTport());
-    settings.endGroup();
-
     // throttling
     settings.beginGroup("throttling");
     settings.setValue("NumFramesToSkip", config.getSkipFrame());
@@ -206,12 +194,6 @@ void MainWindow::loadSettings(bool resetRequested)
     config.setDSTip(settings.value("dstIP", "192.168.1.62").toString()); // factory default
     config.setSRCport(settings.value("srcPort", 6201).toUInt()); // factory default
     config.setDSTport(settings.value("dstPort", 6101).toUInt()); // factory default
-    settings.endGroup();
-
-    // L2 setup
-    settings.beginGroup("L2");
-
-    WorkMode.SetWorkmode(settings.value("workmode",0).toUInt());
     settings.endGroup();
 
     // throttling
