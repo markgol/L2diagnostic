@@ -31,8 +31,8 @@
 //  error detection for bad packets (lost), display subsample
 //  of packets and optionally saves them to a CSV file.
 //
-//  V0.2.6  20260-01-13 Add WorkMode dialog
-//  V0.3.3  2026-01-22 Implement WorkMode dialog
+//  V0.2.6  2026-01-13 Add WorkMode dialog
+//  V0.3.4  2026-01-22 Implement WorkMode dialog
 //
 //--------------------------------------------------------
 
@@ -70,6 +70,22 @@
 #include "WorkModeDialog.h"
 #include "ui_WorkModeDialog.h"
 #include "unitree_lidar_protocol.h"
+
+//--------------------------------------------------------
+//  RequestSetL2workmode
+//--------------------------------------------------------
+void WorkmodeDialog::SendSetL2workmode()
+{
+    emit RequestSetL2workmode();
+}
+
+//--------------------------------------------------------
+//  RequestSetL2workmode
+//--------------------------------------------------------
+void WorkmodeDialog::SendL2reset()
+{
+    emit RequestL2reset();
+}
 
 //--------------------------------------------------------
 //  SetWorkmode

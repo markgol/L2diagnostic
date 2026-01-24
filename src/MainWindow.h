@@ -50,6 +50,8 @@
 //  V0.2.8  2026-01-16  Changed point cloud viewer to dockable window
 //                      Added reset of layout
 //  V0.3.2  2026-01-22  New renderer architecture
+//  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
+//                      UDP datagrams into one L2 Lidar packet
 //
 //--------------------------------------------------------
 
@@ -128,6 +130,8 @@ public:
 public slots:
     // this is in response to set view button in the config dialog
     void handleResetView();
+    void sendSetWorkmode();
+    void sendReset();
 
 private slots:
     // The slots are triggered by ControlsDock class
@@ -141,8 +145,10 @@ private slots:
     // L2 commands
     void startRotation();
     void stopRotation();
-    void sendReset();
     void getVersion();
+
+    // workmode
+    void ClosedWorkmodeDialog();
 
 private:
     // Application MainWindow ui

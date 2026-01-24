@@ -25,6 +25,9 @@ Current Status
 	Added dockable windows for Calibration/state, IMU packet, ACK packet, packet stats
 	Made packet rate chart dockable window
 	Control buttons are now dockable window
+	2D point cloud capture, verfied correct packet decoding
+	Workmode controls implemented
+	L2Lidar class works across multiple UDP datagrams for large packets
 	
 	Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 	unitree_lidar_utilites.h to perform required function needs for using the L2  in the
@@ -56,8 +59,7 @@ Current Status
 	
 	Still to do:
 		Packet rate chart window needs updating
-		Add 2D point cloud capture and rendereing
-		UI for setting workmode parameters
+		Add 2D point cloud rendereing
 		Add UART commmunications
 		Add IMU orientation to point cloud position calcuation
 		build a release package installer

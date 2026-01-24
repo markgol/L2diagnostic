@@ -74,11 +74,11 @@
 //      MainWindow:onNewLidarFrame()  this operates at L2 point cloud
 //          |              packet rate ~200-250 packets/sec
 //          |
-//      throttling         fifo, save only every nth PC framet
+//      throttling         save only every nth PC frame ( 0 every frame)
 //          |
 //      PointCloudWindow::appendFrame()
 //          |
-//      VBO sub-write (or stage CPU buffer)
+//      VBO sub-write
 //          |
 //      requestUpdate->renderer
 //          |

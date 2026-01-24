@@ -66,6 +66,11 @@
 //                      to configuration dialog
 //                      Added separate renderer timer
 //  V0.3.2  2026-01-22  New renderer architecture
+//  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
+//                      UDP datagrams into one L2 Lidar packet
+//                      L2 Workmode implemented
+//                      2D packets decoded but not displayed
+//
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -100,11 +105,11 @@
 //      MainWindow:onNewLidarFrame()  this operates at L2 point cloud
 //          |              packet rate ~200-250 packets/sec
 //          |
-//      throttling         fifo, save only every nth PC framet
+//      throttling         save only every nth PC frame ( 0 every frame)
 //          |
 //      PointCloudWindow::appendFrame()
 //          |
-//      VBO sub-write (or stage CPU buffer)
+//      VBO sub-write
 //          |
 //      requestUpdate->renderer
 //          |
@@ -440,8 +445,11 @@ void MainWindow::ConnectDocksViewerActions()
     connect(m_controlsDock, &ControlsDock::ResetWindowsRequested,
             this, &MainWindow::resetWindowLayout);
 
-    // WorkmodeDialog
+    connect(&WorkMode, &WorkmodeDialog::RequestSetL2workmode,
+            this, &MainWindow::sendSetWorkmode);
 
+    connect(&WorkMode, &WorkmodeDialog::RequestL2reset,
+            this, &MainWindow::sendReset);
 
     //--------------------------------------------------------
     //  setup dockable ACK gui (this is not timer driven)
@@ -456,12 +464,17 @@ void MainWindow::ConnectDocksViewerActions()
     //--------------------------------------------------------
     //  setup point cloud viewer GUI
     //--------------------------------------------------------
-    // point cloud viewer connections
     connect(&l2lidar,
             &::L2lidar::PCL3DReceived,
             this,
             &MainWindow::onNewLidarFrame,
             Qt::QueuedConnection);
+
+    //--------------------------------------------------------
+    //  Workmode dialog
+    //--------------------------------------------------------
+    connect(&WorkMode, &QDialog::finished, this,
+            &MainWindow::ClosedWorkmodeDialog);
    }
 
 //--------------------------------------------------------
@@ -759,10 +772,26 @@ void MainWindow::onNewLidarFrame()
 //--------------------------------------------------------
 
 //--------------------------------------------------------
+//  openWorkmode
+//--------------------------------------------------------
 void MainWindow::openWorkmode()
 {
-    WorkMode.exec();
+    // WorkMode.exec(); // modal dialog
+    // WorkMode.GetWorkmode();
+
+    WorkMode.show(); // non-modal dialog
+    // non-modal dialog needs to use slot
+    // that gets signals when closed
+}
+
+//--------------------------------------------------------
+//  ClosedWorkmodeDialog
+//--------------------------------------------------------
+void MainWindow::ClosedWorkmodeDialog()
+{
     WorkMode.GetWorkmode();
+    // This does not send a set workmode command is saves the
+    // current settings for the workmode dialog
 }
 
 //--------------------------------------------------------
@@ -922,6 +951,18 @@ void MainWindow::stopRotation()
 void MainWindow::sendReset()
 {
     l2lidar.LidarReset();
+    return;
+}
+
+//--------------------------------------------------------
+//  sendSetWorkmode
+//  button press
+//--------------------------------------------------------
+void MainWindow::sendSetWorkmode()
+{
+    uint32_t workmode;
+    workmode = WorkMode.GetWorkmode();
+    l2lidar.SetWorkMode(workmode);
     return;
 }
 

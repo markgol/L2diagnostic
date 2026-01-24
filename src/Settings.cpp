@@ -42,6 +42,7 @@
 //                      added settings for saving all window geometry
 //                      and state
 //                      Completed most display/renderer controlls
+// V0.3.4   2026-01-23  Added save and restore for workmode settings
 //
 //--------------------------------------------------------
 

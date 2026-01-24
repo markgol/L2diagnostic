@@ -42,6 +42,8 @@
 //                      Consolidated all UDP operations into this class
 //                      CRC32normal() normal removed from unitree_lidar_utilies.h
 //  V.2.2   2026-01-08  Added Mutex access to packet copies
+//  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
+//                      UDP datagrams into one L2 Lidar packet
 //
 //--------------------------------------------------------
 
@@ -105,6 +107,7 @@ public:
 
     // This is the readyread Qt callback for processing
     // UDP packets that have been recieved
+    void readPendingDatagrams();
     void processDatagram(const QByteArray& datagram);
 
     // Accessors for external data acces in other threads
@@ -113,10 +116,7 @@ public:
         QMutexLocker locker(&PacketMutex);
         return latestImu_;
     }
-    // const LidarPointData Pcl3D() const {
-    //     QMutexLocker locker(&PacketMutex);
-    //     return latest3Ddata_;
-    // }
+
     const LidarPointDataPacket Pcl3Dpacket() const {
         QMutexLocker locker(&PacketMutex);
         return latest3DdataPacket_;
@@ -168,7 +168,6 @@ public:
 
     bool ConnectL2();  // bind to create, bind socket, connect callback for decode
     void DisconnectL2();   // close socket
-    void readPendingDatagrams();
 
 signals:
     void imuReceived();
@@ -188,7 +187,6 @@ private: // functions
     void decodeAck(const QByteArray& datagram, uint64_t Offset);
     void handleRaw(uint32_t packetType,
                    const QByteArray& datagram, uint64_t Offset);
-    void decodeConfig(const QByteArray& datagram, uint64_t Offset);
 
     // helper functions
     void setPacketHeader(FrameHeader *FrameHeader, uint32_t packet_type,
@@ -198,12 +196,17 @@ private: // functions
     // UDP function(s)
     bool SendPacket(uint8_t *Buffer,uint32_t Len);
 
-private: // variable
+private: // variables
     // mutex for critical packet access while copying packet
     mutable QMutex  PacketMutex;
 
     // UDP socket
     QUdpSocket L2socket;
+
+    // Packet buffer
+    QByteArray PacketBuffer;
+    bool IncompletePacket {false};  // if true needs more UDP datagrams
+                                    // to complete packet
 
     // Latest decoded values
     // Accessing these should use mutex lock, PacketMutex
@@ -211,9 +214,7 @@ private: // variable
     LidarVersionData    latestVersion_{};
     LidarTimeStampData  latestTimestamp_{};
     Lidar2DPointData    latest2Ddata_{};
-    //LidarPointData      latest3Ddata_{};
-    LidarPointDataPacket latest3DdataPacket_{}; // the unitree utility for converting these to PCL
-                                                // use the entire packet
+    LidarPointDataPacket latest3DdataPacket_{};
     LidarAckData latestACKdata_{};
 
     // Packet counters, these do not have a mutex lock

@@ -32,7 +32,7 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V0.2.6  2026-01-13 Add WorkMode dialog
-//  V0.3.3  2026-01-22 Implement WorkMode dialog
+//  V0.3.4  2026-01-23 Implement WorkMode dialog
 //
 //--------------------------------------------------------
 
@@ -68,6 +68,22 @@
 #include <QString>
 #include "ui_WorkModeDialog.h"
 
+
+//--------------------------------------------------------
+// The workmode is used to set the L2 work mode
+// This controls what the startup conditions are on power on
+// 2D vs 3D scanner mode
+// IMU enable/disable (when disabled the L2 does not send IMU packets
+// After chaning the workmode a reset L2 or power cycle is
+// needed for the changes to take effect.
+// This is done by:
+//  l2lidar.SetWorkMode(workmode);
+//  l2lidar.LidarReset();
+//--------------------------------------------------------
+
+//--------------------------------------------------------
+// class declarations
+//--------------------------------------------------------
 class WorkmodeDialog : public QDialog
 {
     Q_OBJECT
@@ -84,12 +100,12 @@ public:
         connect(ui.btnClose, &QPushButton::clicked,
                 this, &QDialog::close);
 
-        // connect(ui.btnSetWM, &QPushButton::clicked,
-        //         this, &WorkmodeDialog::RequestSetL2workmode);
+        connect(ui.btnSetWM, &QPushButton::clicked,
+                 this, &WorkmodeDialog::SendSetL2workmode);
 
         // Reset View button
-        // connect(ui.btnSetView, &QPushButton::clicked,
-        //         this, &ConfigDialog::ResetPCview);
+         connect(ui.btnResetL2, &QPushButton::clicked,
+                 this, &WorkmodeDialog::SendL2reset);
         SetWorkmode(0);
     }
 
@@ -99,6 +115,10 @@ public:
     uint GetIMUenabled();
     uint GetComMode();
     uint GetPwrOnMode();
+    // There is now known open source way to read the
+    // workmode from the L2
+    // This only reflects what the app settings for the
+    // workmode are set.
     uint GetWorkmode();
 
     void SetFOVmode(int mode);
@@ -106,10 +126,20 @@ public:
     void SetIMUenabled(int enable);
     void SetComMode(int mode);
     void SetPwrOnMode(int mode);
+    // Setting the workmomde does not perform a L2 reset
+    // This only sets the desired workmod in the app
+    // To actually set the workmode you must send
+    // a SetWorkmode
     void SetWorkmode(int mode);
+
+signals:
+    void RequestSetL2workmode();
+    void RequestL2reset();
 
 
 private:
+    void SendSetL2workmode();
+    void SendL2reset();
     Ui::WorkmodeDialog ui;
 
     uint32_t mCurrentWorkMode{0};

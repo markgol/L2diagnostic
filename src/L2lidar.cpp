@@ -47,6 +47,8 @@
 //                      Full PCL packet is saved because the
 //                          unitree utility to convert PCL cloud
 //                          requires it
+//  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
+//                      UDP datagrams into one L2 Lidar packet
 //
 //--------------------------------------------------------
 
@@ -94,23 +96,74 @@
 #include <QDebug>
 
 //--------------------------------------------------------------------
-// LidarDecoder()
-//      Multiple UDP packets packed into one datagram
+// L2lidar class constructor
 //--------------------------------------------------------------------
 L2lidar::L2lidar(QObject* parent)
-    : QObject(parent) {}
+    : QObject(parent)
+{
+    PacketBuffer.clear(); // make sure buffered starts cleared
+}
 
+//--------------------------------------------------------
+//  readPendingDatagrams()
+//  This is a callback function that receives the UDP
+//  data packets.  It is a Qt non-blocking I/O service called
+//  when data in received on the ehternet interface
+//--------------------------------------------------------
+void L2lidar::readPendingDatagrams()
+{
+    // only process incoming UPD packets
+    while (L2socket.hasPendingDatagrams()) {
+        QByteArray datagram;
+        datagram.resize(static_cast<int>(L2socket.pendingDatagramSize()));
+        QHostAddress sender;
+        quint16 senderPort;
+
+        // read next Datagram
+        L2socket.readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
+
+        // packets decoder also updates the specific packet ID count totals and packet loss counts
+        // csv file processing also happens in the decoder
+        processDatagram(datagram);
+    }
+}
+
+//--------------------------------------------------------
+//  processDatagram()
+//  processing the payload package from the datagram
+//  note: more than one packet may be in the datagram
+//  Each packet must be processed.
+//
+//  processing requirements:
+//  All but one of the L2 Lidar packets can be contained
+//  in one UDP datagram.  Some UDP datagrams contain more
+//  than one L2 Lidar packet.
+//  Only the L2 Lidar packet for 2D scan data spans multiple
+//  UDP datagrams (4 datagrams)
+//
+//  This means that a processing buffer needs to be allocated
+//  that can span multiple UDP datagrams.
+//
+//--------------------------------------------------------
 void L2lidar::processDatagram(const QByteArray& datagram)
 {
     uint64_t DatagramLength;
     uint64_t Offset {0};
 
+
+
+    if(!IncompletePacket) {
+        PacketBuffer.clear();
+    }
+    PacketBuffer.append(datagram);
+
     // Get the Datagram size
     // Will need to determine UDP packet size using
-    DatagramLength = datagram.size();
+    DatagramLength = PacketBuffer.size();
 
     // first check if this is too small to be valid UPD frame
     if (DatagramLength < sizeof(FrameHeader) + sizeof(FrameTail)) {
+        totalPackets_++;
         lostPackets_++;
         return;
     }
@@ -122,7 +175,7 @@ void L2lidar::processDatagram(const QByteArray& datagram)
     do {
         // point to current UDP packet
         const auto* header =
-            reinterpret_cast<const FrameHeader*>(datagram.constData() + Offset);
+            reinterpret_cast<const FrameHeader*>(PacketBuffer.constData() + Offset);
 
         // check header frame correct format
         if (header->header[0] != FRAME_HEADER_ARRAY_0 ||
@@ -130,76 +183,82 @@ void L2lidar::processDatagram(const QByteArray& datagram)
             header->header[2] != FRAME_HEADER_ARRAY_2 ||
             header->header[3] != FRAME_HEADER_ARRAY_3) {
 
+            totalPackets_++;
             lostPackets_++;
             return;
         }
-	
-        //
-        // The datagram may contains more than one UDP packet
-        // If it does then this is detected here
-        // currently will only process the first UDP packet in the datagram
-        // for future need to process every one
-        // if (header->packet_size != PacketLength) {
-        //     QString hex = datagram.toHex(' ').toUpper();
-        //     qDebug() << "datagram size:" << datagram.size()
-        //              << "header packetsize:" << header->packet_size
-        //              << hex.left(256) << "...";
-        // }
-        //
+
+        if(header->packet_size > PacketBuffer.size()) {
+            // The PacketBuffer does not have enough data for this
+            // L2 Lidar packet
+            // This will add the next UDP datagram
+            IncompletePacket = true;
+            return;
+        }
+
+        // enough data in packet buffer to process packet
+        IncompletePacket = false;
 
         // Verify Tail and CRC
         auto* tail = reinterpret_cast<const FrameTail*>(
-                        datagram.constData() + ((Offset + header->packet_size) - sizeof(FrameTail)));
+                        PacketBuffer.constData() + ((Offset + header->packet_size) - sizeof(FrameTail)));
 	
 	    // check tail frame correct format
-        if (tail->tail[0] != FRAME_TAIL_ARRAY_0 ||
-            tail->tail[1] != FRAME_TAIL_ARRAY_1) {
+        // 2D packets do not have consistent tail code
+
+        bool GoodTailCode =
+            ((tail->tail[0] == FRAME_TAIL_ARRAY_0) &&
+             (tail->tail[1] == FRAME_TAIL_ARRAY_1));
+
+        if (!GoodTailCode) {
+            totalPackets_++;
             lostPackets_++;
             return;
         }
 
         // perform crc just on the data without hreader or tail
-        uint32_t crc = unilidar_sdk2::crc32(reinterpret_cast<const uint8_t*>(datagram.constData()+Offset+sizeof(FrameHeader)),
+        uint32_t crc = unilidar_sdk2::crc32(reinterpret_cast<const uint8_t*>(PacketBuffer.constData()+Offset+sizeof(FrameHeader)),
                                header->packet_size - (sizeof(FrameHeader) + sizeof(FrameTail)));
 
         if (crc != tail->crc32) {
+            totalPackets_++;
             lostPackets_++;
             return;
         }
 
         switch (header->packet_type) {
             case LIDAR_IMU_DATA_PACKET_TYPE:
-                decodeImu(datagram,Offset);
+                decodeImu(PacketBuffer,Offset);
                 Offset += header->packet_size;
                 break;
 
             case LIDAR_POINT_DATA_PACKET_TYPE:
-                decode3D(datagram,Offset);
+                decode3D(PacketBuffer,Offset);
                 Offset += header->packet_size;
                 break;
 
             case LIDAR_2D_POINT_DATA_PACKET_TYPE:
-                decode2D(datagram,Offset);
+                decode2D(PacketBuffer,Offset);
                 Offset += header->packet_size;
                 break;
 
             case LIDAR_VERSION_PACKET_TYPE:
-                decodeVersion(datagram,Offset);
+                decodeVersion(PacketBuffer,Offset);
                 Offset += header->packet_size;
                 break;
 
             case LIDAR_TIME_STAMP_PACKET_TYPE:
-                decodeTimestamp(datagram,Offset);
+                decodeTimestamp(PacketBuffer,Offset);
                 Offset += header->packet_size;
                 break;
 
             case LIDAR_ACK_DATA_PACKET_TYPE:
-                decodeAck(datagram,Offset);
+                decodeAck(PacketBuffer,Offset);
                 Offset += header->packet_size;
                 break;
 
             default:
-                handleRaw(header->packet_type, datagram,Offset);
+                handleRaw(header->packet_type, PacketBuffer,Offset);
                 Offset += header->packet_size;
                 break;
         }
@@ -402,6 +461,10 @@ void L2lidar::handleRaw(uint32_t packetType,
 
 }
 
+//====================================================================
+// L2 commmands
+//====================================================================
+
 //--------------------------------------------------------------------
 // LidarStartRotation
 //--------------------------------------------------------------------
@@ -544,6 +607,12 @@ bool L2lidar::SetWorkMode(uint32_t mode)
 {
     // set header
     LidarWorkModeConfigPacket cmd;
+    //  Note: this is an undocumented command
+    //  It was discovered using Wireshark to see how the
+    //  Unitree software sends commands
+    //  This is how the Unitree software sets workmode
+    //  The define LIDAR_PARAM_WORK_MODE_TYPE
+    //  was added to be inline with the documented commands
     setPacketHeader(&cmd.header,LIDAR_PARAM_WORK_MODE_TYPE,
                     sizeof(LidarWorkModeConfigPacket));
 
@@ -617,7 +686,7 @@ bool L2lidar::SendPacket(uint8_t *Buffer,uint32_t Len)
 }
 
 //--------------------------------------------------------------------
-// StartReceiving
+// ConnectL2
 //--------------------------------------------------------------------
 bool L2lidar::ConnectL2()
 {
@@ -635,34 +704,9 @@ bool L2lidar::ConnectL2()
 }
 
 //--------------------------------------------------------------------
-// StartReceiving
+// DisconnectL2
 //--------------------------------------------------------------------
 void L2lidar::DisconnectL2()
 {
     L2socket.close();
-}
-
-//--------------------------------------------------------
-//  readPendingDatagrams()
-//  This is a callback function that receives the UDP
-//  data packets.  It is a Qt non-blocking I/O service called
-//  when data in received on the ehternet interface
-//--------------------------------------------------------
-void L2lidar::readPendingDatagrams()
-{
-    // only process incoming UPD packets
-    while (L2socket.hasPendingDatagrams()) {
-        QByteArray datagram;
-        datagram.resize(static_cast<int>(L2socket.pendingDatagramSize()));
-        QHostAddress sender;
-        quint16 senderPort;
-
-        // read next Datagram
-        L2socket.readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
-
-        // packets decoder also updates the specific packet ID count totals and packet loss counts
-        // csv file processing also happens in the decoder
-        processDatagram(datagram);
-
-    }
 }
