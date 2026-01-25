@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
 //  V0.2.0  2026-01-02  Documentation, start of debugging
@@ -122,9 +122,9 @@ public:
         return latest3DdataPacket_;
     }
 
-    const Lidar2DPointData Pcl2D() const {
+    const Lidar2DPointDataPacket Pcl2Dpacket() const {
         QMutexLocker locker(&PacketMutex);
-        return latest2Ddata_;
+        return latest2DdataPacket_;
     }
     const LidarAckData ack() const {
         QMutexLocker locker(&PacketMutex);
@@ -213,7 +213,7 @@ private: // variables
     LidarImuData        latestImu_{};
     LidarVersionData    latestVersion_{};
     LidarTimeStampData  latestTimestamp_{};
-    Lidar2DPointData    latest2Ddata_{};
+    Lidar2DPointDataPacket latest2DdataPacket_{};
     LidarPointDataPacket latest3DdataPacket_{};
     LidarAckData latestACKdata_{};
 

@@ -34,6 +34,7 @@
 //  V0.2.5  2026-01-10  added Calibration and internal State dock
 //								added IMU dock
 //  V0.2.6  2026-01-12  Corrected IMU units
+//  V0.3.5  2026-01-24  Minor formatting fix to accelerometer data
 //
 //--------------------------------------------------------
 
@@ -88,42 +89,42 @@ IMUDock::~IMUDock()
 }
 
 //--------------------------------------------------------
-//  updateDiagnostics
-//  signal callback to update diagnostics
+//  updateIMU
+//  signal callback to update IMU window
 //--------------------------------------------------------
 void IMUDock::updateIMU(const LidarImuData& Imu )
 {
     // Calibration
     QString ResultString;
 
-    ResultString = ResultString.asprintf("%.3f m",Imu.linear_acceleration[0]);
+    ResultString = ResultString.asprintf("%8.3f",Imu.linear_acceleration[0]);
     ui->lblAccelXValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.3f m",Imu.linear_acceleration[1]);
+    ResultString = ResultString.asprintf("%8.3f",Imu.linear_acceleration[1]);
     ui->lblAccelYValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.3f rad",Imu.linear_acceleration[2]);
+    ResultString = ResultString.asprintf("%8.3f",Imu.linear_acceleration[2]);
     ui->lblAccelZValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.3f rad",Imu.angular_velocity[0]);
+    ResultString = ResultString.asprintf("%8.3f",Imu.angular_velocity[0]);
     ui->lblGyroXValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.3f rad",Imu.angular_velocity[1]);
+    ResultString = ResultString.asprintf("%8.3f",Imu.angular_velocity[1]);
     ui->lblGyroYValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.3f rad",Imu.angular_velocity[2]);
+    ResultString = ResultString.asprintf("%8.3f",Imu.angular_velocity[2]);
     ui->lblGyroZValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f",Imu.quaternion[0]);
+    ResultString = ResultString.asprintf("%9.6f",Imu.quaternion[0]);
     ui->lblQuat0Value->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f",Imu.quaternion[1]);
+    ResultString = ResultString.asprintf("%9.6f",Imu.quaternion[1]);
     ui->lblQuat1Value->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f",Imu.quaternion[2]);
+    ResultString = ResultString.asprintf("%9.6f",Imu.quaternion[2]);
     ui->lblQuat2Value->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f",Imu.quaternion[3]);
+    ResultString = ResultString.asprintf("%9.6f",Imu.quaternion[3]);
     ui->lblQuat3Value->setText(ResultString);
 
 }

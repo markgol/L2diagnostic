@@ -4,7 +4,7 @@
 //  Author: Mark Stegall
 //  Module: ConfigDialog.h
 //
-//  Purpose:
+//  //  Purpose:
 //  Determine correct operation of the Unitreee L2 Lidar hardware
 //  and software.  Establish platform independent software protocols
 //  for using the L2 Lidar with its Ethernet interface.
@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
 //  V0.2.0  2026-01-02  Documentation, start of debugging
@@ -39,6 +39,10 @@
 //  V0.2.4  2026-01-10  removed CSV checkbox, never fully implemented
 //                      Added spinbox for setting skip frame value
 //  V0.2.6  2026-01-14  Added window visibility settings, throttling setting
+//  V0.3.5  2026-01-24  With change in renderer architecture
+//                      removed Max # frame
+//                      added buffer size instead
+//                      added cloud point size
 //
 //--------------------------------------------------------
 
@@ -186,14 +190,9 @@ public:
     //--------------------------------------------------------
     // point cloud viewer buffering
     //--------------------------------------------------------
-    uint32_t getMax3Dframes2Buffer()
+    uint32_t getMaxPoints()
     {
-        return static_cast<uint32_t>(ui.spinMax3DFrames->value());
-    }
-
-    uint32_t getMax2Dframes2Buffer()
-    {
-        return static_cast<uint32_t>(ui.spinMax2DFrames->value());
+        return static_cast<uint32_t>(ui.spinMaxPoints->value());
     }
     bool isIMUadjustEnabled()
     {
@@ -217,6 +216,21 @@ public:
     float getPCWpitch() const
     {
         return static_cast<float>(ui.spinPitch->value());
+    }
+
+    int getPointSize() const
+    {
+        return static_cast<int>(ui.spinPointSize->value());
+    }
+
+    float getMinDistance() const
+    {
+        return static_cast<float>(ui.spinColorMin->value());
+    }
+
+    float getMaxDistance() const
+    {
+        return static_cast<float>(ui.spinColorMax->value());
     }
 
     // =============================
@@ -272,14 +286,10 @@ public:
     //--------------------------------------------------------
     // point cloud viewer buffering
     //--------------------------------------------------------
-    void setMax3Dframes2Buffer(uint32_t p)
-    {
-        ui.spinMax3DFrames->setValue(p);
-    }
 
-    void setMax2Dframes2Buffer(uint32_t p)
+    void setMaxPoints(uint32_t p)
     {
-        ui.spinMax2DFrames->setValue(p);
+        ui.spinMaxPoints->setValue(p);
     }
 
     //--------------------------------------------------------
@@ -304,6 +314,21 @@ public:
     void setIMUadjustEnabled(bool p)
     {
         ui.cbIMUadjust->setChecked(p);
+    }
+
+    void setPointSize(int PointSize)
+    {
+        ui.spinPointSize->setValue(PointSize);
+    }
+
+    void setMinDistance(float MinDistance)
+    {
+        ui.spinColorMin->setValue(MinDistance);
+    }
+
+    void setMaxDistance(float MaxDistance)
+    {
+        ui.spinColorMax->setValue(MaxDistance);
     }
 
     //--------------------------------------------------------

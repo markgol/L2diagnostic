@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.2.6  2026-01-13 Add WorkMode dialog
 //  V0.3.4  2026-01-23 Implement WorkMode dialog

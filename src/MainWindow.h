@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
 //  V0.2.0  2026-01-02  Documentation, start of debugging
@@ -52,6 +52,8 @@
 //  V0.3.2  2026-01-22  New renderer architecture
 //  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
 //                      UDP datagrams into one L2 Lidar packet
+//  V0.3.5  2026-01-24  removed remnant from old renderer architecture
+//                      Added display of 2d point cloud data
 //
 //--------------------------------------------------------
 
@@ -59,12 +61,18 @@
 // This uses the following Unitree L2 sources modules:
 //      unitree_lidar_protocol.h
 //      unitree_lidar_utilities
+// They have been modifed from the original sources
+// to correct for errors, missing definitions and
+// inconsistencies.  These have been minor in most
+// instances.
+//
+// Copyright (c) 2024, Unitree Robotics
 // The orignal source can be found at:
 //      https://github.com/unitreerobotics/unilidar_sdk2
 //      under License: BSD 3-Clause License (see files)
 //
-// Corrections/additions have been made to these 2 files
 //--------------------------------------------------------
+
 
 //--------------------------------------------------------
 // GPL-3.0 license
@@ -181,8 +189,6 @@ private:
 
     // ack packets are very low rate, only occurs
     // when a command is sent to the hardware
-    // it should be connected to a signal
-    // void MainWindow::updateACK()
     void updateACK();
 
     //-----------------------------------------------------
@@ -193,7 +199,7 @@ private:
     uint64_t        m_lastPacketCount = 0;
 
     // L2 workmode
-    int mLidarScanMode {LIDAR_MODE_3D}; // default is 3D scanning
+    //int mLidarScanMode {LIDAR_MODE_3D}; // default is 3D scanning
 
     //-----------------------------------------------------
     // Point cloud veiwer
@@ -206,11 +212,16 @@ private:
     // Point cloud window renderer Timer
     QTimer* RendererTimer;
 
-    // close point cloud viewer
+    // close point cloud viewer and workmode dialog (non-modal)
     void closeEvent(QCloseEvent* e);
 
     // sends last frame received to renderer
-    void onNewLidarFrame();
+    void onNewLidarFrame(bool Frame3D);
+    void onNew3DLidarFrame() {onNewLidarFrame(true); mLastTypePacketReceived = true;};
+    void onNew2DLidarFrame() {onNewLidarFrame(false); mLastTypePacketReceived = false;};
+
+    bool mLastTypePacketReceived = {true}; // false - 2D packet received
+                                            // true - 3D packet recieved
 
     // throttle for point cloud viewer
     uint32_t NumFramesToSkip {4};
@@ -220,17 +231,12 @@ private:
     QMutex m_cloudMutex;
 
     // ring storage for point cloud frames to display
-    uint32_t mMax3Dframes2Buffer {MAX_3DPOINTS_PER_FRAME}; // maximum number of 3D frames
+    //uint32_t mMax3Dframes2Buffer {MAX_3DPOINTS_PER_FRAME}; // maximum number of 3D frames
                                         // to buffer for display
 
-    uint32_t mMax2Dframes2Buffer {MAX_2DPOINTS_PER_FRAME}; // maximum number of 2D frames
+    //uint32_t mMax2Dframes2Buffer {MAX_2DPOINTS_PER_FRAME}; // maximum number of 2D frames
                                         // to buffer for display
-    int mmaxFrames{0};  // maximum number of frames for current scan mode
     int mmaxPoints{0}; // computed maximum number of points
-
-    QVector<Frame> m_frameRing;   // Fixed-capacity ring
-    size_t m_ringWrite = 0;       // Next write index
-    size_t m_ringCount = 0;       // Number of valid frames (<= MAX_FRAMES)
 
     // helper function for Config dialog when cancelling dialog
     void RestoreConfigSettings(); // reset the point cloud view back to defaults

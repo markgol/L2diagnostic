@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packet.
 //
 //  V.02.5  2026-01-10  added ACK packet dockable window
 //
@@ -86,8 +86,8 @@ ACKDock::~ACKDock()
 }
 
 //--------------------------------------------------------
-//  updateDiagnostics
-//  signal callback to update diagnostics
+//  updateACK
+//  signal callback to update ACK window
 //--------------------------------------------------------
 void ACKDock::updateACK(LidarAckData& ACKdata)
 {

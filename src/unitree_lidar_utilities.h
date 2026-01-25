@@ -36,20 +36,21 @@
 //  Additions/Corrections
 //  2026-01-21  Added MAX_3DPOINTS_PER_FRAME definition
 //              Added MAX_2DPOINTS_PER_FRAME definition
-//              Correction point array size in parseFromPacketPointCloud2D()
-//              shoudl have been MAX_2DPOINT_PER_FRAME not MAX_3DPOINTS_PER_FRAME
+//              Correction to point array size in parseFromPacketPointCloud2D()
+//              should have been MAX_2DPOINT_PER_FRAME not MAX_3DPOINTS_PER_FRAME
+//  2026-01-24  Removed unused #includes
 //-----------------------------------------------------------------------
 
 #pragma once
 
 // modifcation for use with Qt using Qvector instead of std::vector
 #include <cstdint>
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <deque>
-#include <vector>
-#include <memory>
+//#include <iostream>  // not used here
+//#include <fstream>   // not used here
+//#include <iomanip>  // not used here
+//#include <deque>  // not used here
+//#include <vector>    // not used here
+//#include <memory>  // not used here
 #include <cmath>
 #include <chrono>
 #include <numbers>

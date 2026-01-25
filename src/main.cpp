@@ -2,7 +2,7 @@
 //
 //  L2Diagnostic
 //  Author: Mark Stegall
-//  Module: main.cpp
+//  Module: Main.cpp
 //
 //  Purpose:
 //  Determine correct operation of the Unitreee L2 Lidar hardware
@@ -29,25 +29,26 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packet.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
-//  V0.2.0  2026-01-02  Documentation, start of debugging
-//                      implementation of LidarDecoder
-//                      Added L2 information to GUI
-//                      separate source file: Settings.cpp
-//  V0.2.2  2026-01-08  Added license info to source files
+//
 //--------------------------------------------------------
 
 //--------------------------------------------------------
 // This uses the following Unitree L2 sources modules:
 //      unitree_lidar_protocol.h
 //      unitree_lidar_utilities
+// They have been modifed from the original sources
+// to correct for errors, missing definitions and
+// inconsistencies.  These have been minor in most
+// instances.
+//
+// Copyright (c) 2024, Unitree Robotics
 // The orignal source can be found at:
 //      https://github.com/unitreerobotics/unilidar_sdk2
 //      under License: BSD 3-Clause License (see files)
 //
-// Corrections/additions have been made to these 2 files
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -78,7 +79,6 @@ int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
 
     MainWindow w;
-    //w.resize(1000, 700);
     w.show();
 
     return app.exec();

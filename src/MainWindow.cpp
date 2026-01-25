@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
 //  V0.2.0  2026-01-02  Documentation, start of debugging
@@ -70,6 +70,9 @@
 //                      UDP datagrams into one L2 Lidar packet
 //                      L2 Workmode implemented
 //                      2D packets decoded but not displayed
+// V0.3.5   2026-01-24  Removal of MainWindow ring buffer for frames
+//                      removed remnants from old renderer architecture
+//                      Added display of 2d point cloud data
 //
 //--------------------------------------------------------
 
@@ -77,11 +80,16 @@
 // This uses the following Unitree L2 sources modules:
 //      unitree_lidar_protocol.h
 //      unitree_lidar_utilities
+// They have been modifed from the original sources
+// to correct for errors, missing definitions and
+// inconsistencies.  These have been minor in most
+// instances.
+//
+// Copyright (c) 2024, Unitree Robotics
 // The orignal source can be found at:
 //      https://github.com/unitreerobotics/unilidar_sdk2
 //      under License: BSD 3-Clause License (see files)
 //
-// Corrections/additions have been made to these 2 files
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -109,12 +117,11 @@
 //          |
 //      PointCloudWindow::appendFrame()
 //          |
-//      VBO sub-write
+//      VBO sub-write       accumulates cloud points from frames
 //          |
-//      requestUpdate->renderer
+//      requestUpdate->renderer   queued for next paintGL
 //          |
-//          |
-//      QOpenGLWindow::paintGL()
+//      QOpenGLWindow::paintGL()  timer driven typically at 30-60Hz
 //
 //--------------------------------------------------------
 
@@ -168,35 +175,21 @@ MainWindow::MainWindow(QWidget* parent)
 
     // create cloud viewer window
     // This is not a Qt window but a OpenGL managed window
-    if(mLidarScanMode==LIDAR_MODE_3D) {
-        mmaxPoints =  MAX_3DPOINTS_PER_FRAME * mMax3Dframes2Buffer;
-        mmaxFrames = mMax3Dframes2Buffer;
-    } else {
-        mmaxPoints =  MAX_2DPOINTS_PER_FRAME * mMax2Dframes2Buffer;
-        mmaxFrames = mMax2Dframes2Buffer;
+    if(mmaxPoints>=50000) {
+        // only open point cloud window if there is a minimum
+        // number point cloud buffer size
+        m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
+        // set default view settings
+        SetDefaultView();
+        m_pointCloudWindow->setTransientParent(windowHandle());
+        m_pointCloudWindow->Initialize();
     }
-    m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
-    m_pointCloudWindow->setTransientParent(windowHandle());
-    m_pointCloudWindow->setFlag(Qt::Window);
-    // Window geometry and state for point cloud window
-    m_pointCloudWindow->restoreWindowState();
-
-    // set default view settings
-    SetDefaultView();
-    m_pointCloudWindow->ResetView();
 
     SetupGUIrefreshTimers();
     ConnectDocksViewerActions();
 
     // these are only done after loadsettings()
     applyDocksVisibilityConstraint();
-
-    // point cloud viewer buffering
-    if(mLidarScanMode==LIDAR_MODE_3D) {
-        m_frameRing.resize(mMax3Dframes2Buffer); // ring buffer pre allocated
-    } else {
-        m_frameRing.resize(mMax2Dframes2Buffer); // ring buffer pre allocated
-    }
 
     NumFramesToSkip = config.getSkipFrame();
 
@@ -239,6 +232,9 @@ void MainWindow::SetDefaultView() {
     defaultPCsettings.Distance = config.getPCWdistance();
     defaultPCsettings.Yaw = config.getPCWyaw();
     defaultPCsettings.Pitch = config.getPCWpitch();
+    defaultPCsettings.PointSize = config.getPointSize();
+    defaultPCsettings.MinDistance = config.getMinDistance();
+    defaultPCsettings.MaxDistance = config.getMaxDistance();
     m_pointCloudWindow->setDefaultPCsettings(defaultPCsettings);
 }
 
@@ -323,6 +319,9 @@ void MainWindow::closeEvent(QCloseEvent* e)
         delete m_pointCloudWindow;
         m_pointCloudWindow = nullptr;
     }
+
+    WorkMode.close();
+
     QMainWindow::closeEvent(e);
 }
 
@@ -335,6 +334,9 @@ void MainWindow::handleResetView()
     defaultPCsettings.Distance = config.getPCWdistance();
     defaultPCsettings.Yaw = config.getPCWyaw();
     defaultPCsettings.Pitch = config.getPCWpitch();
+    defaultPCsettings.PointSize = config.getPointSize();
+    defaultPCsettings.MinDistance = config.getMinDistance();
+    defaultPCsettings.MaxDistance = config.getMaxDistance();
 
     m_pointCloudWindow->setPCsettings(defaultPCsettings);
 }
@@ -467,7 +469,13 @@ void MainWindow::ConnectDocksViewerActions()
     connect(&l2lidar,
             &::L2lidar::PCL3DReceived,
             this,
-            &MainWindow::onNewLidarFrame,
+            &MainWindow::onNew3DLidarFrame,
+            Qt::QueuedConnection);
+
+    connect(&l2lidar,
+            &::L2lidar::PCL2DReceived,
+            this,
+            &MainWindow::onNew2DLidarFrame,
             Qt::QueuedConnection);
 
     //--------------------------------------------------------
@@ -637,7 +645,7 @@ void MainWindow::updatePacketRate()
     const double rate =
         (deltaPackets * 1000.0) / static_cast<double>(elapsedMs);
 
-    m_packetRateDock->addSample(rate);
+    m_packetRateDock->addSample(rate); // add time, sample rate
 
     m_lastPacketCount = total;
     m_rateTimer->restart();
@@ -649,9 +657,14 @@ void MainWindow::updatePacketRate()
 void MainWindow::updateDiagnostics()
 {
     LidarVersionData Version = l2lidar.version();
-    LidarPointDataPacket PCLpacket = l2lidar.Pcl3Dpacket();
+    if(mLastTypePacketReceived) {
+        LidarPointDataPacket PCLpacket = l2lidar.Pcl3Dpacket();
+        m_diagnosticsDock->updateDiagnostics(PCLpacket.data.state, PCLpacket.data.param);
+   } else {
+        Lidar2DPointDataPacket PCLpacket = l2lidar.Pcl2Dpacket();
+        m_diagnosticsDock->updateDiagnostics(PCLpacket.data.state, PCLpacket.data.param);
+   }
 
-    m_diagnosticsDock->updateDiagnostics(PCLpacket.data.state, PCLpacket.data.param);
     m_diagnosticsDock->updateVersion(Version);
 
     return;
@@ -700,7 +713,7 @@ void MainWindow::updateACK()
 //  This is updated at the packet receive rate
 //
 //--------------------------------------------------------
-void MainWindow::onNewLidarFrame()
+void MainWindow::onNewLidarFrame(bool Frame3D)
 {
     // skip packet logic to reduce load
     // skip 0 take severy packet
@@ -717,13 +730,19 @@ void MainWindow::onNewLidarFrame()
     }
 
     // Retrieve packet
-    auto packet = l2lidar.Pcl3Dpacket();
-
-    // move this to l2lidar class ???
-    // to containerise the unitree code
     unilidar_sdk2::PointCloudUnitree cloud;
-    unilidar_sdk2::parseFromPacketToPointCloud(
-        cloud, packet, false, 0, 100);
+
+    if(Frame3D) {
+        // 3D packet
+        auto packet = l2lidar.Pcl3Dpacket();
+        unilidar_sdk2::parseFromPacketToPointCloud(
+                    cloud, packet, false, 0, 100);
+    } else {
+        // 2D packet
+        auto packet = l2lidar.Pcl2Dpacket();
+        unilidar_sdk2::parseFromPacketPointCloud2D(
+                    cloud, packet, false, 0, 100);
+    }
 
     Frame frame;
     frame.reserve(cloud.points.size());
@@ -741,23 +760,14 @@ void MainWindow::onNewLidarFrame()
     }
 
 
-    QMutexLocker lock(&m_cloudMutex);
+    // QMutexLocker lock(&m_cloudMutex);
 
-    // Overwrite oldest frame in-place
-    m_frameRing[m_ringWrite] = std::move(frame);
-
-    m_ringWrite = (m_ringWrite + 1) % mMax3Dframes2Buffer;
-    if (m_ringCount < mMax3Dframes2Buffer)
-        ++m_ringCount;
-
-    if (m_pointCloudWindow) {
-        Frame frameCopy =
-            m_frameRing[(m_ringWrite + mmaxFrames - 1) % mmaxFrames];
-
+    if (m_pointCloudWindow)
+    {
         QMetaObject::invokeMethod(
             m_pointCloudWindow,
-            [this, frameCopy]() {
-                m_pointCloudWindow->appendFrame(frameCopy);
+            [this, frame]() {
+                m_pointCloudWindow->appendFrame(frame);
             },
             Qt::QueuedConnection
             );
@@ -823,19 +833,17 @@ void MainWindow::openConfig()
         NumFramesToSkip = config.getSkipFrame();
 
         // check if buffering has changed
-        if(mMax3Dframes2Buffer!=config.getMax3Dframes2Buffer() ||
-            mMax2Dframes2Buffer!= config.getMax2Dframes2Buffer()) {
-            //ask user if they reaaly want to changes settings
+        if(mmaxPoints!=config.getMaxPoints()) {
+            //ask user if they really want to changes settings
             QMessageBox msgBox;
-            msgBox.setText("Critical buffering paramters changed\nThe app must exit\nAre you sure you want to proceed?");
+            msgBox.setText("Critical buffer size changed\nThe app must exit\nAre you sure you want to proceed?");
             msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
             msgBox.setDefaultButton(QMessageBox::No);
             // Show the dialog and wait for user response
             int ret = msgBox.exec();
             if (ret == QMessageBox::Yes) {
                 // User clicked Yes
-                mMax3Dframes2Buffer = config.getMax3Dframes2Buffer();
-                mMax2Dframes2Buffer = config.getMax2Dframes2Buffer();
+                mmaxPoints = config.getMaxPoints();
                 saveSettings(false); // do not reset window geometries
                 QApplication::quit();
                 return;
@@ -844,6 +852,12 @@ void MainWindow::openConfig()
                 RestoreConfigSettings();
                 return;
             }
+            // ****** alternate process ******
+            // delete m_pointCloudWindow;
+            // reopen m_pointCloudWindow;
+            // mmaxPoints = config.getMaxPoints();
+            // saveSettings(false); // do not reset window geometries
+            // reopen m_pointCloudWindow;
         }
 
         if(m_controlsDock->GetConnectedState()) {
@@ -859,6 +873,15 @@ void MainWindow::openConfig()
                 L2ConnectedButtonsUIs(); // this restarts everything
             }
         }
+
+        // update PC window settings
+        PCsettings CurrentPC;
+        m_pointCloudWindow->getPCsettings(CurrentPC);
+        CurrentPC.MinDistance = config.getMinDistance();
+        CurrentPC.MaxDistance = config.getMaxDistance();
+        CurrentPC.PointSize = config.getPointSize();
+        m_pointCloudWindow->setPCsettings(CurrentPC);
+
 
         // Save current user settings
         saveSettings(false); // do not reset window geometries
@@ -881,9 +904,11 @@ void MainWindow::RestoreConfigSettings()
     config.setPCWdistance(defaultPCsettings.Distance);
     config.setPCWyaw(defaultPCsettings.Yaw);
     config.setPCWpitch(defaultPCsettings.Pitch);
+    config.setPointSize(defaultPCsettings.PointSize);
+    config.setMinDistance(defaultPCsettings.MinDistance);
+    config.setMaxDistance(defaultPCsettings.MaxDistance);
     // reset the point cloud buffering back to current setting
-    config.setMax3Dframes2Buffer(mMax3Dframes2Buffer);
-    config.setMax2Dframes2Buffer(mMax2Dframes2Buffer);
+    config.setMaxPoints(mmaxPoints);
 }
 
 //--------------------------------------------------------

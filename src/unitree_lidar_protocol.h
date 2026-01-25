@@ -37,7 +37,7 @@
 //  The following modifcations/clarifications have been made to the original
 //  source file from unitree
 //
-//  date: 2025-01-23
+//  date: 2025-01-24
 //  Author: Mark Stegall
 //  no claim is made to any portion of this source file
 //
@@ -58,15 +58,16 @@
 //          Added MAX_2DPOINTS_PER_FRAME
 //      Added LidarTimeStampData structure to be consistent
 //          with other data packet structures
+//      Removed unused #includes
 //
 //------------------------------------------------
 
 #ifndef UNITREE_LIDAR_PROTOCOL_HEADER
 #define UNITREE_LIDAR_PROTOCOL_HEADER
 
-#include <stdio.h>
+//#include <stdio.h>  // not used here
 #include <stdint.h>
-#include <string.h>
+//#include <string.h>  // not used here
 
 ///////////////////////////////////////////////////////////////////////////////
 // MACRO DEFINITION
@@ -125,7 +126,7 @@
 #define WORK_MODE_STARTUP_WAIT  16 // 0: Power on and start automatically,
                                    // 1: Power on and wait for start command without rotation
 
-// buffer sizea
+// buffer sizes
 #define MAX_3DPOINTS_PER_FRAME  300
 #define MAX_2DPOINTS_PER_FRAME  1800
 ///////////////////////////////////////////////////////////////////////////////

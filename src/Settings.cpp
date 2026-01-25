@@ -4,7 +4,7 @@
 //  Author: Mark Stegall
 //  Module: Settings.cpp
 //
-//  Purpose:
+//  //  Purpose:
 //  Determine correct operation of the Unitreee L2 Lidar hardware
 //  and software.  Establish platform independent software protocols
 //  for using the L2 Lidar with its Ethernet interface.
@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
 //  V0.2.0  2026-01-02  Documentation, start of debugging
@@ -43,6 +43,8 @@
 //                      and state
 //                      Completed most display/renderer controlls
 // V0.3.4   2026-01-23  Added save and restore for workmode settings
+// V0.3.5   2026-01-24  Added scan mode setting (3D or 2D)
+//                      Added cloud point size control
 //
 //--------------------------------------------------------
 
@@ -88,7 +90,7 @@
 #include <QStandardPaths>
 #include <QDebug>
 
-#include "unitree_lidar_protocol.h"
+//#include "unitree_lidar_protocol.h"
 
 //--------------------------------------------------------
 //  saveSettings()
@@ -129,7 +131,7 @@ void MainWindow::saveSettings(bool resetRequested)
     uint mode =WorkMode.GetWorkmode();
     settings.setValue("workmode", mode);
 
-    // maybe later if we read back UDP config
+    // ??? maybe later if we read back UDP config
     //settings.setValue("srcIP", config.getSRCip());
     //settings.setValue("dstIP", config.getDSTip());
     //settings.setValue("srcPort", config.getSRCport());
@@ -164,12 +166,14 @@ void MainWindow::saveSettings(bool resetRequested)
     settings.setValue("Distance",defaultPCsettings.Distance);
     settings.setValue("Yaw",defaultPCsettings.Yaw);
     settings.setValue("Pitch",defaultPCsettings.Pitch);
+    settings.setValue("PointSize",defaultPCsettings.PointSize);
+    settings.setValue("MinDistance",defaultPCsettings.MinDistance);
+    settings.setValue("MaxDistance",defaultPCsettings.MaxDistance);
     settings.endGroup();
 
     // point cloud buffering settings
     settings.beginGroup("PCbuffering");
-    settings.setValue("Max3Dframes",mMax3Dframes2Buffer);
-    settings.setValue("Max2Dframes",mMax2Dframes2Buffer);
+    settings.setValue("MaxPoints",mmaxPoints);
     settings.setValue("IMUadjust",config.isIMUadjustEnabled());
     settings.endGroup();
 }
@@ -211,60 +215,61 @@ void MainWindow::loadSettings(bool resetRequested)
 
     // L2 setup
     settings.beginGroup("L2");
-
-    WorkMode.SetWorkmode(settings.value("workmode",0).toUInt());
+        WorkMode.SetWorkmode(settings.value("workmode",0).toUInt());
     settings.endGroup();
 
     // throttling
     settings.beginGroup("throttling");
-    config.setSkipFrame(settings.value("NumFramesToSkip", 1).toUInt());
-    config.setPacketUpdateRate(settings.value("PacketUpdateRate", 100).toUInt()); // 10Hz
-    config.setDiagUpdateRate(settings.value("DiagUpdateRate", 200).toUInt());   // 5Hz
-    config.setRenderRate(settings.value("RendererUpdateRate", 33).toUInt());    // 30Hz
+        config.setSkipFrame(settings.value("NumFramesToSkip", 1).toUInt());
+        config.setPacketUpdateRate(settings.value("PacketUpdateRate", 100).toUInt()); // 10Hz
+        config.setDiagUpdateRate(settings.value("DiagUpdateRate", 200).toUInt());   // 5Hz
+        config.setRenderRate(settings.value("RendererUpdateRate", 33).toUInt());    // 30Hz
     settings.endGroup();
 
     // windows visibility
     settings.beginGroup("visibility");
-    if(resetRequested){  // check if reset to the windows has been requested
-        // reset settings to initial state, ignore past settings
-        config.setPCviewerEnabled(true);
-        config.setACKenabled(true);
-        config.setDiagEnabled(true);
-        config.setIMUenabled(true);
-        config.setPacketRateChartEnabled(true);
-        config.setStatsEnabled(true);
-      } else {
-        config.setPCviewerEnabled(settings.value("PCviewer", true).toBool());
-        config.setACKenabled(settings.value("ACK", true).toBool());
-        config.setDiagEnabled(settings.value("Diag", true).toBool());
-        config.setIMUenabled(settings.value("IMU", true).toBool());
-        config.setPacketRateChartEnabled(settings.value("PacketRateChart", true).toBool());
-        config.setStatsEnabled(settings.value("Stats", true).toBool());
-    }
+        if(resetRequested){  // check if reset to the windows has been requested
+            // reset settings to initial state, ignore past settings
+            config.setPCviewerEnabled(true);
+            config.setACKenabled(true);
+            config.setDiagEnabled(true);
+            config.setIMUenabled(true);
+            config.setPacketRateChartEnabled(true);
+            config.setStatsEnabled(true);
+          } else {
+            config.setPCviewerEnabled(settings.value("PCviewer", true).toBool());
+            config.setACKenabled(settings.value("ACK", true).toBool());
+            config.setDiagEnabled(settings.value("Diag", true).toBool());
+            config.setIMUenabled(settings.value("IMU", true).toBool());
+            config.setPacketRateChartEnabled(settings.value("PacketRateChart", true).toBool());
+            config.setStatsEnabled(settings.value("Stats", true).toBool());
+        }
     settings.endGroup();
 
     // point cloud view settings
 
     settings.beginGroup("PCview");
-    defaultPCsettings.Distance =settings.value("Distance", 10.0).toDouble();
-    defaultPCsettings.Yaw =settings.value("Yaw", 145.0).toDouble();
-    defaultPCsettings.Pitch = settings.value("Pitch", 20.0).toDouble();
+        defaultPCsettings.Distance =settings.value("Distance", 10.0).toDouble();
+        defaultPCsettings.Yaw =settings.value("Yaw", 145.0).toDouble();
+        defaultPCsettings.Pitch = settings.value("Pitch", 20.0).toDouble();
+        defaultPCsettings.PointSize = settings.value("PointSize", 1).toInt();
+        defaultPCsettings.MinDistance = settings.value("MinDistance",0.1).toDouble();
+        defaultPCsettings.MaxDistance = settings.value("MaxDistance",10.0).toDouble();
 
-    config.setPCWdistance(defaultPCsettings.Distance);
-    config.setPCWyaw(defaultPCsettings.Yaw);
-    config.setPCWpitch(defaultPCsettings.Pitch);
+        config.setPCWdistance(defaultPCsettings.Distance);
+        config.setPCWyaw(defaultPCsettings.Yaw);
+        config.setPCWpitch(defaultPCsettings.Pitch);
+        config.setPointSize(defaultPCsettings.PointSize);
+        config.setMinDistance(defaultPCsettings.MinDistance);
+        config.setMaxDistance(defaultPCsettings.MaxDistance);
     settings.endGroup();
 
     // point cloud buffering settings
     settings.beginGroup("PCbuffering");
-    mMax3Dframes2Buffer=settings.value("Max3Dframes", 1800).toUInt(); // 3D PC frame is 300 points
-    mMax2Dframes2Buffer=settings.value("Max2Dframes", 300).toUInt();  // 2D PC frame is 1800 points
-    config.setMax3Dframes2Buffer(mMax3Dframes2Buffer);
-    config.setMax2Dframes2Buffer(mMax2Dframes2Buffer);
-    config.setIMUadjustEnabled(settings.value("IMUadjust", false).toBool());
-
+        mmaxPoints=settings.value("MaxPoints", 900000).toUInt(); // 3D PC frame is 300 points
+        config.setMaxPoints(mmaxPoints);
+        config.setIMUadjustEnabled(settings.value("IMUadjust", false).toBool());
     settings.endGroup();
-
 }
 
 //--------------------------------------------------------

@@ -86,8 +86,8 @@ StatsDock::~StatsDock()
 }
 
 //--------------------------------------------------------
-//  updateDiagnostics
-//  signal callback to update diagnostics
+//  updateStats
+//  signal callback to update Stats window
 //--------------------------------------------------------
 void StatsDock::updateStats(PacketStats& Stats)
 {

@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.3.0  2026-01-18  Changed point cloud viewer back
 //								into regular OpenGL window
@@ -39,6 +39,9 @@
 //                      added default view settings
 //  V0.3.2  2026-01-22  New renderer architecture
 //  V0.3.3  2026-01-23  New renderer architecture completed
+//  V0.3.5  2026-01-24  Moved the creation of the
+//                      point cloud window into the class
+//                      Moved much of the closing of the class here
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -69,22 +72,48 @@
 //--------------------------------------------------------
 
 //--------------------------------------------------------
+//
+// Example of using PointCloudWindow
+//
+// ****** create cloud viewer window ******
+//
+// #include "PointCloudWindow.h"
+//
+// if(mmaxPoints>=50000) {
+//      // only open point cloud window if there is a minimum
+//      // number point cloud buffer size
+//      m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
+//      // set default view settings
+//      PCsettings defaultPCsettings;
+//      defaultPCsettings.Distance = 10.0f;
+//      defaultPCsettings.Yaw = 145.0f;
+//      defaultPCsettings.Pitch = 20.0f;
+//      m_pointCloudWindow->setDefaultPCsettings(defaultPCsettings);
+//      // finish intiailization
+//      m_pointCloudWindow->setTransientParent(windowHandle());
+//      m_pointCloudWindow->Initialize();
+// }
+//
+//--------------------------------------------------------
+
+
+//--------------------------------------------------------
 //  Data flow for point cloud
 //      MainWindow:onNewLidarFrame()  this operates at L2 point cloud
 //          |              packet rate ~200-250 packets/sec
 //          |
-//      throttling         fifo, save only every nth PC framet
+//      throttling         save only every nth PC frame ( 0 every frame)
 //          |
 //      PointCloudWindow::appendFrame()
 //          |
-//      VBO sub-write (or stage CPU buffer)
+//      VBO sub-write       accumulates cloud points from frames
 //          |
-//      requestUpdate->renderer
+//      requestUpdate->renderer   queued for next paintGL
 //          |
-//          |
-//      QOpenGLWindow::paintGL()
+//      QOpenGLWindow::paintGL()  timer driven typically at 30-60Hz
 //
 //--------------------------------------------------------
+
 #pragma once
 
 #include <QOpenGLWindow>
@@ -120,6 +149,9 @@ typedef struct
     float Distance;
     float Yaw;
     float Pitch;
+    int PointSize;
+    float MinDistance;
+    float MaxDistance;
 } PCsettings;
 
 // L2 lidar point has a min intensity of 0 and a max of 255
@@ -154,6 +186,7 @@ public:
     void getPCsettings(PCsettings& settings); // current settings
     void setPCsettings(PCsettings& settings); // current settings
     void setDefaultPCsettings(PCsettings& settings);
+    void Initialize();
 
 public slots:
     void onRenderTick(); // timer driven renderer
@@ -198,12 +231,9 @@ private:
     // Up      = +Z = ( 0, 0, 1 )
 
     QVector3D m_target { 0.0f, 0.0f, 0.0f };
-    PCsettings mPCsettings {10.0,145.0,20.0};
+    PCsettings mPCsettings {10.0,145.0,20.0, 2, 0.1, 10.0};
 
-    PCsettings DefaultPCsettings {10.0,145.0,20.0};
-
-    float m_minDistance = 0.1f; // closest distance (M)
-    float m_maxDistance = 1000.0f; // farthest distance (M)
+    PCsettings DefaultPCsettings {10.0,145.0,20.0, 2, 0.1, 10.0};
 
     // limits
     float m_pitchMin = -89.0f; // min pitch angle (degress)
@@ -215,8 +245,6 @@ private:
     float m_farPlane  = 1000.0f;
 
     // coloring limits
-    float m_minRange {0.1};
-    float m_maxRange = 4.0f;        // lidar-dependent
     float m_minIntensity = 0.0f;
     float m_maxIntensity = 255.0f;
 

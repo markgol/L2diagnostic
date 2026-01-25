@@ -25,9 +25,10 @@ Current Status
 	Added dockable windows for Calibration/state, IMU packet, ACK packet, packet stats
 	Made packet rate chart dockable window
 	Control buttons are now dockable window
-	2D point cloud capture, verfied correct packet decoding
+	3D and 2Dpoint cloud viewing
 	Workmode controls implemented
 	L2Lidar class works across multiple UDP datagrams for large packets
+	PointCloudWindow class useable in other apps
 	
 	Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 	unitree_lidar_utilites.h to perform required function needs for using the L2  in the
@@ -58,22 +59,20 @@ Current Status
 	then use the Config dialog again and renable the windows cna click okay
 	
 	Still to do:
-		Packet rate chart window needs updating
-		Add 2D point cloud rendereing
 		Add UART commmunications
 		Add IMU orientation to point cloud position calcuation
 		build a release package installer
 		test other target builds
 		
-Using in Qt 6.10.x
-	The project has been devleoped using Qt Creator 18.0.1  Qt 6.10.1.
-	Using MSVC 2022, x86_64
-	I have not tested it for other targets.
-	The this a CmakeList.txt project.  I have tried to keep things compatible to other targets.
-	If you are copying the project then copy it using the existing folder structure to whatever
-	folder will be your project folder.
-	When you open Qt Creator -> File -> Open file or project
-			Select the CmakeList.txt file and select open
-	Qt will ask you to select a configuration. I selected Desktop Qt 6.10.1 MSVC2022 64bit
-	This selection will only show up if you have MSVC 2022 already installed
-	ctrl+b will build the project, f5 will run it.
+	Using Qt 6.10.x
+		The project has been devleoped using Qt Creator 18.0.1  Qt 6.10.1.
+		Using MSVC 2022, x86_64
+		I have not tested it for other targets.
+		The this a CmakeList.txt project.  I have tried to keep things compatible to other targets.
+		If you are copying the project then copy it using the existing folder structure to whatever
+		folder will be your project folder.
+		When you open Qt Creator -> File -> Open file or project
+				Select the CmakeList.txt file and select open
+		Qt will ask you to select a configuration. I selected Desktop Qt 6.10.1 MSVC2022 64bit
+		This selection will only show up if you have MSVC 2022 already installed
+		ctrl+b will build the project, f5 will run it.

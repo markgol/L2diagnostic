@@ -25,12 +25,11 @@
 //  the full sensor speed of 64K/sec sample points.
 //
 //  Solution:
-//  This software skeleton was initially created using a
-//  directed ChatGPT AI conversation targetting a QT Creator
-//  development platform.
+//  This software skeleton was created using directed ChatGPT AI
+//  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
 //  V0.2.0  2026-01-02  Documentation, start of debugging
@@ -49,6 +48,7 @@
 //                          requires it
 //  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
 //                      UDP datagrams into one L2 Lidar packet
+//  V0.3.5  2026-01-24  Correction to last2D packet
 //
 //--------------------------------------------------------
 
@@ -328,10 +328,14 @@ void L2lidar::decode2D(const QByteArray& datagram, uint64_t Offset)
         reinterpret_cast<const Lidar2DPointDataPacket*>(datagram.constData()+Offset);
 
     PacketMutex.lock();
-    latest2Ddata_ = pkt->data;
 
-    latestTimestamp_.data.sec = latest2Ddata_.info.stamp.sec;
-    latestTimestamp_.data.nsec = latest2Ddata_.info.stamp.nsec;
+    latest2DdataPacket_.header = pkt->header;
+    latest2DdataPacket_.data = pkt->data;
+    latest2DdataPacket_.tail = pkt->tail;
+
+    latestTimestamp_.data.sec = latest2DdataPacket_.data.info.stamp.sec;
+    latestTimestamp_.data.nsec = latest2DdataPacket_.data.info.stamp.nsec;
+
     PacketMutex.unlock();
 
     emit timestampReceived();

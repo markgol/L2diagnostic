@@ -29,7 +29,7 @@
 //  conversation targetting a QT Creator development platform.
 //  It reads UPD packets from the L2, caterorizes them, performs
 //  error detection for bad packets (lost), display subsample
-//  of packets and optionally saves them to a CSV file.
+//  of packets.
 //
 //  V0.3.0  2026-01-18  Changed point cloud viewer back
 //								into regular OpenGL window
@@ -78,12 +78,11 @@
 //          |
 //      PointCloudWindow::appendFrame()
 //          |
-//      VBO sub-write
+//      VBO sub-write       accumulates cloud points from frames
 //          |
-//      requestUpdate->renderer
+//      requestUpdate->renderer   queued for next paintGL
 //          |
-//          |
-//      QOpenGLWindow::paintGL()
+//      QOpenGLWindow::paintGL()  timer driven typically at 30-60Hz
 //
 //--------------------------------------------------------
 
@@ -125,12 +124,20 @@ void PointCloudWindow::closeEvent(QCloseEvent* e)
 //  PointCloudWindow methods
 //========================================================
 
+void PointCloudWindow::Initialize()
+{
+    setFlag(Qt::Window);
+    // Window geometry and state for point cloud window
+    restoreWindowState();
+    ResetView();
+}
+
 //--------------------------------------------------------
 //  initializeGL
 //--------------------------------------------------------
 void PointCloudWindow::initializeGL()
 {
-    // this won't work until maxPoints, maxFrame and maxPointPerFrame are defined
+    // this won't work until maxPoints are defined
     if(m_maxPoints==0) {
         return;
     }
@@ -160,6 +167,7 @@ void PointCloudWindow::initializeGL()
             "uniform float uMaxRange;\n"
             "uniform float uMinIntensity;\n"
             "uniform float uMaxIntensity;\n"
+            "uniform float uPointSize;\n"
 
             "out float vRangeNorm;\n"
             "out float vIntensityNorm;\n"
@@ -179,7 +187,7 @@ void PointCloudWindow::initializeGL()
             "          );\n"
 
             "   gl_Position = mvp * vec4(inPos, 1.0);\n"
-            "   gl_PointSize = 2.0;\n"
+            "   gl_PointSize = 2.0f;\n"
         "}\n"
                                       );
 
@@ -268,13 +276,11 @@ void PointCloudWindow::paintGL()
     m_program.bind();
 
     m_program.setUniformValue("mvp", mvp);
-    m_program.setUniformValue("uMinRange", m_minRange);
-    m_program.setUniformValue("uMaxRange", m_maxRange);
+    m_program.setUniformValue("uMinRange", mPCsettings.MinDistance);
+    m_program.setUniformValue("uMaxRange", mPCsettings.MaxDistance);
     m_program.setUniformValue("uMinIntensity", m_minIntensity);
     m_program.setUniformValue("uMaxIntensity", m_maxIntensity);
-    // m_program.setUniformValue("pointSize", m_pointSize); // ??? future update
-    //
-
+    m_program.setUniformValue("uPointSize", (float)mPCsettings.PointSize);
 
     m_vao.bind();
     if (!m_wrapped) {
@@ -491,7 +497,8 @@ void PointCloudWindow::wheelEvent(QWheelEvent* e)
     const float zoomFactor = std::pow(1.001f, -e->angleDelta().y());
 
     mPCsettings.Distance *= zoomFactor;
-    mPCsettings.Distance = std::clamp(mPCsettings.Distance, m_minDistance, m_maxDistance);
+    //mPCsettings.Distance = std::clamp(mPCsettings.Distance, m_minDistance, m_maxDistance);
+    mPCsettings.Distance = std::clamp(mPCsettings.Distance, 0.1f, 200.0f);
 
     updateViewMatrix();
     update();
@@ -586,6 +593,9 @@ void PointCloudWindow::ResetView()
     mPCsettings.Distance = DefaultPCsettings.Distance;
     mPCsettings.Yaw = DefaultPCsettings.Yaw;
     mPCsettings.Pitch = DefaultPCsettings.Pitch;
+    mPCsettings.PointSize = DefaultPCsettings.PointSize;
+    mPCsettings.MinDistance = DefaultPCsettings.MinDistance;
+    mPCsettings.MaxDistance = DefaultPCsettings.MaxDistance;
 
     updateViewMatrix();
     update();
@@ -599,6 +609,9 @@ void PointCloudWindow::getPCsettings(PCsettings& settings)
     settings.Distance = mPCsettings.Distance;
     settings.Pitch = mPCsettings.Pitch;
     settings.Yaw = mPCsettings.Yaw;
+    settings.PointSize = mPCsettings.PointSize;
+    settings.MinDistance = mPCsettings.MinDistance;
+    settings.MaxDistance = mPCsettings.MaxDistance;
 }
 
 //--------------------------------------------------------
@@ -609,6 +622,9 @@ void PointCloudWindow::setPCsettings(PCsettings& settings)
     mPCsettings.Distance = settings.Distance;
     mPCsettings.Pitch = settings.Pitch;
     mPCsettings.Yaw = settings.Yaw;
+    mPCsettings.PointSize = settings.PointSize;
+    mPCsettings.MinDistance = settings.MinDistance;
+    mPCsettings.MaxDistance = settings.MaxDistance;
 
     m_target = QVector3D(0,0,0);
 
