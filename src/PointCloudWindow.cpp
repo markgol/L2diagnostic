@@ -152,6 +152,9 @@ void PointCloudWindow::initializeGL()
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_BLEND);
+    //glEnable(GL_POINT_SPRITE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 
     // ---- Shaders ----
@@ -187,14 +190,13 @@ void PointCloudWindow::initializeGL()
             "          );\n"
 
             "   gl_Position = mvp * vec4(inPos, 1.0);\n"
-            "   gl_PointSize = 2.0f;\n"
+            "   gl_PointSize = uPointSize;\n"
         "}\n"
                                       );
 
 
     m_program.addShaderFromSourceCode(QOpenGLShader::Fragment,
     "#version 330 core\n"
-
         "in float vRangeNorm;\n"
         "in float vIntensityNorm;\n"
 
@@ -209,6 +211,11 @@ void PointCloudWindow::initializeGL()
 
         "void main()\n"
         "{\n"
+        "   // ---- circular point mask ----\n"
+        "   vec2 c = gl_PointCoord * 2.0 - vec2(1.0);\n"
+        "   if (dot(c,c) > 1.0)\n"
+        "       discard;\n"
+        "\n"
         "   float hue = (1.0 - vRangeNorm) * 0.66; // blue → red\n"
         "   float saturation = 1.0;\n"
         "   float value = mix(0.2, 1.0, vIntensityNorm);\n"
@@ -259,6 +266,11 @@ void PointCloudWindow::resizeGL(int w, int h)
     updateViewMatrix();
 }
 
+void PointCloudWindow::getPointSizeRange(float *SizeRange)
+{
+    glGetFloatv(GL_POINT_SIZE_RANGE, SizeRange);
+    return;
+}
 //--------------------------------------------------------
 //  paintGL
 //--------------------------------------------------------
@@ -280,7 +292,15 @@ void PointCloudWindow::paintGL()
     m_program.setUniformValue("uMaxRange", mPCsettings.MaxDistance);
     m_program.setUniformValue("uMinIntensity", m_minIntensity);
     m_program.setUniformValue("uMaxIntensity", m_maxIntensity);
-    m_program.setUniformValue("uPointSize", (float)mPCsettings.PointSize);
+    float sizeRange[2];
+    float pointsize = mPCsettings.PointSize;
+    glGetFloatv(GL_POINT_SIZE_RANGE, sizeRange);
+    if(pointsize < sizeRange[0])
+        pointsize = sizeRange[0];
+    if(pointsize > sizeRange[1])
+        pointsize = sizeRange[1];
+
+    m_program.setUniformValue("uPointSize", pointsize);
 
     m_vao.bind();
     if (!m_wrapped) {

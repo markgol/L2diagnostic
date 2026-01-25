@@ -775,27 +775,11 @@
      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
-   <widget class="QSpinBox" name="spinPointSize">
-    <property name="geometry">
-     <rect>
-      <x>91</x>
-      <y>100</y>
-      <width>51</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="minimum">
-     <number>1</number>
-    </property>
-    <property name="maximum">
-     <number>10</number>
-    </property>
-   </widget>
    <widget class="QLabel" name="label_23">
     <property name="geometry">
      <rect>
       <x>150</x>
-      <y>100</y>
+      <y>110</y>
       <width>41</width>
       <height>31</height>
      </rect>
@@ -807,9 +791,9 @@
    <widget class="QLabel" name="label_24">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>100</y>
-      <width>61</width>
+      <x>0</x>
+      <y>110</y>
+      <width>51</width>
       <height>31</height>
      </rect>
     </property>
@@ -818,6 +802,16 @@
     </property>
     <property name="alignment">
      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="spinPointSize">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>110</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
     </property>
    </widget>
   </widget>
@@ -841,7 +835,6 @@
   <tabstop>cbACK</tabstop>
   <tabstop>spinColorMin</tabstop>
   <tabstop>spinColorMax</tabstop>
-  <tabstop>spinPointSize</tabstop>
   <tabstop>dstIPedit</tabstop>
   <tabstop>dstPortSpin</tabstop>
   <tabstop>srcIPedit</tabstop>

@@ -198,13 +198,14 @@ private:
     QTimer*         mPacketBeat; // this is heartbeat for the packet rate chart
     uint64_t        m_lastPacketCount = 0;
 
-    // L2 workmode
-    //int mLidarScanMode {LIDAR_MODE_3D}; // default is 3D scanning
-
     //-----------------------------------------------------
     // Point cloud veiwer
     //-----------------------------------------------------
     PointCloudWindow* m_pointCloudWindow{nullptr};
+
+    // This does all the dirty work for opening
+    // The PointCloudWindow class
+    void OpenPointCloudWindow();
 
     PCsettings defaultPCsettings {10.0,145.0,20.0};
     void SetDefaultView();

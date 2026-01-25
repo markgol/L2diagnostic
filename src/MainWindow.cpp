@@ -176,13 +176,7 @@ MainWindow::MainWindow(QWidget* parent)
     // create cloud viewer window
     // This is not a Qt window but a OpenGL managed window
     if(mmaxPoints>=50000) {
-        // only open point cloud window if there is a minimum
-        // number point cloud buffer size
-        m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
-        // set default view settings
-        SetDefaultView();
-        m_pointCloudWindow->setTransientParent(windowHandle());
-        m_pointCloudWindow->Initialize();
+        OpenPointCloudWindow();
     }
 
     SetupGUIrefreshTimers();
@@ -224,6 +218,29 @@ MainWindow::~MainWindow()
 //========================================================
 // constructor helpers
 //========================================================
+
+//--------------------------------------------------------
+// OpenPointCloudWindow
+//--------------------------------------------------------
+void MainWindow::OpenPointCloudWindow()
+{
+    // only open point cloud window if there is a minimum
+    // number point cloud buffer size
+    // configure OpenGL before creating PointCloudWindow class
+    // so that it has the correct OpenGL context
+    QSurfaceFormat format;
+    format.setVersion(3, 3);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    format.setDepthBufferSize(24);
+    format.setRenderableType(QSurfaceFormat::OpenGL);
+
+    QSurfaceFormat::setDefaultFormat(format);
+    m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
+    // set default view settings
+    SetDefaultView();
+    m_pointCloudWindow->setTransientParent(windowHandle());
+    m_pointCloudWindow->Initialize();
+}
 
 //--------------------------------------------------------
 // SetDefaultView
@@ -712,6 +729,13 @@ void MainWindow::updateACK()
 //
 //  This is updated at the packet receive rate
 //
+//  The Point cloud viewer architecture changed allows means
+//  it doesn't need to have any awareness of the frame or
+//  frame size.
+//
+//  The frame is converted to a point cloud format and then
+//  appended to the point cloud display.
+//
 //--------------------------------------------------------
 void MainWindow::onNewLidarFrame(bool Frame3D)
 {
@@ -824,6 +848,10 @@ void MainWindow::openConfig()
         return;
     }
 
+    float PointSizeRange[2];
+    m_pointCloudWindow->getPointSizeRange((PointSizeRange));
+    config.setPointSizeRange(PointSizeRange);
+
     if (config.exec() == QDialog::Accepted) {
         // update the L2 UDP connection
         l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
@@ -852,12 +880,6 @@ void MainWindow::openConfig()
                 RestoreConfigSettings();
                 return;
             }
-            // ****** alternate process ******
-            // delete m_pointCloudWindow;
-            // reopen m_pointCloudWindow;
-            // mmaxPoints = config.getMaxPoints();
-            // saveSettings(false); // do not reset window geometries
-            // reopen m_pointCloudWindow;
         }
 
         if(m_controlsDock->GetConnectedState()) {

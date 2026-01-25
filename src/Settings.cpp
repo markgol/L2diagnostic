@@ -252,7 +252,7 @@ void MainWindow::loadSettings(bool resetRequested)
         defaultPCsettings.Distance =settings.value("Distance", 10.0).toDouble();
         defaultPCsettings.Yaw =settings.value("Yaw", 145.0).toDouble();
         defaultPCsettings.Pitch = settings.value("Pitch", 20.0).toDouble();
-        defaultPCsettings.PointSize = settings.value("PointSize", 1).toInt();
+        defaultPCsettings.PointSize = settings.value("PointSize", 1.0).toDouble();
         defaultPCsettings.MinDistance = settings.value("MinDistance",0.1).toDouble();
         defaultPCsettings.MaxDistance = settings.value("MaxDistance",10.0).toDouble();
 

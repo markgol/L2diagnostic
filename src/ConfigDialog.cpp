@@ -73,4 +73,11 @@ void ConfigDialog::ResetPCview()
 
 }
 
+void ConfigDialog::setPointSizeRange(float *PointSizeRange)
+{
+    // set the limits on the cloud point size based on system settings
+    ui.spinPointSize->setRange(PointSizeRange[0],PointSizeRange[1]);
+    return;
+}
+
 

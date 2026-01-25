@@ -79,19 +79,25 @@
 //
 // #include "PointCloudWindow.h"
 //
+// create cloud viewer window
+// This is not a Qt window but a OpenGL managed window
 // if(mmaxPoints>=50000) {
-//      // only open point cloud window if there is a minimum
-//      // number point cloud buffer size
-//      m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
-//      // set default view settings
-//      PCsettings defaultPCsettings;
-//      defaultPCsettings.Distance = 10.0f;
-//      defaultPCsettings.Yaw = 145.0f;
-//      defaultPCsettings.Pitch = 20.0f;
-//      m_pointCloudWindow->setDefaultPCsettings(defaultPCsettings);
-//      // finish intiailization
-//      m_pointCloudWindow->setTransientParent(windowHandle());
-//      m_pointCloudWindow->Initialize();
+//     // only open point cloud window if there is a minimum
+//     // number point cloud buffer size
+//     // configure OpenGL before creating PointCloudWindow class
+//     // so that it has the correct OpenGL context
+//     QSurfaceFormat format;
+//     format.setVersion(3, 3);
+//     format.setProfile(QSurfaceFormat::CoreProfile);
+//     format.setDepthBufferSize(24);
+//     format.setRenderableType(QSurfaceFormat::OpenGL);
+
+//     QSurfaceFormat::setDefaultFormat(format);
+//     m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
+//     // set default view settings
+//     SetDefaultView();
+//     m_pointCloudWindow->setTransientParent(windowHandle());
+//     m_pointCloudWindow->Initialize();
 // }
 //
 //--------------------------------------------------------
@@ -149,7 +155,7 @@ typedef struct
     float Distance;
     float Yaw;
     float Pitch;
-    int PointSize;
+    float PointSize;
     float MinDistance;
     float MaxDistance;
 } PCsettings;
@@ -187,6 +193,7 @@ public:
     void setPCsettings(PCsettings& settings); // current settings
     void setDefaultPCsettings(PCsettings& settings);
     void Initialize();
+    void getPointSizeRange(float *SizeRange);
 
 public slots:
     void onRenderTick(); // timer driven renderer

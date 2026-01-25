@@ -218,9 +218,9 @@ public:
         return static_cast<float>(ui.spinPitch->value());
     }
 
-    int getPointSize() const
+    float getPointSize() const
     {
-        return static_cast<int>(ui.spinPointSize->value());
+        return static_cast<float>(ui.spinPointSize->value());
     }
 
     float getMinDistance() const
@@ -236,6 +236,9 @@ public:
     // =============================
     // Setters (for LoadSettings)
     // =============================
+
+    // this set the range on the point size spin button
+    void setPointSizeRange(float *PointSizeRange);
 
     //--------------------------------------------------------
     // Ehternet Application UDP parameters
@@ -316,7 +319,7 @@ public:
         ui.cbIMUadjust->setChecked(p);
     }
 
-    void setPointSize(int PointSize)
+    void setPointSize(float PointSize)
     {
         ui.spinPointSize->setValue(PointSize);
     }
