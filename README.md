@@ -29,7 +29,7 @@ files for license.
 		Workmode controls implemented
 		L2Lidar class works across multiple UDP datagrams for large packets
 		PointCloudWindow class useable in other apps
-		 IMU orientation correction to point cloud position
+		IMU orientation correction to point cloud position
 		
 		Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 		unitree_lidar_utilites.h to perform required function needs for using the L2  in the
@@ -65,7 +65,7 @@ files for license.
 		test other target builds
 		
 	Using Qt 6.10.x
-		The project has been devleoped using Qt Creator 18.0.1  Qt 6.10.1.
+		The project has been developed using Qt Creator 18.0.1  Qt 6.10.1.
 		Using MSVC 2022, x86_64
 		I have not tested it for other targets.
 		The this a CmakeList.txt project.  I have tried to keep things compatible to other targets.
