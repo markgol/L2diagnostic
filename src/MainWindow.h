@@ -54,6 +54,7 @@
 //                      UDP datagrams into one L2 Lidar packet
 //  V0.3.5  2026-01-24  removed remnant from old renderer architecture
 //                      Added display of 2d point cloud data
+// V0.3.6   2026-01-25  Added IMU orientation correction to point cloud data
 //
 //--------------------------------------------------------
 
@@ -89,8 +90,6 @@
 // You should have received a copy of the GNU General Public License along with L2diagnsotic.
 // If not, see < https://www.gnu.org/licenses/>.
 //--------------------------------------------------------
-
-
 #pragma once
 
 // Qt includes
@@ -117,6 +116,7 @@
 #include "ControlsDock.h"
 #include "WorkmodeDialog.h"
 #include "PacketRateDock.h"
+#include "quaternion.h"
 
 #define LIDAR_MODE_3D 0
 #define LIDAR_MODE_2D 1
@@ -149,6 +149,7 @@ private slots:
     void L2disconnect();
     void openConfig();
     void openWorkmode();
+    void ClearPCwindow();
 
     // L2 commands
     void startRotation();
@@ -231,13 +232,9 @@ private:
     // mutexf for point cloud frame updates
     QMutex m_cloudMutex;
 
-    // ring storage for point cloud frames to display
-    //uint32_t mMax3Dframes2Buffer {MAX_3DPOINTS_PER_FRAME}; // maximum number of 3D frames
-                                        // to buffer for display
-
-    //uint32_t mMax2Dframes2Buffer {MAX_2DPOINTS_PER_FRAME}; // maximum number of 2D frames
-                                        // to buffer for display
     int mmaxPoints{0}; // computed maximum number of points
+
+    bool mIMUadjust{false}; // correct for IMU
 
     // helper function for Config dialog when cancelling dialog
     void RestoreConfigSettings(); // reset the point cloud view back to defaults

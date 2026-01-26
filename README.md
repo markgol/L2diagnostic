@@ -29,6 +29,7 @@ Current Status
 	Workmode controls implemented
 	L2Lidar class works across multiple UDP datagrams for large packets
 	PointCloudWindow class useable in other apps
+	 IMU orientation correction to point cloud position
 	
 	Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 	unitree_lidar_utilites.h to perform required function needs for using the L2  in the
@@ -60,7 +61,6 @@ Current Status
 	
 	Still to do:
 		Add UART commmunications
-		Add IMU orientation to point cloud position calcuation
 		build a release package installer
 		test other target builds
 		

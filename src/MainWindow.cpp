@@ -73,6 +73,7 @@
 // V0.3.5   2026-01-24  Removal of MainWindow ring buffer for frames
 //                      removed remnants from old renderer architecture
 //                      Added display of 2d point cloud data
+// V0.3.6   2026-01-25  Added IMU orientation correction to point cloud data
 //
 //--------------------------------------------------------
 
@@ -434,7 +435,7 @@ void MainWindow::ConnectDocksViewerActions()
     //  Controls gui
     //  This is the buttons dialog.
     //--------------------------------------------------------
-    //added the seven button connections
+    //added the controls button connections
     connect(m_controlsDock, &ControlsDock::L2connectRequested,
             this, &MainWindow::L2connect);
 
@@ -455,6 +456,9 @@ void MainWindow::ConnectDocksViewerActions()
 
     connect(m_controlsDock, &ControlsDock::L2resetRequested,
             this, &MainWindow::sendReset);
+
+    connect(m_controlsDock, &ControlsDock::ClearPCwindowRequested,
+            this, &MainWindow::ClearPCwindow);
 
     // dialogs connections (will open a dialog)
     connect(m_controlsDock, &ControlsDock::GetVersionRequested,
@@ -745,7 +749,11 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
     // skip 2 takes every 3rd packet
     // ...
     // ...
-    static uint64_t frameCounter = 0;
+    static uint32_t frameCounter {0};
+   bool adjustWithIMU {false};
+    double time;
+    LidarImuData Imu;
+    Quaternion Quat;
 
     if (NumFramesToSkip > 0 &&
         (++frameCounter % (NumFramesToSkip + 1)) != 0)
@@ -758,21 +766,43 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
 
     if(Frame3D) {
         // 3D packet
-        auto packet = l2lidar.Pcl3Dpacket();
+        LidarPointDataPacket packet = l2lidar.Pcl3Dpacket();
         unilidar_sdk2::parseFromPacketToPointCloud(
                     cloud, packet, false, 0, 100);
+        time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
     } else {
         // 2D packet
-        auto packet = l2lidar.Pcl2Dpacket();
+        Lidar2DPointDataPacket packet = l2lidar.Pcl2Dpacket();
         unilidar_sdk2::parseFromPacketPointCloud2D(
                     cloud, packet, false, 0, 100);
+        time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
+    }
+
+    if(mIMUadjust) {
+        // check if latest IMU packet is within 10 msec
+        double IMUtime;
+        Imu = l2lidar.imu();
+        IMUtime = (double)Imu.info.stamp.sec +(double)Imu.info.stamp.nsec * 1e-9;
+        if(abs(time-IMUtime) < .010) {
+            adjustWithIMU = true;
+            Quat.w = Imu.quaternion[0];
+            Quat.x = Imu.quaternion[1];
+            Quat.y = Imu.quaternion[2];
+            Quat.z = Imu.quaternion[3];
+        } else {
+            adjustWithIMU = false;
+        }
     }
 
     Frame frame;
     frame.reserve(cloud.points.size());
 
-    for (const auto& p : cloud.points)
+    for (auto& p : cloud.points)
     {
+        if(adjustWithIMU) {
+            rotateByQuaternion(Quat,p.x,p.y,p.z);
+        }
+
         frame.push_back({
             p.x,
             p.y,
@@ -1011,6 +1041,11 @@ void MainWindow::sendSetWorkmode()
     workmode = WorkMode.GetWorkmode();
     l2lidar.SetWorkMode(workmode);
     return;
+}
+
+void MainWindow::ClearPCwindow()
+{
+    m_pointCloudWindow->clearPointCloud();
 }
 
 //--------------------------------------------------------

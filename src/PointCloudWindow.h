@@ -42,6 +42,7 @@
 //  V0.3.5  2026-01-24  Moved the creation of the
 //                      point cloud window into the class
 //                      Moved much of the closing of the class here
+//  V0.3.6  2026-01-24  Added clear point cloud
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -194,6 +195,7 @@ public:
     void setDefaultPCsettings(PCsettings& settings);
     void Initialize();
     void getPointSizeRange(float *SizeRange);
+    void clearPointCloud();
 
 public slots:
     void onRenderTick(); // timer driven renderer

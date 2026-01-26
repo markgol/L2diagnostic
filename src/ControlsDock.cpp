@@ -32,6 +32,7 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V.02.6  2026-01-13  added button controls dockable dialog
+//  V0.3.6  2026-01-25  Added clear point cloud window button
 //
 //--------------------------------------------------------
 #include "ControlsDock.h"
@@ -86,6 +87,10 @@ ControlsDock::ControlsDock(QWidget *parent)
     // reset window geometry and state button
     connect(ui->btnResetWindows, &QPushButton::clicked,
             this, &ControlsDock::ResetWindowsRequested);
+
+    // clear point cloud button
+    connect(ui->btnClearDisplay, &QPushButton::clicked,
+            this, &ControlsDock::ClearPCwindowRequested);
 
     setConnectState(false); // L2 is disconnected at start
 }

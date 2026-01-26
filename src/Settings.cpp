@@ -45,6 +45,9 @@
 // V0.3.4   2026-01-23  Added save and restore for workmode settings
 // V0.3.5   2026-01-24  Added scan mode setting (3D or 2D)
 //                      Added cloud point size control
+// V0.3.6   2026-01-25  correction to load/save settings
+//                      moved 2 settings into PCview group
+//                      removed PCbuffering group
 //
 //--------------------------------------------------------
 
@@ -161,20 +164,21 @@ void MainWindow::saveSettings(bool resetRequested)
     // point cloud view settings
     settings.beginGroup("PCview");
 
-    // point cloud view settings
+        // point cloud view settings
 
-    settings.setValue("Distance",defaultPCsettings.Distance);
-    settings.setValue("Yaw",defaultPCsettings.Yaw);
-    settings.setValue("Pitch",defaultPCsettings.Pitch);
-    settings.setValue("PointSize",defaultPCsettings.PointSize);
-    settings.setValue("MinDistance",defaultPCsettings.MinDistance);
-    settings.setValue("MaxDistance",defaultPCsettings.MaxDistance);
-    settings.endGroup();
+        settings.setValue("Distance",defaultPCsettings.Distance);
+        settings.setValue("Yaw",defaultPCsettings.Yaw);
+        settings.setValue("Pitch",defaultPCsettings.Pitch);
+        settings.setValue("PointSize",defaultPCsettings.PointSize);
+        settings.setValue("MinDistance",defaultPCsettings.MinDistance);
+        settings.setValue("MaxDistance",defaultPCsettings.MaxDistance);
 
-    // point cloud buffering settings
-    settings.beginGroup("PCbuffering");
-    settings.setValue("MaxPoints",mmaxPoints);
-    settings.setValue("IMUadjust",config.isIMUadjustEnabled());
+        // point cloud buffering settings
+        settings.setValue("MaxPoints",mmaxPoints);
+        bool IMUadjust = config.isIMUadjustEnabled();
+        settings.setValue("IMUadjust",IMUadjust);
+        mIMUadjust = IMUadjust;
+
     settings.endGroup();
 }
 
@@ -262,13 +266,12 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setPointSize(defaultPCsettings.PointSize);
         config.setMinDistance(defaultPCsettings.MinDistance);
         config.setMaxDistance(defaultPCsettings.MaxDistance);
-    settings.endGroup();
 
-    // point cloud buffering settings
-    settings.beginGroup("PCbuffering");
+        // point cloud buffering settings
         mmaxPoints=settings.value("MaxPoints", 900000).toUInt(); // 3D PC frame is 300 points
         config.setMaxPoints(mmaxPoints);
-        config.setIMUadjustEnabled(settings.value("IMUadjust", false).toBool());
+        mIMUadjust = settings.value("IMUadjust", false).toBool();
+        config.setIMUadjustEnabled(mIMUadjust);
     settings.endGroup();
 }
 

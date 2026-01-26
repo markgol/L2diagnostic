@@ -39,6 +39,10 @@
 //                      added default view settings
 //  V0.3.2  2026-01-22  New renderer architecture
 //  V0.3.3  2026-01-23  New renderer architecture completed
+//  V0.3.5  2026-01-24  Moved the creation of the
+//                      point cloud window into the class
+//                      Moved much of the closing of the class here
+//  V0.3.6  2026-01-24  Added clear point cloud
 //
 //--------------------------------------------------------
 
@@ -415,6 +419,35 @@ void PointCloudWindow::appendFrame(const Frame& frame)
     // Stage for GPU upload
     m_accumulatedPoints += converted;
 }
+
+//--------------------------------------------------------
+//  clearPointCloud
+//--------------------------------------------------------
+void PointCloudWindow::clearPointCloud()
+{
+    // Clear CPU-side accumulation
+    m_accumulatedPoints.clear();
+
+    // Reset ring buffer state
+    m_pointCount   = 0;
+    m_writeOffset  = 0;
+    m_wrapped      = false;
+
+    // Clear GPU buffer safely if context exists
+    if (isExposed() && m_vbo.isCreated())
+    {
+        makeCurrent();
+
+        m_vbo.bind();
+        m_vbo.allocate(m_maxPoints * sizeof(GLPoint)); // orphan old data
+        m_vbo.release();
+
+        doneCurrent();
+    }
+
+    requestUpdate();
+}
+
 
 //========================================================
 //  setDefaultPCsettings

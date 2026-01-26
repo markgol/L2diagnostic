@@ -44,6 +44,7 @@
 //  V.2.2   2026-01-08  Added Mutex access to packet copies
 //  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
 //                      UDP datagrams into one L2 Lidar packet
+//  V0.3.6  2026-01-25  Added quaternion spatial correction routine
 //
 //--------------------------------------------------------
 
@@ -100,6 +101,9 @@
 #pragma pack(pop)
 #include "unitree_lidar_utilities.h"
 
+//--------------------------------------------------------
+//  L2lidar class definitions
+//--------------------------------------------------------
 class L2lidar : public QObject {
     Q_OBJECT
 public:
