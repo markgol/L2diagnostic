@@ -2,34 +2,46 @@
 //
 //  L2Diagnostic
 //  Author: Mark Stegall
-//  Module: LidarDecoder.cpp
+//  Module: L2lidar.cpp
 //
 //  Purpose:
-//  Determine correct operation of the Unitreee L2 Lidar hardware
-//  and software.  Establish platform independent software protocols
-//  for using the L2 Lidar with its Ethernet interface.
+//
+//  The L2lidar class consists of 2 files:
+//      L2lidar.cpp
+//      L2lidar.h
+//
+//  This is to provide necesary software interfaces to control and
+//  receive data for the Unitree L2 LiDAR.
+//
+//  This is to support applications such as diagnotic, point cloud viewer
+//  and ROS2 interfaces to the L2
 //
 //  Background:
-//  Unitree provides undoucmented software files in the form:
-//      include files
-//      example application files
-//      .a Archive Library
+//      Unitree provides 2 marginally documented software files
+//      in the form:
+//          include files (open source)
+//          example application files (open source)
+//          .a Archive Library (proprietary)
 //
-//  The source files rely on an Archive library using POSIX I/O
-//  No source exists for the archive Library making it diffcult
-//  to debug or port usage of the L2 Lidar for other platforms.
-//  The hardware has 2 mutually exclusive communication interfaces:
-//      Ethernet using UDP
-//      Serial UART
-//  The serial UART is limited in speed and does not operate at
-//  the full sensor speed of 64K/sec sample points.
+//      The source files rely on an Archive library using POSIX I/O
+//      No source exists for the archive Library making it diffcult
+//      to debug or port usage of the L2 Lidar for other platforms.
+//      The hardware has 2 mutually exclusive communication interfaces:
+//          Ethernet using UDP
+//          Serial UART
 //
-//  Solution:
-//  This software skeleton was created using directed ChatGPT AI
-//  conversation targetting a QT Creator development platform.
-//  It reads UPD packets from the L2, caterorizes them, performs
-//  error detection for bad packets (lost), display subsample
-//  of packets.
+//  Observations:
+//      The serial UART can be limited in speed and may not operate at
+//      the full sensor speed of 64K/sec sample points on some platforms.
+//
+//  Current status:
+//      Implementation of functions verified using UDP interface only.
+//      Serial UART impementation is being explored but not included.
+//      Working on integration and use of this class in support of ROS2
+//      as substitute for Unitree's SDK proprietary archive library.
+//
+//  Planned offical release will be V0.4.0
+//
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
 //  V0.2.0  2026-01-02  Documentation, start of debugging
@@ -49,18 +61,26 @@
 //  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
 //                      UDP datagrams into one L2 Lidar packet
 //  V0.3.5  2026-01-24  Correction to last2D packet
+//  V0.3.6  2026-01-26  Added skeleton for Serial UART only
+//                      (std QSerialPort has issues with
+//                       4M buadrate and 250K byte/sec)
 //
 //--------------------------------------------------------
 
 //--------------------------------------------------------
-// This uses the following Unitree L2 sources modules:
+// This uses the following Unitree L2 open sources:
 //      unitree_lidar_protocol.h
 //      unitree_lidar_utilities
+// They have been modifed from the original sources
+// to correct for errors, missing definitions and
+// inconsistencies. These have been minor in most
+// instances.
+//
+// Copyright (c) 2024, Unitree Robotics
 // The orignal source can be found at:
 //      https://github.com/unitreerobotics/unilidar_sdk2
 //      under License: BSD 3-Clause License (see files)
 //
-// Corrections/additions have been made to these 2 files
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -79,10 +99,8 @@
 // If not, see < https://www.gnu.org/licenses/>.
 //--------------------------------------------------------
 
-
 //--------------------------------------------------------
 //
-//  There are 2 interface sides to the L2 Lidar
 //  The packets sent from the L2 are recieved on different port
 //  then the command packets that are sent to the L2
 //
@@ -105,12 +123,20 @@ L2lidar::L2lidar(QObject* parent)
 }
 
 //--------------------------------------------------------
-//  readPendingDatagrams()
+//  readUDPpendingDatagrams()
+//
+//  It is a Qt non-blocking I/O service called when data
+//  is received on the ethernet interface.
 //  This is a callback function that receives the UDP
-//  data packets.  It is a Qt non-blocking I/O service called
-//  when data in received on the ehternet interface
+//  datagram packets.
+//
+//  It is connected to the readyread Qt thread in
+//  this ConnectL2() in this class.
+//
+//  It is not used externally from the class
+//
 //--------------------------------------------------------
-void L2lidar::readPendingDatagrams()
+void L2lidar::readUDPpendingDatagrams()
 {
     // only process incoming UPD packets
     while (L2socket.hasPendingDatagrams()) {
@@ -129,6 +155,32 @@ void L2lidar::readPendingDatagrams()
 }
 
 //--------------------------------------------------------
+//  readUARTpendingDatagrams()
+//  This is a callback function that receives the UDP
+//  data packets.  It is a Qt non-blocking I/O service called
+//  when data in received on the UART interface
+//  This is just skeleton fragment, to reserve for
+//  future implementation
+//--------------------------------------------------------
+void L2lidar::readUARTpendingDatagrams()
+{
+    // // only process incoming UPD packets
+    // while (L2SerialPort.hasPendingDatagrams()) {
+    //     QByteArray datagram;
+    //     datagram.resize(static_cast<int>(L2SerialPort.pendingDatagramSize()));
+    //     QHostAddress sender;
+    //     quint16 senderPort;
+
+    //     // read next Datagram
+    //     L2SerialPort.readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
+
+    //     // packets decoder also updates the specific packet ID count totals and packet loss counts
+    //     // csv file processing also happens in the decoder
+    //     processDatagram(datagram);
+    // }
+}
+
+//--------------------------------------------------------
 //  processDatagram()
 //  processing the payload package from the datagram
 //  note: more than one packet may be in the datagram
@@ -141,8 +193,8 @@ void L2lidar::readPendingDatagrams()
 //  Only the L2 Lidar packet for 2D scan data spans multiple
 //  UDP datagrams (4 datagrams)
 //
-//  This means that a processing buffer needs to be allocated
-//  that can span multiple UDP datagrams.
+//  This means that a processing buffer needs to be appended
+//  so that it can span multiple UDP datagrams.
 //
 //--------------------------------------------------------
 void L2lidar::processDatagram(const QByteArray& datagram)
@@ -669,9 +721,9 @@ void L2lidar::setPacketHeader(FrameHeader *FrameHeader, uint32_t packet_type, ui
 }
 
 //--------------------------------------------------------------------
-// SendPacket
+// SendUDPPacket
 //--------------------------------------------------------------------
-bool L2lidar::SendPacket(uint8_t *Buffer,uint32_t Len)
+bool L2lidar::SendUDPpacket(uint8_t *Buffer,uint32_t Len)
 {
     QByteArray byteArray(reinterpret_cast<const char*>(Buffer), Len);
 
@@ -690,21 +742,68 @@ bool L2lidar::SendPacket(uint8_t *Buffer,uint32_t Len)
 }
 
 //--------------------------------------------------------------------
+// SendUARTPacket
+//--------------------------------------------------------------------
+bool L2lidar::SendUARTpacket(uint8_t *Buffer,uint32_t Len)
+{
+    return false;
+}
+
+//--------------------------------------------------------------------
+// SendPacket
+//--------------------------------------------------------------------
+bool L2lidar::SendPacket(uint8_t *Buffer,uint32_t Len)
+{
+    bool result;
+
+    if(!UseSerial) {
+        result = SendUDPpacket(Buffer,Len);
+    } else {
+        result = SendUARTpacket(Buffer,Len);
+    }
+
+    return result;
+}
+
+//--------------------------------------------------------------------
 // ConnectL2
 //--------------------------------------------------------------------
 bool L2lidar::ConnectL2()
 {
-    // Receive packets from L2
-    // QHostAddress(srcip),srcport
-    // QHostAddress::AnyIPv4, src_port, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)
-    if (!L2socket.bind(QHostAddress(src_ip),src_port)) {
-        qWarning() << "Failed to bind UDP socket to port" << src_port;
-        return false;
+    if(!UseSerial) {
+        // Receive packets from L2 UDP
+        // QHostAddress(srcip),srcport
+        // QHostAddress::AnyIPv4, src_port, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)
+        if (!L2socket.bind(QHostAddress(src_ip),src_port)) {
+            qWarning() << "Failed to bind UDP socket to port" << src_port;
+            return false;
+        }
+
+        // Connect readyRead signal
+        connect(&L2socket, &QUdpSocket::readyRead, this, &L2lidar::readUDPpendingDatagrams);
+        return true;
+    } else {
+        // Receive packets from L2 UART
+        // problem with QSerialPort support for 4M baudrate
+        // need to find alternative UART support package
+        // that will support across multiple platforms
+        L2serial.setPortName(SerialPort);
+        if (!L2serial.open(QIODevice::ReadWrite)) {
+            return false;
+        }
+
+        L2serial.setBaudRate(QSerialPort::Baud115200);
+        L2serial.setDataBits(QSerialPort::Data8);
+        L2serial.setParity(QSerialPort::NoParity);
+        L2serial.setStopBits(QSerialPort::OneStop);
+        L2serial.setFlowControl(QSerialPort::NoFlowControl);
+
+        // Connect readyRead signal
+        connect(&L2serial, &QUdpSocket::readyRead, this, &L2lidar::readUARTpendingDatagrams);
+
+        return true;
     }
 
-    // Connect readyRead signal
-    connect(&L2socket, &QUdpSocket::readyRead, this, &L2lidar::readPendingDatagrams);
-    return true;
 }
 
 //--------------------------------------------------------------------
@@ -712,5 +811,11 @@ bool L2lidar::ConnectL2()
 //--------------------------------------------------------------------
 void L2lidar::DisconnectL2()
 {
-    L2socket.close();
+    if(!UseSerial){
+        // close UDP
+        L2socket.close();
+    } else {
+        // close UART
+        L2serial.close();
+    }
 }

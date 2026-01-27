@@ -60,12 +60,19 @@ files for license.
 	then use the Config dialog again and renable the windows cna click okay
 	
 	Still to do:
-		Add UART commmunications
+		Update documentation
+		Cleanup L2lidar class and PointCloudWindow class
+		Add UART commmunications (delayed while researching UART packages)
 		build a release package installer
 		test other target builds
 		
+	Issues:
+		L2 UART baudrate is 4M.  The QSerialPort has issues operating at this baud rate
+		an alternative UART library must be used.  This issue makes it challenging to find
+		a platform independent UART solution.  Solutions can be found for specific platforms.
+		
 	Using Qt 6.10.x
-		The project has been developed using Qt Creator 18.0.1  Qt 6.10.1.
+		The project has been developed using Qt Creator 18.0.x  Qt 6.10.x
 		Using MSVC 2022, x86_64
 		I have not tested it for other targets.
 		The this a CmakeList.txt project.  I have tried to keep things compatible to other targets.

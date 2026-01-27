@@ -31,7 +31,7 @@ endif()
 # Qt packages
 # =============================
 set(Qt6_DIR "" CACHE PATH "Path to Qt6 installation")
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Charts)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Charts SerialPort)
 
 # Enable Qt autogen features
 set(CMAKE_AUTOMOC ON)
@@ -82,6 +82,7 @@ target_link_libraries(${PROJECT_NAME}
         Qt6::Charts
         Qt6::OpenGL
         Qt6::OpenGLWidgets
+        Qt6::SerialPort
 )
 
 # =============================

@@ -44,7 +44,8 @@
 //  V.2.2   2026-01-08  Added Mutex access to packet copies
 //  V0.3.4  2026-01-23  Changed processingDatagram() to process multiple
 //                      UDP datagrams into one L2 Lidar packet
-//  V0.3.6  2026-01-25  Added quaternion spatial correction routine
+//  V0.3.6  2026-01-26  Added quaternion spatial correction routine
+//                      Added Serial UART support
 //
 //--------------------------------------------------------
 
@@ -94,11 +95,15 @@
 #include <QUdpSocket>
 #include <Qhostaddress>
 #include <QMutex>
+#include <QSerialPort>
+
 #include <cstdint>
 
+// this is required
 #pragma pack(push, 1)
 #include "unitree_lidar_protocol.h"
 #pragma pack(pop)
+// this is needed by the parent classes
 #include "unitree_lidar_utilities.h"
 
 //--------------------------------------------------------
@@ -109,10 +114,18 @@ class L2lidar : public QObject {
 public:
     explicit L2lidar(QObject* parent = nullptr);
 
+    // Generic Send/receive packets
+    bool SendPacket(uint8_t *Buffer,uint32_t Len);
+    void processDatagram(const QByteArray& datagram);
+
     // This is the readyread Qt callback for processing
     // UDP packets that have been recieved
-    void readPendingDatagrams();
-    void processDatagram(const QByteArray& datagram);
+    void readUDPpendingDatagrams();
+    bool SendUDPpacket(uint8_t *Buffer,uint32_t Len);
+
+    // UART packets
+    bool SendUARTpacket(uint8_t *Buffer,uint32_t Len);
+    void readUARTpendingDatagrams();
 
     // Accessors for external data acces in other threads
     // such as a timer based GUI
@@ -197,15 +210,22 @@ private: // functions
                          uint32_t packet_size);
     void setPacketTail(FrameHeader *FrameTale);
 
-    // UDP function(s)
-    bool SendPacket(uint8_t *Buffer,uint32_t Len);
-
 private: // variables
     // mutex for critical packet access while copying packet
     mutable QMutex  PacketMutex;
 
+    // Communicatopns selector
+    bool UseSerial {false}; // false -  use UDP
+                            // true - use UART
+
     // UDP socket
     QUdpSocket L2socket;
+
+    // Serial UART
+    QString SerialPort {"com4"};
+    // serial port settings are fixed and can not be changed
+    // 4M buadrate, 8 bit, even partity, 1 stop, no flow control ?
+    QSerialPort L2serial;
 
     // Packet buffer
     QByteArray PacketBuffer;
