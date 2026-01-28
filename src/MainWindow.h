@@ -138,6 +138,7 @@ public:
 public slots:
     // this is in response to set view button in the config dialog
     void handleResetView();
+    void handleConfigureUDP();
     void sendSetWorkmode();
     void sendReset();
 

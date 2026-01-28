@@ -69,7 +69,7 @@
 
 #include "WorkModeDialog.h"
 #include "ui_WorkModeDialog.h"
-#include "unitree_lidar_protocol.h"
+#include "unitree_lidar_protocolL2.h"
 
 //--------------------------------------------------------
 //  RequestSetL2workmode

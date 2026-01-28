@@ -55,7 +55,7 @@
 #include <chrono>
 #include <numbers>
 
-#include "unitree_lidar_protocol.h"
+#include "unitree_lidar_protocolL2.h"
 
 namespace unilidar_sdk2{
 
@@ -204,7 +204,7 @@ inline void parseFromPacketToPointCloud(
              theta_cur += theta_step, time_relative += time_step)
     {
         // jump invalid points
-        if (ranges[j] < 1)
+        if (ranges[j] <= 1)
         {
             continue;
         }

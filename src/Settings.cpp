@@ -224,7 +224,7 @@ void MainWindow::loadSettings(bool resetRequested)
 
     // throttling
     settings.beginGroup("throttling");
-        config.setSkipFrame(settings.value("NumFramesToSkip", 1).toUInt());
+        config.setSkipFrame(settings.value("NumFramesToSkip", 0).toUInt());
         config.setPacketUpdateRate(settings.value("PacketUpdateRate", 100).toUInt()); // 10Hz
         config.setDiagUpdateRate(settings.value("DiagUpdateRate", 200).toUInt());   // 5Hz
         config.setRenderRate(settings.value("RendererUpdateRate", 33).toUInt());    // 30Hz
@@ -268,7 +268,7 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setMaxDistance(defaultPCsettings.MaxDistance);
 
         // point cloud buffering settings
-        mmaxPoints=settings.value("MaxPoints", 900000).toUInt(); // 3D PC frame is 300 points
+        mmaxPoints=settings.value("MaxPoints", 450000).toUInt(); // 3D PC frame is 300 points
         config.setMaxPoints(mmaxPoints);
         mIMUadjust = settings.value("IMUadjust", false).toBool();
         config.setIMUadjustEnabled(mIMUadjust);

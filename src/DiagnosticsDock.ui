@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>556</width>
-    <height>197</height>
+    <height>216</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -100,6 +100,34 @@
        </item>
        <item row="7" column="1">
         <widget class="QLabel" name="lblRangeScaleValue"/>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="lblRangeMinText">
+         <property name="text">
+          <string>Range min</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0">
+        <widget class="QLabel" name="lblRangeMaxText">
+         <property name="text">
+          <string>Range max</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QLabel" name="lblRangeMinValue">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="1">
+        <widget class="QLabel" name="lblRangeMaxValue">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

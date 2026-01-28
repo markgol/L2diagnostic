@@ -43,6 +43,7 @@
 //                      removed Max # frame
 //                      added buffer size instead
 //                      added cloud point size
+//  V.3.7   2026-01-26  Added set UDP configuration in L2
 //
 //--------------------------------------------------------
 
@@ -91,6 +92,10 @@ public:
         // Reset View button
         connect(ui.btnSetView, &QPushButton::clicked,
                 this, &ConfigDialog::ResetPCview);
+
+        // Configure L2 UDP
+        connect(ui.btnConfigureUDP, &QPushButton::clicked,
+                this, &ConfigDialog::ConfigureUDP);
 
         // Reasonable defaults / limits
         // UDP ports
@@ -369,10 +374,12 @@ public:
 
 signals:
     void requestViewReset();
+    void requestConfigureUDP();
 
 
 private slots:
     void ResetPCview();
+    void ConfigureUDP();
 
 
 private:

@@ -73,7 +73,7 @@ class IMUDock;
 QT_END_NAMESPACE
 
 // needed device data structures
-#include "unitree_lidar_protocol.h"
+#include "unitree_lidar_protocolL2.h"
 
 //--------------------------------------------------------
 // IMUDock class definition

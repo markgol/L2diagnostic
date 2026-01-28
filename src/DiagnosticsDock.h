@@ -73,7 +73,7 @@ class DiagnosticsDock;
 QT_END_NAMESPACE
 
 // needed device data structures
-#include "unitree_lidar_protocol.h"
+#include "unitree_lidar_protocolL2.h"
 
 //--------------------------------------------------------
 // DiagnosticsDock class definition
@@ -103,7 +103,9 @@ public:
     ~DiagnosticsDock();
 
     // use these calls to update this dock window
-    void updateDiagnostics(const LidarInsideState& State, const LidarCalibParam& Calib );
+    void updateDiagnostics(const LidarInsideState& State, const LidarCalibParam& Calib,
+                float range_min, float range_max );
+
     void updateVersion(const LidarVersionData& version);
 
 private:

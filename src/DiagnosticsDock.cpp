@@ -89,7 +89,8 @@ DiagnosticsDock::~DiagnosticsDock()
 //  updateDiagnostics
 //  signal callback to update diagnostics
 //--------------------------------------------------------
-void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State, const LidarCalibParam& Calib )
+void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State, const LidarCalibParam& Calib,
+                                        float range_min, float range_max )
 {
     // Calibration
     QString ResultString;
@@ -117,6 +118,12 @@ void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State, const Lid
 
     ResultString = ResultString.asprintf("%.6f",Calib.range_scale);
     ui->lblRangeScaleValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%.1f m",range_min);
+    ui->lblRangeMinValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%.1f m",range_max);
+    ui->lblRangeMaxValue->setText(ResultString);
 
     // Internal state
     ResultString = ResultString.asprintf("%u",State.sys_rotation_period);

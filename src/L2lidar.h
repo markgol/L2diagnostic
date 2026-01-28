@@ -46,6 +46,9 @@
 //                      UDP datagrams into one L2 Lidar packet
 //  V0.3.6  2026-01-26  Added quaternion spatial correction routine
 //                      Added Serial UART support
+//  V0.3.7  2026-01-28  Documentation updates
+//                      Minor bug corrections
+//                      Added Set UPD configuration in the L2
 //
 //--------------------------------------------------------
 
@@ -76,15 +79,14 @@
 // If not, see < https://www.gnu.org/licenses/>.
 //--------------------------------------------------------
 
+
 //--------------------------------------------------------
-//
-//  There are 2 interface sides to the L2 Lidar
-//  The packets sent from the L2 are recieved on different port
-//  then the command packets that are sent to the L2
 //
 //  No ui (user interface) elements are contained in this class
 //
 //  class L2lidar
+//
+//  See the L2lidar.cpp file for class method() documentaion
 //
 //--------------------------------------------------------
 
@@ -99,12 +101,12 @@
 
 #include <cstdint>
 
-// this is required
+// this is required, DO NOT REMOVE
 #pragma pack(push, 1)
-#include "unitree_lidar_protocol.h"
+#include "unitree_lidar_protocolL2.h"
 #pragma pack(pop)
-// this is needed by the parent classes
-#include "unitree_lidar_utilities.h"
+// This is typically needed by the parent classes
+#include "unitree_lidar_utilitiesL2.h"
 
 //--------------------------------------------------------
 //  L2lidar class definitions
@@ -113,19 +115,6 @@ class L2lidar : public QObject {
     Q_OBJECT
 public:
     explicit L2lidar(QObject* parent = nullptr);
-
-    // Generic Send/receive packets
-    bool SendPacket(uint8_t *Buffer,uint32_t Len);
-    void processDatagram(const QByteArray& datagram);
-
-    // This is the readyread Qt callback for processing
-    // UDP packets that have been recieved
-    void readUDPpendingDatagrams();
-    bool SendUDPpacket(uint8_t *Buffer,uint32_t Len);
-
-    // UART packets
-    bool SendUARTpacket(uint8_t *Buffer,uint32_t Len);
-    void readUARTpendingDatagrams();
 
     // Accessors for external data acces in other threads
     // such as a timer based GUI
@@ -173,7 +162,7 @@ public:
     bool LidarStopRotation(void);
     bool LidarReset(void);
     bool LidarGetVersion(void);
-    //bool QueryWorkMode(void);
+    //bool QueryWorkMode(void);  // no method of determing this from L2 has been found
     bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
 
     // UDP ethernet communications
@@ -182,6 +171,11 @@ public:
     // It DOES NOT change the L2 configuration settings
     void LidarSetCmdConfig(QString srcIP, uint32_t srcPort,
                            QString dstIP, uint32_t dstPort);
+
+    // This set the stored UDP configuration on the L2
+    // a power cycle is required after this for it to take effect
+    bool setL2UDPconfig(QString hostIP, uint32_t hostPort,
+                           QString LidarIP, uint32_t LidarPort);
 
     bool ConnectL2();  // bind to create, bind socket, connect callback for decode
     void DisconnectL2();   // close socket
@@ -195,6 +189,19 @@ signals:
     void ackReceived();
 
 private: // functions
+    // Generic Send/receive packets
+    bool SendPacket(uint8_t *Buffer,uint32_t Len);
+    void processDatagram(const QByteArray& datagram);
+
+    // This is the readyread Qt callback for processing
+    // UDP packets that have been recieved
+    void readUDPpendingDatagrams();
+    bool SendUDPpacket(uint8_t *Buffer,uint32_t Len);
+
+    // UART packets
+    bool SendUARTpacket(uint8_t *Buffer,uint32_t Len);
+    void readUARTpendingDatagrams();
+
     // UDP packet decoders
     void decode3D(const QByteArray& datagram, uint64_t Offset);
     void decode2D(const QByteArray& datagram, uint64_t Offset);
@@ -254,10 +261,10 @@ private: // variables
 
     // QudpSocket parmameters
     // These should only be a reflection of L2
-    // UDP ethernet interface.  Currently they do not set
+    // UDP ethernet interface. They do not set
     // ethernet configuration on the L2
-    QString src_ip {""};
-    QString dst_ip {""};
-    uint32_t src_port {0};
-    uint32_t dst_port {0};
+    QString src_ip {"192.168.1.2"}; // factory default
+    QString dst_ip {"192.168.1.62"}; // factory default
+    uint32_t src_port {6201}; // factory default
+    uint32_t dst_port {6101}; // factory default
 };

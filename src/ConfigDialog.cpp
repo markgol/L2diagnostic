@@ -61,7 +61,22 @@
 #include <QMessageBox>
 
 //--------------------------------------------------------
-//
+//  private slot
+//  ConfigureUDP
+//--------------------------------------------------------
+void ConfigDialog::ConfigureUDP()
+{
+    // Distance
+    // Yaw
+    // Pitch
+
+    emit requestConfigureUDP();
+
+}
+
+//--------------------------------------------------------
+//  private slot
+//  ResetPCview
 //--------------------------------------------------------
 void ConfigDialog::ResetPCview()
 {
@@ -73,6 +88,10 @@ void ConfigDialog::ResetPCview()
 
 }
 
+//--------------------------------------------------------
+//  signal
+//  setPointSizeRange
+//--------------------------------------------------------
 void ConfigDialog::setPointSizeRange(float *PointSizeRange)
 {
     // set the limits on the cloud point size based on system settings

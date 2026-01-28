@@ -30,6 +30,7 @@ files for license.
 		L2Lidar class works across multiple UDP datagrams for large packets
 		PointCloudWindow class useable in other apps
 		IMU orientation correction to point cloud position
+		Set UDP configuration in L2 (requires restart of the L2 and restart of the app)
 		
 		Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 		unitree_lidar_utilites.h to perform required function needs for using the L2  in the
