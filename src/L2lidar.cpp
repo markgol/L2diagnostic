@@ -68,6 +68,7 @@
 //  V0.3.7  2026-01-26  Primarily documentation updates
 //                      Added setting UDP settings on L2
 //                      Minor bug corrections
+//  V0.3.7  2026-01-29  Added send latency ID command
 //
 //--------------------------------------------------------
 
@@ -117,6 +118,7 @@
 #include "L2lidar.h"
 #include <QDebug>
 #include <QMessageBox>
+#include <QCoreApplication>
 
 //--------------------------------------------------------------------
 // L2lidar class constructor
@@ -128,6 +130,7 @@ L2lidar::L2lidar(QObject* parent)
     : QObject(parent)
 {
     PacketBuffer.clear(); // make sure buffered starts cleared
+    latencyTimer.start();
 }
 
 
@@ -535,6 +538,19 @@ void L2lidar::decodeAck(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const LidarAckDataPacket*>(datagram.constData()+Offset);
 
+    uint32_t seq = pkt->data.cmd_value;
+
+    // ----- RTT latency calculation -----
+    auto it = latencyMap.find(seq);
+    if (it != latencyMap.end()) {
+        qint64 now = latencyTimer.nsecsElapsed();
+        double latencyMs = (now - it->second) / 1e6;
+        latencyMap.erase(it);
+
+        emit latencyMeasured(latencyMs);
+    }
+    // ----------------------------------
+
     // critical section
     PacketMutex.lock();
     latestACKdata_ = pkt->data;
@@ -597,6 +613,7 @@ void L2lidar::ClearCounts()
 //      configure L2
 //      reset the L2
 //      request information from the L2 (such as Version info)
+//      set sequence ID using for latency checks
 //
 //  note: when constructing the commad packets the 'tail' portion
 //   of the packet has 2 fields that are undocumented
@@ -606,6 +623,42 @@ void L2lidar::ClearCounts()
 //   Some experimentation indicates these fields may not be used
 //   the L2b ut are included here just in case.
 //====================================================================
+
+//--------------------------------------------------------------------
+//  sendLatencyID
+//  sets packet sequence ID
+//  This is used in measuring the latency of packets over the UDP interface
+//  Note: Command packets and User command packets use the same packet structure
+//--------------------------------------------------------------------
+bool L2lidar::sendLatencyID(uint32_t SeqID)
+{
+    // set header
+    LidarUserCtrlCmdPacket cmd;
+    setPacketHeader(&cmd.header,LIDAR_COMMAND_PACKET_TYPE,
+                    sizeof(LidarUserCtrlCmdPacket));
+
+    // set data
+    cmd.data.cmd_type = CMD_LATENCY_TYPE;
+    cmd.data.cmd_value = SeqID;
+
+    // set tail
+    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+    cmd.tail.msg_type_check = 0;
+    cmd.tail.reserve[0] = 0;
+    cmd.tail.reserve[1] = 0;
+    cmd.tail.tail[0] = 0x00;
+    cmd.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
+        qDebug() << "Start cmd failed";
+        return false;
+    }
+
+    latencyMap[SeqID] = latencyTimer.nsecsElapsed();
+    //SequenceID = SeqID;
+    return true;
+}
 
 //--------------------------------------------------------------------
 //  LidarStartRotation
@@ -980,7 +1033,6 @@ bool L2lidar::SendUDPpacket(uint8_t *Buffer,uint32_t Len)
         qDebug() << "Error sending datagram:" << L2socket.errorString();
         return false;
     }
-    //qDebug() << "Sent" << bytesWritten << "bytes to" << dstip << ":" << dstport;
     return true;
 }
 
@@ -1075,7 +1127,7 @@ bool L2lidar::ConnectL2()
 }
 
 //--------------------------------------------------------------------
-// DisconnectL2
+//  DisconnectL2
 //--------------------------------------------------------------------
 void L2lidar::DisconnectL2()
 {
@@ -1086,4 +1138,22 @@ void L2lidar::DisconnectL2()
         // close UART
         L2serial.close();
     }
+}
+
+//====================================================================
+//
+//  Support functions
+//
+//====================================================================
+
+//--------------------------------------------------------------------
+//  requestLatencyMeasurement
+//  This measures the packet latency from the L2 in seconds
+//  -1.0 is invalid measurment
+//--------------------------------------------------------------------
+bool L2lidar::requestLatencyMeasurement()
+{
+    uint32_t seq = ++SequenceID;
+    latencyMap[seq] = latencyTimer.nsecsElapsed();
+    return sendLatencyID(seq);
 }

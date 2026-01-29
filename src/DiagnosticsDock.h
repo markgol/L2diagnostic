@@ -32,6 +32,8 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V.02.5  2026-01-10  added Calibration and internal State dialog
+//  V0.3.7  2026-01-29  added RTT latency measurement
+//                      added seq ID for point cloud and imu packets
 //
 //--------------------------------------------------------
 
@@ -103,8 +105,12 @@ public:
     ~DiagnosticsDock();
 
     // use these calls to update this dock window
-    void updateDiagnostics(const LidarInsideState& State, const LidarCalibParam& Calib,
-                float range_min, float range_max );
+    void updateDiagnostics(const LidarInsideState& State,
+                const LidarCalibParam& Calib,
+                const float range_min, const float range_max,
+                const uint32_t SeqID,
+                const double MeasuredLatency,
+                const double MinLatency);
 
     void updateVersion(const LidarVersionData& version);
 

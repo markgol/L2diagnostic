@@ -127,4 +127,6 @@ void IMUDock::updateIMU(const LidarImuData& Imu )
     ResultString = ResultString.asprintf("%9.6f",Imu.quaternion[3]);
     ui->lblQuat3Value->setText(ResultString);
 
+    ResultString = ResultString.asprintf("%d", Imu.info.seq);
+    ui->lblSeqIDvalue->setText(ResultString);
 }

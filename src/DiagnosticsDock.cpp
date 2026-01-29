@@ -32,6 +32,8 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V.02.5  2026-01-10  added Calibration and internal State dialog
+//  V0.3.7  2026-01-29  added RTT latency measurement
+//                      added seq ID for point cloud and imu packets
 //
 //--------------------------------------------------------
 
@@ -89,8 +91,12 @@ DiagnosticsDock::~DiagnosticsDock()
 //  updateDiagnostics
 //  signal callback to update diagnostics
 //--------------------------------------------------------
-void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State, const LidarCalibParam& Calib,
-                                        float range_min, float range_max )
+void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State,
+                       const LidarCalibParam& Calib,
+                       const float range_min, const float range_max,
+                       const uint32_t SeqID,
+                       const double MeasuredLatency,
+                       const double MinLatency)
 {
     // Calibration
     QString ResultString;
@@ -124,6 +130,18 @@ void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State, const Lid
 
     ResultString = ResultString.asprintf("%.1f m",range_max);
     ui->lblRangeMaxValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%d",SeqID);
+    ui->lblSequenceIDvalue->setText(ResultString);
+
+    if(MeasuredLatency <0.0) {
+        ui->lblRTTvalue->setText("Invalid");
+    } else {
+        ResultString = ResultString.asprintf("%.3fmsec",MeasuredLatency);
+        ui->lblRTTvalue->setText(ResultString);
+        ResultString = ResultString.asprintf("%.3fmsec",MinLatency);
+        ui->lblMinRTTvalue->setText(ResultString);
+    }
 
     // Internal state
     ResultString = ResultString.asprintf("%u",State.sys_rotation_period);

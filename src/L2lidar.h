@@ -49,6 +49,9 @@
 //  V0.3.7  2026-01-28  Documentation updates
 //                      Minor bug corrections
 //                      Added Set UPD configuration in the L2
+//                      Added send Latency command packet
+//                      Added requestLatencyMeasurement(), note this is rtt latency
+//                          This is non-blocking.
 //
 //--------------------------------------------------------
 
@@ -98,6 +101,8 @@
 #include <Qhostaddress>
 #include <QMutex>
 #include <QSerialPort>
+#include <QElapsedTimer>
+#include <unordered_map>
 
 #include <cstdint>
 
@@ -166,6 +171,10 @@ public:
     bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
 
     // UDP ethernet communications
+    bool requestLatencyMeasurement();
+    bool sendLatencyID(uint32_t SeqeunceID);
+
+    uint32_t SequenceID {100};
 
     // this is only to set the UDP parameters in the class
     // It DOES NOT change the L2 configuration settings
@@ -187,6 +196,7 @@ signals:
     void versionReceived();
     void timestampReceived();
     void ackReceived();
+    void latencyMeasured(double ms);
 
 private: // functions
     // Generic Send/receive packets
@@ -267,4 +277,9 @@ private: // variables
     QString dst_ip {"192.168.1.62"}; // factory default
     uint32_t src_port {6201}; // factory default
     uint32_t dst_port {6101}; // factory default
+
+    // Latency measurement variables
+    QElapsedTimer latencyTimer;
+    std::unordered_map<uint32_t, qint64> latencyMap; // SeqID → send time (ns)
+
 };

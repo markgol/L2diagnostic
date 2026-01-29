@@ -55,6 +55,7 @@
 //  V0.3.5  2026-01-24  removed remnant from old renderer architecture
 //                      Added display of 2d point cloud data
 // V0.3.6   2026-01-25  Added IMU orientation correction to point cloud data
+//                      Added measure latency button
 //
 //--------------------------------------------------------
 
@@ -141,10 +142,9 @@ public slots:
     void handleConfigureUDP();
     void sendSetWorkmode();
     void sendReset();
+    void MeasureLatency();
 
 private slots:
-    // The slots are triggered by ControlsDock class
-
     // // button controls
     void L2connect();
     void L2disconnect();
@@ -159,6 +159,9 @@ private slots:
 
     // workmode
     void ClosedWorkmodeDialog();
+
+    // latency measurement
+    void SaveLatency(double ms);
 
 private:
     // Application MainWindow ui
@@ -250,6 +253,10 @@ private:
 
     // workmode dialog
     WorkmodeDialog WorkMode;
+
+    // measurements
+    float MeasuredLatency {-1.0};
+    float MinLatency {999.99};
 
     // helper functions
     void L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected

@@ -33,6 +33,7 @@
 //
 //  V.02.6  2026-01-13  added button controls dockable dialog
 //  V0.3.6  2026-01-25  Added clear point cloud window button
+//  V0.3.7  2026-01-28  Added measure latency button
 //
 //--------------------------------------------------------
 #include "ControlsDock.h"
@@ -67,6 +68,10 @@ ControlsDock::ControlsDock(QWidget *parent)
     // get version button
     connect(ui->btnVersion, &QPushButton::clicked,
             this, &ControlsDock::GetVersionRequested);
+
+    // Measure latency button
+    connect(ui->btnLatency, &QPushButton::clicked,
+            this, &ControlsDock::SendLatencyRequested);
 
     // config button
     connect(ui->btnConfig, &QPushButton::clicked,
@@ -118,6 +123,7 @@ void ControlsDock::setConnectState(bool connected)
     ui->btnReset->setEnabled(connected);
     ui->btnL2Disconnect->setEnabled(connected);
     ui->btnVersion->setEnabled(connected);
+    ui->btnLatency->setEnabled(connected);
 
     // this button is always enabled
     ui->btnConfig->setEnabled(true);
