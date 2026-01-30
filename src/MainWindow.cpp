@@ -205,9 +205,6 @@ MainWindow::MainWindow(QWidget* parent)
     connect(&config, &ConfigDialog::requestConfigureUDP,
             this, &MainWindow::handleConfigureUDP);
 
-    connect(&l2lidar, &L2lidar::latencyMeasured,
-            this, &MainWindow::SaveLatency);
-
     ShowWindows(); // show windows effects all windows including point cloud window
 }
 
@@ -527,9 +524,6 @@ void MainWindow::ConnectDocksViewerActions()
     connect(m_controlsDock, &ControlsDock::L2resetRequested,
             this, &MainWindow::sendReset);
 
-    connect(m_controlsDock, &ControlsDock::SendLatencyRequested,
-            this, &MainWindow::MeasureLatency);
-
     connect(m_controlsDock, &ControlsDock::ClearPCwindowRequested,
             this, &MainWindow::ClearPCwindow);
 
@@ -751,18 +745,19 @@ void MainWindow::updatePacketRate()
 void MainWindow::updateDiagnostics()
 {
     LidarVersionData Version = l2lidar.version();
+    Latency LatestLatency = l2lidar.GetLatency();
     if(mLastTypePacketReceived) {
         LidarPointDataPacket PCLpacket = l2lidar.Pcl3Dpacket();
         m_diagnosticsDock->updateDiagnostics(PCLpacket.data.state, PCLpacket.data.param,
                 PCLpacket.data.range_min, PCLpacket.data.range_max,
                 PCLpacket.data.info.seq,
-                MeasuredLatency, MinLatency);
+                LatestLatency);
    } else {
         Lidar2DPointDataPacket PCLpacket = l2lidar.Pcl2Dpacket();
         m_diagnosticsDock->updateDiagnostics(PCLpacket.data.state, PCLpacket.data.param,
                 PCLpacket.data.range_min, PCLpacket.data.range_max,
                 PCLpacket.data.info.seq,
-                MeasuredLatency, MinLatency);
+                LatestLatency);
    }
 
     m_diagnosticsDock->updateVersion(Version);
@@ -1135,28 +1130,6 @@ void MainWindow::getVersion()
 {
     l2lidar.LidarGetVersion();
     return;
-}
-
-//--------------------------------------------------------
-//  Measure Latency
-//  button press
-//  This sends a measure latency request, this is non-blocking
-//  and uses a slot connection to save variable MeasuredLatency
-//
-//      connect(&l2lidar, &L2lidar::latencyMeasured,
-//            this, &MainWindow::SaveLatency);
-//
-//--------------------------------------------------------
-void MainWindow::MeasureLatency()
-{
-    l2lidar.requestLatencyMeasurement();
-    return;
-}
-
-void MainWindow::SaveLatency(double ms)
-{
-    MeasuredLatency = ms;
-    if(ms < MinLatency) MinLatency = ms;
 }
 
 //--------------------------------------------------------

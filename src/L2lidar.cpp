@@ -547,7 +547,32 @@ void L2lidar::decodeAck(const QByteArray& datagram, uint64_t Offset)
         double latencyMs = (now - it->second) / 1e6;
         latencyMap.erase(it);
 
-        emit latencyMeasured(latencyMs);
+        // save results if valid
+        latestLatency_.lastMeasurement = latencyMs;
+        if(latestLatency_.Average<0.0) {
+            // first point is new stats
+            latestLatency_.Average = latencyMs;
+            latestLatency_.Variance = 0.0;
+            latestLatency_.max = latencyMs;
+            latestLatency_.min = latencyMs;
+        } else {
+            // compute stats
+            PacketMutex.lock();
+            if(latencyMs>latestLatency_.max)
+                latestLatency_.max = latencyMs;
+            if(latencyMs<latestLatency_.min)
+                latestLatency_.min = latencyMs;
+            // first order exponential moving average
+            const double Aplha {.05};
+            double Xmean = latestLatency_.Average;
+            double Xvariance = latestLatency_.Variance;
+
+            UpdateEWMAStats(Aplha,latencyMs,Xmean,Xvariance);
+
+            latestLatency_.Average = Xmean;
+            latestLatency_.Variance = Xvariance;
+            PacketMutex.unlock();
+        }
     }
     // ----------------------------------
 
@@ -1101,7 +1126,21 @@ bool L2lidar::ConnectL2()
 
         // Connect readyRead signal
         connect(&L2socket, &QUdpSocket::readyRead, this, &L2lidar::readUDPpendingDatagrams);
+
+        // setup for latency measurements
+        latestLatency_.Average = -1.0; // invalid
+        latestLatency_.Variance = 0.0;   // invalid
+        latestLatency_.lastMeasurement = -1.0;  // inva;od
+        latestLatency_.min = 999.99; // invlaid
+        latestLatency_.max = -1.0; // invlaid
+
+        connect(&LatencyTimer, &QTimer::timeout,
+                this, &L2lidar::requestLatencyMeasurement);
+
+        LatencyTimer.start(1000); // first timeout is 1 sec
+                                // to allow everything to statup
         return true;
+
     } else {
         // Receive packets from L2 UART
         // problem with QSerialPort support for 4M baudrate
@@ -1121,6 +1160,19 @@ bool L2lidar::ConnectL2()
         // Connect readyRead signal
         connect(&L2serial, &QUdpSocket::readyRead, this, &L2lidar::readUARTpendingDatagrams);
 
+        // setup for latency measurements
+        latestLatency_.Average = -1.0; // invalid
+        latestLatency_.Variance = 0.0;   // invalid
+        latestLatency_.lastMeasurement = -1.0;  // inva;od
+        latestLatency_.min = 999.99; // invlaid
+        latestLatency_.max = -1.0; // invlaid
+
+        connect(&LatencyTimer, &QTimer::timeout,
+                this, &L2lidar::requestLatencyMeasurement);
+
+        LatencyTimer.start(1500); // first timeout is 1.5 sec
+                                // to allow everything to statup
+
         return true;
     }
 
@@ -1134,6 +1186,18 @@ void L2lidar::DisconnectL2()
     if(!UseSerial){
         // close UDP
         L2socket.close();
+
+        // end latency measurements
+        LatencyTimer.stop();
+        latestLatency_.Average = -1.0; // invalid
+        latestLatency_.Variance = 0;   // invalid
+        latestLatency_.lastMeasurement = -1.0;  // inva;od
+        latestLatency_.min = 999.99; // invlaid
+        latestLatency_.max = -1.0; // invlaid
+
+        disconnect(&LatencyTimer, &QTimer::timeout,
+                this, &L2lidar::requestLatencyMeasurement);
+
     } else {
         // close UART
         L2serial.close();
@@ -1148,12 +1212,47 @@ void L2lidar::DisconnectL2()
 
 //--------------------------------------------------------------------
 //  requestLatencyMeasurement
-//  This measures the packet latency from the L2 in seconds
-//  -1.0 is invalid measurment
+//  This is timer driven (rate 1/4 second)
+//  The latency stats are measured over time
+//  as long as the L2 is connected and opened
 //--------------------------------------------------------------------
 bool L2lidar::requestLatencyMeasurement()
 {
+    // the first timeout is 1 second
+    // after the connect
+    // subsequent timeouts are 1/4 second
+    // This allows all the activities after connect
+    // to complete and not affect the measurement
+    if(LatencyTimer.interval() > 250) {
+        LatencyTimer.stop();
+        LatencyTimer.setInterval(250);
+        LatencyTimer.start();
+    }
     uint32_t seq = ++SequenceID;
+    if(SequenceID >10000) SequenceID = 100;
     latencyMap[seq] = latencyTimer.nsecsElapsed();
     return sendLatencyID(seq);
+}
+
+//--------------------------------------------------------------------
+//  UpdateEWMAStats
+//  This is in updating the latency stats
+//  This is frist order exponetial filter
+//  that doesn't require saving 'n' samples
+//  It is only an estimator using Alpha as a 'time' constant
+//--------------------------------------------------------------------
+void L2lidar::UpdateEWMAStats(double alpha,
+                     double Xnew,
+                     double& Xmean,
+                     double& Xvariance
+                     )
+{
+    double delta = Xnew - Xmean;
+
+    // Update mean (EWMA)
+    Xmean += alpha * delta;
+
+    // Update variance (Welford-style EWMA)
+    Xvariance = (1.0 - alpha) * Xvariance
+                + alpha * delta * (Xnew - Xmean);
 }

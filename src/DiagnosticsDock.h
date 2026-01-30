@@ -67,6 +67,7 @@
 #pragma once
 
 #include <QDockWidget>
+#include "L2lidar.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -109,8 +110,7 @@ public:
                 const LidarCalibParam& Calib,
                 const float range_min, const float range_max,
                 const uint32_t SeqID,
-                const double MeasuredLatency,
-                const double MinLatency);
+                const Latency LatencyStats);
 
     void updateVersion(const LidarVersionData& version);
 

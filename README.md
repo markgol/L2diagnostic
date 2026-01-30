@@ -31,7 +31,7 @@ files for license.
 		PointCloudWindow class useable in other apps
 		IMU orientation correction to point cloud position
 		Set UDP configuration in L2 (requires restart of the L2 and restart of the app)
-		Measurement of RTT latency (instaneuous and minimum)
+		Measurement of RTT latency (instanteous, average, minimum, maximu, variance)
 		
 		Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 		unitree_lidar_utilites.h to perform required function needs for using the L2  in the
@@ -63,10 +63,11 @@ files for license.
 	
 	Still to do:
 		Update documentation
-		Cleanup L2lidar class and PointCloudWindow class
+		Cleanup PointCloudWindow class
 		Add UART commmunications (delayed while researching UART packages)
 		build a release package installer
 		test other target builds
+		Integrate the L2lidar class into a ROS2 application
 		
 	Issues:
 		L2 UART baudrate is 4M.  The QSerialPort has issues operating at this baud rate
@@ -77,7 +78,7 @@ files for license.
 		The project has been developed using Qt Creator 18.0.x  Qt 6.10.x
 		Using MSVC 2022, x86_64
 		I have not tested it for other targets.
-		The this a CmakeList.txt project.  I have tried to keep things compatible to other targets.
+		There this a CmakeList.txt project.  I have tried to keep things compatible to other targets.
 		If you are copying the project then copy it using the existing folder structure to whatever
 		folder will be your project folder.
 		When you open Qt Creator -> File -> Open file or project

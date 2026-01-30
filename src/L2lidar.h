@@ -52,6 +52,7 @@
 //                      Added send Latency command packet
 //                      Added requestLatencyMeasurement(), note this is rtt latency
 //                          This is non-blocking.
+//  V0.3.8  2026-01-29  Refined latency mesurements and class interface to them
 //
 //--------------------------------------------------------
 
@@ -95,13 +96,14 @@
 
 #pragma once
 
-#include <QObject>
 #include <QByteArray>
+#include <QElapsedTimer>
+#include <QMutex>
+#include <QObject>
+#include <QSerialPort>
 #include <QUdpSocket>
 #include <Qhostaddress>
-#include <QMutex>
-#include <QSerialPort>
-#include <QElapsedTimer>
+#include <QTimer>
 #include <unordered_map>
 
 #include <cstdint>
@@ -112,6 +114,14 @@
 #pragma pack(pop)
 // This is typically needed by the parent classes
 #include "unitree_lidar_utilitiesL2.h"
+
+typedef struct {
+    double lastMeasurement;
+    double Average;
+    double Variance;
+    double min;
+    double max;
+} Latency;
 
 //--------------------------------------------------------
 //  L2lidar class definitions
@@ -159,6 +169,7 @@ public:
     const uint64_t totalPackets() const { return totalPackets_; }
     const uint64_t lostPackets() const { return lostPackets_; }
     const uint64_t totalOther() const { return lostPackets_; }
+    const Latency GetLatency() const {return latestLatency_;}
 
     void ClearCounts(); // clears the packet totals
 
@@ -173,8 +184,6 @@ public:
     // UDP ethernet communications
     bool requestLatencyMeasurement();
     bool sendLatencyID(uint32_t SeqeunceID);
-
-    uint32_t SequenceID {100};
 
     // this is only to set the UDP parameters in the class
     // It DOES NOT change the L2 configuration settings
@@ -196,7 +205,6 @@ signals:
     void versionReceived();
     void timestampReceived();
     void ackReceived();
-    void latencyMeasured(double ms);
 
 private: // functions
     // Generic Send/receive packets
@@ -226,6 +234,12 @@ private: // functions
     void setPacketHeader(FrameHeader *FrameHeader, uint32_t packet_type,
                          uint32_t packet_size);
     void setPacketTail(FrameHeader *FrameTale);
+
+    void UpdateEWMAStats(double alpha,
+                     double Xnew,
+                     double& Xmean,
+                     double& Xvariance
+                     );
 
 private: // variables
     // mutex for critical packet access while copying packet
@@ -280,6 +294,10 @@ private: // variables
 
     // Latency measurement variables
     QElapsedTimer latencyTimer;
+    QTimer LatencyTimer;
     std::unordered_map<uint32_t, qint64> latencyMap; // SeqID → send time (ns)
+    // latest latency measurements
+    uint32_t SequenceID {100};
+    Latency latestLatency_ {-1.0,0.0,-1.0, 999.99,-1.0};
 
 };

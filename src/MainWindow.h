@@ -142,7 +142,6 @@ public slots:
     void handleConfigureUDP();
     void sendSetWorkmode();
     void sendReset();
-    void MeasureLatency();
 
 private slots:
     // // button controls
@@ -159,9 +158,6 @@ private slots:
 
     // workmode
     void ClosedWorkmodeDialog();
-
-    // latency measurement
-    void SaveLatency(double ms);
 
 private:
     // Application MainWindow ui
@@ -253,10 +249,6 @@ private:
 
     // workmode dialog
     WorkmodeDialog WorkMode;
-
-    // measurements
-    float MeasuredLatency {-1.0};
-    float MinLatency {999.99};
 
     // helper functions
     void L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected

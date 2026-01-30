@@ -95,8 +95,7 @@ void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State,
                        const LidarCalibParam& Calib,
                        const float range_min, const float range_max,
                        const uint32_t SeqID,
-                       const double MeasuredLatency,
-                       const double MinLatency)
+                       const Latency LatencyStats)
 {
     // Calibration
     QString ResultString;
@@ -134,13 +133,17 @@ void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State,
     ResultString = ResultString.asprintf("%d",SeqID);
     ui->lblSequenceIDvalue->setText(ResultString);
 
-    if(MeasuredLatency <0.0) {
+    if(LatencyStats.lastMeasurement <0.0) {
         ui->lblRTTvalue->setText("Invalid");
+        ui->lblMinRTTvalue->setText("invalid");
+        ui->lblStdDevRTTvalue->setText("invalid");
     } else {
-        ResultString = ResultString.asprintf("%.3fmsec",MeasuredLatency);
+        ResultString = ResultString.asprintf("%.3fmsec",LatencyStats.Average);
         ui->lblRTTvalue->setText(ResultString);
-        ResultString = ResultString.asprintf("%.3fmsec",MinLatency);
+        ResultString = ResultString.asprintf("%.3fmsec",LatencyStats.min);
         ui->lblMinRTTvalue->setText(ResultString);
+        ResultString = ResultString.asprintf("%.3fmsec",sqrt(LatencyStats.Variance));
+        ui->lblStdDevRTTvalue->setText(ResultString);
     }
 
     // Internal state

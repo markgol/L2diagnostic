@@ -36,6 +36,8 @@
 //  V0.3.3  2026-01-22  Added Workmode button
 //  V0.3.6  2026-01-25  Added clear point cloud window button
 //  V0.3.7  2026-01-28  Added measure latency button
+//  V0.3.8  2026-01-29  Remove measure latency button
+//                      Updated latency measurement
 //
 //--------------------------------------------------------
 #ifndef CONTROLSDOCK_H
@@ -71,7 +73,6 @@ signals:
     void ResetWindowsRequested();
     void WorkmodeRequested();
     void ClearPCwindowRequested();
-    void SendLatencyRequested();
 
 protected:
     void closeEvent(QCloseEvent* event) override;
