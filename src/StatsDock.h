@@ -65,6 +65,8 @@
 #pragma once
 
 #include <QDockWidget>
+// this is just for TimeStamp
+#include "unitree_lidar_utilitiesL2.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -114,7 +116,7 @@ public:
     ~StatsDock();
 
     // use these calls to update this dock window
-    void updateStats(PacketStats& Stats);
+    void updateStats(PacketStats& Stats, TimeStamp now);
 
 private:
     Ui::StatsDock* ui;

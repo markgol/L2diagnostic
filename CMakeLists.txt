@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 0.3.8
+    VERSION 0.3.9
     LANGUAGES CXX
 )
 
@@ -31,7 +31,7 @@ endif()
 # Qt packages
 # =============================
 set(Qt6_DIR "" CACHE PATH "Path to Qt6 installation")
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Charts SerialPort)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Charts)
 
 # Enable Qt autogen features
 set(CMAKE_AUTOMOC ON)
@@ -58,20 +58,6 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # =============================
-# Architecture-specific libraries
-# =============================
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(ARCH "x86_64")
-else()
-    set(ARCH "aarch64")
-endif()
-
-set(LIB_DIR "${CMAKE_SOURCE_DIR}/lib/${ARCH}")
-link_directories(${LIB_DIR})
-# Example: if you have libunitree.a in lib/x86_64 or lib/aarch64
-# target_link_libraries(${PROJECT_NAME} PRIVATE unitree)
-
-# =============================
 # Link Qt libraries
 # =============================
 target_link_libraries(${PROJECT_NAME}
@@ -82,7 +68,6 @@ target_link_libraries(${PROJECT_NAME}
         Qt6::Charts
         Qt6::OpenGL
         Qt6::OpenGLWidgets
-        Qt6::SerialPort
 )
 
 # =============================

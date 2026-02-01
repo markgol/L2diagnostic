@@ -61,7 +61,6 @@
 // You should have received a copy of the GNU General Public License along with L2diagnsotic.
 // If not, see < https://www.gnu.org/licenses/>.
 //--------------------------------------------------------
-
 #include "StatsDock.h"
 #include "ui_StatsDock.h"
 
@@ -89,10 +88,16 @@ StatsDock::~StatsDock()
 //  updateStats
 //  signal callback to update Stats window
 //--------------------------------------------------------
-void StatsDock::updateStats(PacketStats& Stats)
+void StatsDock::updateStats(PacketStats& Stats, TimeStamp Now)
 {
     // Calibration
     QString ResultString;
+
+    ResultString = ResultString.asprintf("%6llu",Now.sec);
+    ui->lblSysTimeSecValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9llu",Now.nsec);
+    ui->lblSysTimeNsecValue->setText(ResultString);
 
     ResultString = ResultString.asprintf("%6llu",Stats.TimeSec);
     ui->lblTimeSecValue->setText(ResultString);

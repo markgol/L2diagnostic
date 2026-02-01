@@ -69,6 +69,11 @@
 //                      Added setting UDP settings on L2
 //                      Minor bug corrections
 //  V0.3.7  2026-01-29  Added send latency ID command
+//                      Minor bug corrections
+//                      Added Set UPD configuration in the L2
+//                      Added requestLatencyMeasurement(), note this is rtt latency
+//                          This is non-blocking.
+//  V0.3.9  2026-01-30  Added SyncL2clock(), SyncL2clock(TimeStamp)
 //
 //--------------------------------------------------------
 
@@ -117,8 +122,6 @@
 
 #include "L2lidar.h"
 #include <QDebug>
-#include <QMessageBox>
-#include <QCoreApplication>
 
 //--------------------------------------------------------------------
 // L2lidar class constructor
@@ -188,10 +191,10 @@ void L2lidar::readUDPpendingDatagrams()
 //  This is just skeleton fragment, to reserve for
 //  future implementation
 //--------------------------------------------------------
-void L2lidar::readUARTpendingDatagrams()
-{
-    qDebug() << "UART Not yet implemented\n"
-             << "readUARTpendingDatagram()";
+//void L2lidar::readUARTpendingDatagrams()
+//{
+//    qDebug() << "UART Not yet implemented\n"
+//             << "readUARTpendingDatagram()";
     // // only process incoming UPD packets
     // while (L2SerialPort.hasPendingDatagrams()) {
     //     QByteArray datagram;
@@ -206,7 +209,7 @@ void L2lidar::readUARTpendingDatagrams()
     //     // csv file processing also happens in the decoder
     //     processDatagram(datagram);
     // }
-}
+//}
 
 //--------------------------------------------------------
 //  processDatagram()
@@ -367,26 +370,43 @@ void L2lidar::decode3D(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const LidarPointDataPacket*>(datagram.constData()+Offset);
 
+    double t1;
+    double t2;
+    double DeltaTime;
+
     // critical section
     PacketMutex.lock();
+
     latest3DdataPacket_.header = pkt->header;
     latest3DdataPacket_.data = pkt->data;
     latest3DdataPacket_.tail = pkt->tail;
 
-    latestTimestamp_.data.sec = latest3DdataPacket_.data.info.stamp.sec;
-    latestTimestamp_.data.nsec = latest3DdataPacket_.data.info.stamp.nsec;
+    // correct timestamp if needed
+    // initally for test only changed latest
+    // after testing also change packet
+    if(enableL2TimeStampFix) {
+        double t1,t2;
+        t1 = (double)latest3DdataPacket_.data.info.stamp.sec +
+             ((double)latest3DdataPacket_.data.info.stamp.nsec*1.0e-9);
+
+        t2 = ((t1-mLastTimestamp) * mL2ScaleTimeStamp) + mLastTimestamp;
+
+        // convert to seconds, nanoseconds
+        latestTimestamp_.data.sec = (uint32_t) t2;
+        t2 = t2 - (double)latestTimestamp_.data.sec;
+        latestTimestamp_.data.nsec = (uint32_t)(t2*1.0e9);
+
+        // update time stamp in the packet
+        latest3DdataPacket_.data.info.stamp.sec = latestTimestamp_.data.sec;
+        latest3DdataPacket_.data.info.stamp.nsec = latestTimestamp_.data.nsec;
+
+    } else {
+        latestTimestamp_.data.sec = latest3DdataPacket_.data.info.stamp.sec;
+        latestTimestamp_.data.nsec = latest3DdataPacket_.data.info.stamp.nsec;
+    }
+
     PacketMutex.unlock();
     // end of critical section
-
-    //  if(latest3DdataPacket_.data.state.dirty_index != 0.0) {
-    //      // report packets that show a no zero dirty_index
-    //      // This has been used to determine that any point
-    //      // with a range value of less than 1 meter is
-    //      // how dirty_index has been calculated
-    //      // i.e. any point less than 1 meter from L2 unit are
-    //      // not observable
-    //      qDebug() << "DirtyIndex: " << latest3DdataPacket_.data.state.dirty_index;
-    // }
 
     // send out notice of latest L2 time stap
     emit timestampReceived();
@@ -411,6 +431,10 @@ void L2lidar::decode2D(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const Lidar2DPointDataPacket*>(datagram.constData()+Offset);
 
+    double t1;
+    double t2;
+    double DeltaTime;
+
     // critical section
     PacketMutex.lock();
 
@@ -418,11 +442,33 @@ void L2lidar::decode2D(const QByteArray& datagram, uint64_t Offset)
     latest2DdataPacket_.data = pkt->data;
     latest2DdataPacket_.tail = pkt->tail;
 
-    latestTimestamp_.data.sec = latest2DdataPacket_.data.info.stamp.sec;
-    latestTimestamp_.data.nsec = latest2DdataPacket_.data.info.stamp.nsec;
+    // correct timestamp if needed
+    // initally for test only changed latest
+    // after testing also change packet
+    if(enableL2TimeStampFix) {
+        double t1,t2;
+        t1 = (double)latest2DdataPacket_.data.info.stamp.sec +
+             ((double)latest2DdataPacket_.data.info.stamp.nsec*1.0e-9);
+
+        t2 = ((t1-mLastTimestamp) * mL2ScaleTimeStamp) + mLastTimestamp;
+
+        // convert to seconds, nanoseconds
+        latestTimestamp_.data.sec = (uint32_t) t2;
+        t2 = t2 - (double)latestTimestamp_.data.sec;
+        latestTimestamp_.data.nsec = (uint32_t)(t2*1.0e9);
+
+        // update time stamp in the packet
+        latest2DdataPacket_.data.info.stamp.sec = latestTimestamp_.data.sec;
+        latest2DdataPacket_.data.info.stamp.nsec = latestTimestamp_.data.nsec;
+    } else {
+        latestTimestamp_.data.sec = latest2DdataPacket_.data.info.stamp.sec;
+        latestTimestamp_.data.nsec = latest2DdataPacket_.data.info.stamp.nsec;
+    }
 
     PacketMutex.unlock();
     // end of critical section
+
+
 
     // send out notice of latest L2 time stap
     emit timestampReceived();
@@ -447,12 +493,38 @@ void L2lidar::decodeImu(const QByteArray& datagram, uint64_t Offset)
     const auto* pkt =
         reinterpret_cast<const LidarImuDataPacket*>(datagram.constData()+Offset);
 
+    double t1;
+    double t2;
+    double DeltaTime;
+
     // critical section
     PacketMutex.lock();
-    latestImu_ = pkt->data;
+    latestImuPacket_.header = pkt->header;
+    latestImuPacket_.data = pkt->data;
+    latestImuPacket_.tail = pkt->tail;
 
-    latestTimestamp_.data.sec = latestImu_.info.stamp.sec;
-    latestTimestamp_.data.nsec = latestImu_.info.stamp.nsec;
+    // correct timestamp if needed
+    // initally for test only changed latest
+    // after testing also change packet
+    if(enableL2TimeStampFix) {
+        double t1,t2;
+        t1 = (double)pkt->data.info.stamp.sec +
+             ((double)pkt->data.info.stamp.nsec*1.0e-9);
+        t2 = ((t1-mLastTimestamp) * mL2ScaleTimeStamp) +mLastTimestamp;
+
+        // convert to seconds, nanoseconds
+        latestTimestamp_.data.sec = (uint32_t) t2;
+        t2 = t2 - (double)latestTimestamp_.data.sec;
+        latestTimestamp_.data.nsec = (uint32_t)(t2*1.0e9);
+
+        // update time stamp in the packet
+        latestImuPacket_.data.info.stamp.sec = latestTimestamp_.data.sec;
+        latestImuPacket_.data.info.stamp.nsec = latestTimestamp_.data.nsec;
+    } else {
+        latestTimestamp_.data.sec = pkt->data.info.stamp.sec;
+        latestTimestamp_.data.nsec = pkt->data.info.stamp.nsec;
+    }
+
     PacketMutex.unlock();
     // end of critical section
 
@@ -650,6 +722,74 @@ void L2lidar::ClearCounts()
 //====================================================================
 
 //--------------------------------------------------------------------
+//  SyncL2Clock()
+//  SyncL2Clock(TimeStamp timestamp)
+//  Sets the L2 clock either to the current system time or
+//  the passed timestamp parameter
+//--------------------------------------------------------------------
+bool L2lidar::SyncL2Clock()
+{
+    // set header
+    LidarTimeStampPacket pkt;
+    setPacketHeader(&pkt.header,LIDAR_TIME_STAMP_PACKET_TYPE,
+                    sizeof(LidarTimeStampPacket));
+
+    // set data
+    TimeStamp Now;
+    unilidar_sdk2::getSystemTimeStamp(Now);
+    pkt.data.data.sec = Now.sec;
+    pkt.data.data.nsec = Now.nsec;
+
+    // set tail
+    pkt.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &pkt.data, sizeof(pkt.data));
+    pkt.tail.msg_type_check = 0;
+    pkt.tail.reserve[0] = 0;
+    pkt.tail.reserve[1] = 0;
+    pkt.tail.tail[0] = 0x00;
+    pkt.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &pkt, sizeof(LidarTimeStampPacket))) {
+        qDebug() << "Send timestanp failed";
+        return false;
+    }
+
+    mLastTimestamp = (double)Now.sec + (Now.nsec * 1.0e-9);
+
+    return true;
+}
+
+bool L2lidar::SyncL2Clock(TimeStamp timestamp)
+{
+    // set header
+    LidarTimeStampPacket pkt;
+    setPacketHeader(&pkt.header,LIDAR_TIME_STAMP_PACKET_TYPE,
+                    sizeof(LidarTimeStampPacket));
+
+    // set data
+    pkt.data.data.sec = timestamp.sec;
+    pkt.data.data.nsec = timestamp.nsec;
+
+    // set tail
+    pkt.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &pkt.data, sizeof(pkt.data));
+    pkt.tail.msg_type_check = 0;
+    pkt.tail.reserve[0] = 0;
+    pkt.tail.reserve[1] = 0;
+    pkt.tail.tail[0] = 0x00;
+    pkt.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &pkt, sizeof(LidarTimeStampPacket))) {
+        qDebug() << "Send timestanp failed";
+        return false;
+    }
+
+    mLastTimestamp = (double)timestamp.sec + (timestamp.nsec * 1.0e-9);
+
+    return true;
+}
+
+//--------------------------------------------------------------------
 //  sendLatencyID
 //  sets packet sequence ID
 //  This is used in measuring the latency of packets over the UDP interface
@@ -676,12 +816,11 @@ bool L2lidar::sendLatencyID(uint32_t SeqID)
 
     // send packet
     if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Start cmd failed";
+        qDebug() << "Send latency failed";
         return false;
     }
 
     latencyMap[SeqID] = latencyTimer.nsecsElapsed();
-    //SequenceID = SeqID;
     return true;
 }
 
@@ -715,7 +854,7 @@ bool L2lidar::LidarStartRotation(void)
 
     // send packet
     if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Start cmd failed";
+        qDebug() << "Start rotataion failed";
         return false;
     }
 
@@ -752,7 +891,7 @@ bool L2lidar::LidarStopRotation(void)
 
     // send packet
     if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Stop cmd failed";
+        qDebug() << "Stop rotation failed";
         return false;
     }
 
@@ -1017,7 +1156,7 @@ bool L2lidar::setL2UDPconfig(QString hostIP, uint32_t hostPort,
 
     // send packet
     if(!SendPacket((uint8_t *) &config, sizeof(LidarIpAddressConfigPacket))) {
-        qDebug() << "Set work mode failed";
+        qDebug() << "Set UDP config failed";
         return false;
     }
 
@@ -1135,10 +1274,21 @@ bool L2lidar::ConnectL2()
         latestLatency_.max = -1.0; // invlaid
 
         connect(&LatencyTimer, &QTimer::timeout,
-                this, &L2lidar::requestLatencyMeasurement);
+                this, &L2lidar::requestRTTLatencyMeasurement);
 
         LatencyTimer.start(1000); // first timeout is 1 sec
                                 // to allow everything to statup
+
+        connect(&TimerSyncTimer, &QTimer::timeout,
+                this, &L2lidar::SyncClock);
+
+        if(mL2EnableSyncHost && mL2TSsyncRate>0){
+            TimerSyncTimer.start(mL2TSsyncRate);
+        } else {
+            TimerSyncTimer.stop();
+        }
+
+        mConnected = true;
         return true;
 
     } else {
@@ -1146,19 +1296,20 @@ bool L2lidar::ConnectL2()
         // problem with QSerialPort support for 4M baudrate
         // need to find alternative UART support package
         // that will support across multiple platforms
-        L2serial.setPortName(SerialPort);
-        if (!L2serial.open(QIODevice::ReadWrite)) {
-            return false;
-        }
+        //
+        // L2serial.setPortName(SerialPort);
+        // if (!L2serial.open(QIODevice::ReadWrite)) {
+        //     return false;
+        // }
 
-        L2serial.setBaudRate(QSerialPort::Baud115200);
-        L2serial.setDataBits(QSerialPort::Data8);
-        L2serial.setParity(QSerialPort::NoParity);
-        L2serial.setStopBits(QSerialPort::OneStop);
-        L2serial.setFlowControl(QSerialPort::NoFlowControl);
+        // L2serial.setBaudRate(QSerialPort::Baud115200);
+        // L2serial.setDataBits(QSerialPort::Data8);
+        // L2serial.setParity(QSerialPort::NoParity);
+        // L2serial.setStopBits(QSerialPort::OneStop);
+        // L2serial.setFlowControl(QSerialPort::NoFlowControl);
 
         // Connect readyRead signal
-        connect(&L2serial, &QUdpSocket::readyRead, this, &L2lidar::readUARTpendingDatagrams);
+        // connect(&L2serial, &QUdpSocket::readyRead, this, &L2lidar::readUARTpendingDatagrams);
 
         // setup for latency measurements
         latestLatency_.Average = -1.0; // invalid
@@ -1168,12 +1319,14 @@ bool L2lidar::ConnectL2()
         latestLatency_.max = -1.0; // invlaid
 
         connect(&LatencyTimer, &QTimer::timeout,
-                this, &L2lidar::requestLatencyMeasurement);
+                this, &L2lidar::requestRTTLatencyMeasurement);
 
         LatencyTimer.start(1500); // first timeout is 1.5 sec
                                 // to allow everything to statup
 
-        return true;
+        // not yet implemented
+        mConnected = false;
+        return false;
     }
 
 }
@@ -1196,12 +1349,29 @@ void L2lidar::DisconnectL2()
         latestLatency_.max = -1.0; // invlaid
 
         disconnect(&LatencyTimer, &QTimer::timeout,
-                this, &L2lidar::requestLatencyMeasurement);
+                this, &L2lidar::requestRTTLatencyMeasurement);
+
+        // end timebase syncing
+        TimerSyncTimer.stop();
+        disconnect(&TimerSyncTimer, &QTimer::timeout,
+                this, &L2lidar::SyncClock);
 
     } else {
         // close UART
-        L2serial.close();
+        //L2serial.close();
+
+        // end latency measurements
+        LatencyTimer.stop();
+        latestLatency_.Average = -1.0; // invalid
+        latestLatency_.Variance = 0;   // invalid
+        latestLatency_.lastMeasurement = -1.0;  // inva;od
+        latestLatency_.min = 999.99; // invlaid
+        latestLatency_.max = -1.0; // invlaid
+
+        disconnect(&LatencyTimer, &QTimer::timeout,
+                   this, &L2lidar::requestRTTLatencyMeasurement);
     }
+    mConnected = false;
 }
 
 //====================================================================
@@ -1210,13 +1380,49 @@ void L2lidar::DisconnectL2()
 //
 //====================================================================
 
+void L2lidar::SetL2TSsyncRate(uint32_t Rate)
+{
+    // nothing to do
+    if(mL2TSsyncRate==Rate) return;
+
+    mL2TSsyncRate = Rate;
+
+    if(!mConnected) return;
+
+    if(mL2EnableSyncHost && Rate > 0) {
+            TimerSyncTimer.stop();
+            TimerSyncTimer.setInterval(Rate);
+            TimerSyncTimer.start();
+    }
+}
+
+void L2lidar::EnableL2TSsync(bool enable)
+{
+    // no change, nothing to do
+    if(enable==mL2EnableSyncHost) return;
+
+    mL2EnableSyncHost = enable;
+
+    if(!mConnected) return;
+
+    if(enable) {
+        if(mL2TSsyncRate>0) {
+            TimerSyncTimer.setInterval(mL2TSsyncRate);
+            TimerSyncTimer.start();
+        }
+    } else {
+        TimerSyncTimer.stop();
+    }
+
+}
+
 //--------------------------------------------------------------------
 //  requestLatencyMeasurement
 //  This is timer driven (rate 1/4 second)
 //  The latency stats are measured over time
 //  as long as the L2 is connected and opened
 //--------------------------------------------------------------------
-bool L2lidar::requestLatencyMeasurement()
+bool L2lidar::requestRTTLatencyMeasurement()
 {
     // the first timeout is 1 second
     // after the connect

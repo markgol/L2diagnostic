@@ -76,6 +76,8 @@
 // V0.3.6   2026-01-25  Added IMU orientation correction to point cloud data
 // V0.3.7   2026-01-26  Added ConfigureUPD button
 //                      Added measure latency button
+// V0.3.9   2026-01-30  Removed measure latency button
+//                      Added Sync L2 timestamp button
 //
 //--------------------------------------------------------
 
@@ -127,7 +129,6 @@
 //      QOpenGLWindow::paintGL()  timer driven typically at 30-60Hz
 //
 //--------------------------------------------------------
-
 
 //--------------------------------------------------------
 // Main project includes required before anything else
@@ -527,6 +528,9 @@ void MainWindow::ConnectDocksViewerActions()
     connect(m_controlsDock, &ControlsDock::ClearPCwindowRequested,
             this, &MainWindow::ClearPCwindow);
 
+    connect(m_controlsDock, &ControlsDock::SyncL2CLock,
+            this, &MainWindow::SyncL2Clock);
+
     // dialogs connections (will open a dialog)
     connect(m_controlsDock, &ControlsDock::GetVersionRequested,
             this, &MainWindow::getVersion);
@@ -708,10 +712,12 @@ void MainWindow::updateStats()
     Stats.countIMU = l2lidar.totalIMU();
     Stats.countACK = l2lidar.totalACK();
     Stats.countOther = l2lidar.totalOther();
-    LidarTimeStampData TimeStamp = l2lidar.timestamp();
-    Stats.TimeSec = TimeStamp.data.sec;
-    Stats.TimeNsec = TimeStamp.data.nsec;
-    m_StatsDock->updateStats(Stats);
+    LidarTimeStampData timestamp = l2lidar.timestamp();
+    Stats.TimeSec = timestamp.data.sec;
+    Stats.TimeNsec = timestamp.data.nsec;
+    TimeStamp Now;
+    unilidar_sdk2::getSystemTimeStamp(Now);
+    m_StatsDock->updateStats(Stats,Now);
 
     return;
 }
@@ -746,6 +752,7 @@ void MainWindow::updateDiagnostics()
 {
     LidarVersionData Version = l2lidar.version();
     Latency LatestLatency = l2lidar.GetLatency();
+
     if(mLastTypePacketReceived) {
         LidarPointDataPacket PCLpacket = l2lidar.Pcl3Dpacket();
         m_diagnosticsDock->updateDiagnostics(PCLpacket.data.state, PCLpacket.data.param,
@@ -770,10 +777,9 @@ void MainWindow::updateDiagnostics()
 //--------------------------------------------------------
 void MainWindow::updateIMU()
 {
-    LidarImuData Imu = l2lidar.imu();
+    LidarImuDataPacket Imu = l2lidar.imu();
 
-
-    m_IMUDock->updateIMU(Imu);
+    m_IMUDock->updateIMU(Imu.data);
 
     return;
 }
@@ -826,7 +832,7 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
     static uint32_t frameCounter {0};
    bool adjustWithIMU {false};
     double time;
-    LidarImuData Imu;
+    LidarImuDataPacket Imu;
     Quaternion Quat;
 
     if (NumFramesToSkip > 0 &&
@@ -842,13 +848,13 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         // 3D packet
         LidarPointDataPacket packet = l2lidar.Pcl3Dpacket();
         unilidar_sdk2::parseFromPacketToPointCloud(
-                    cloud, packet, false, 0, 100);
+                    cloud, packet, true, 0, 100);
         time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
     } else {
         // 2D packet
         Lidar2DPointDataPacket packet = l2lidar.Pcl2Dpacket();
         unilidar_sdk2::parseFromPacketPointCloud2D(
-                    cloud, packet, false, 0, 100);
+                    cloud, packet, true, 0, 100);
         time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
     }
 
@@ -856,13 +862,13 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         // check if latest IMU packet is within 10 msec
         double IMUtime;
         Imu = l2lidar.imu();
-        IMUtime = (double)Imu.info.stamp.sec +(double)Imu.info.stamp.nsec * 1e-9;
+        IMUtime = (double)Imu.data.info.stamp.sec +(double)Imu.data.info.stamp.nsec * 1e-9;
         if(abs(time-IMUtime) < .010) {
             adjustWithIMU = true;
-            Quat.w = Imu.quaternion[0];
-            Quat.x = Imu.quaternion[1];
-            Quat.y = Imu.quaternion[2];
-            Quat.z = Imu.quaternion[3];
+            Quat.w = Imu.data.quaternion[0];
+            Quat.x = Imu.data.quaternion[1];
+            Quat.y = Imu.data.quaternion[2];
+            Quat.z = Imu.data.quaternion[3];
         } else {
             adjustWithIMU = false;
         }
@@ -964,6 +970,11 @@ void MainWindow::openConfig()
         // update frames to skip
         NumFramesToSkip = config.getSkipFrame();
 
+        // L2 corrections
+        l2lidar.EnableL2TimeCorrection(config.isL2TimeCorrectionEnabled());
+        l2lidar.EnableL2TSsync(config.isL2TsyncHostEnabled());
+        l2lidar.SetL2TSsyncRate(config.getL2syncRate());
+
         // check if buffering has changed
         if(mmaxPoints!=config.getMaxPoints()) {
             //ask user if they really want to changes settings
@@ -1008,7 +1019,6 @@ void MainWindow::openConfig()
         CurrentPC.PointSize = config.getPointSize();
         m_pointCloudWindow->setPCsettings(CurrentPC);
 
-
         // Save current user settings
         saveSettings(false); // do not reset window geometries
         SetDefaultView(); // saves the default point cloud view
@@ -1043,7 +1053,11 @@ void MainWindow::RestoreConfigSettings()
 //--------------------------------------------------------
 void MainWindow::L2connect()
 {
-    //
+    // L2 time base correction settings
+    l2lidar.EnableL2TimeCorrection(config.isL2TimeCorrectionEnabled());
+    l2lidar.EnableL2TSsync(config.isL2TsyncHostEnabled());
+    l2lidar.SetL2TSsyncRate(config.getL2syncRate());
+
     if(!l2lidar.ConnectL2()) {
         QMessageBox msgBox;
         msgBox.setText("Connect to L2 LiDAR");
@@ -1117,9 +1131,22 @@ void MainWindow::sendSetWorkmode()
     return;
 }
 
+//--------------------------------------------------------
+//  ClearPCwindow
+//  button press
+//--------------------------------------------------------
 void MainWindow::ClearPCwindow()
 {
     m_pointCloudWindow->clearPointCloud();
+}
+
+//--------------------------------------------------------
+//  SyncL2CLock
+//  button press
+//--------------------------------------------------------
+void MainWindow::SyncL2Clock()
+{
+    l2lidar.SyncL2Clock();
 }
 
 //--------------------------------------------------------

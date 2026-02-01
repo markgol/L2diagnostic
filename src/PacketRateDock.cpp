@@ -13,7 +13,7 @@ PacketRateDock::PacketRateDock(QWidget* parent)
 
     m_chart->addSeries(m_series);
     m_chart->legend()->hide();
-    m_chart->setTitle("Packet Rate");
+    m_chart->setTitle("Receive Packet Rate");
 
     m_axisX->setTitleText("");
     m_axisX->setRange(0, MAX_SAMPLES);

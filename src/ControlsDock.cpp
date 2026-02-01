@@ -95,6 +95,10 @@ ControlsDock::ControlsDock(QWidget *parent)
     connect(ui->btnClearDisplay, &QPushButton::clicked,
             this, &ControlsDock::ClearPCwindowRequested);
 
+    // Sync L2 clock button
+    connect(ui->btnL2SetClock, &QPushButton::clicked,
+            this, &ControlsDock::SyncL2CLock);
+
     setConnectState(false); // L2 is disconnected at start
 }
 
@@ -121,6 +125,7 @@ void ControlsDock::setConnectState(bool connected)
     ui->btnReset->setEnabled(connected);
     ui->btnL2Disconnect->setEnabled(connected);
     ui->btnVersion->setEnabled(connected);
+    ui->btnL2SetClock->setEnabled(connected);
 
     // this button is always enabled
     ui->btnConfig->setEnabled(true);

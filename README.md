@@ -32,6 +32,9 @@ files for license.
 		IMU orientation correction to point cloud position
 		Set UDP configuration in L2 (requires restart of the L2 and restart of the app)
 		Measurement of RTT latency (instanteous, average, minimum, maximu, variance)
+		Correction of L2 timestamp to account for incorrect time clock on the L2
+		(L2 time clock reports 1 second for every 2 real world seconds)
+		Sync the L2 to the host time at a user settable rate (default 20Hz)
 		
 		Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 		unitree_lidar_utilites.h to perform required function needs for using the L2  in the

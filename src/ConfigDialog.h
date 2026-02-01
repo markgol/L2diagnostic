@@ -43,7 +43,8 @@
 //                      removed Max # frame
 //                      added buffer size instead
 //                      added cloud point size
-//  V.3.7   2026-01-26  Added set UDP configuration in L2
+//  V0.3.7  2026-01-26  Added set UDP configuration in L2
+//  V0.3.9  2026-01-31  Added L2 timebase and sync controls
 //
 //--------------------------------------------------------
 
@@ -238,6 +239,24 @@ public:
         return static_cast<float>(ui.spinColorMax->value());
     }
 
+    //--------------------------------------------------------
+    // L2 timebase correction controls
+    //--------------------------------------------------------
+    bool isL2TimeCorrectionEnabled()
+    {
+        return static_cast<bool>(ui.cbL2TSCorrect->isChecked());
+    }
+
+    bool isL2TsyncHostEnabled()
+    {
+        return static_cast<bool>(ui.cbL2syncHost->isChecked());
+    }
+
+    uint32_t getL2syncRate() const
+    {
+        return static_cast<uint32_t>(ui.spinL2syncRate->value());
+    }
+
     // =============================
     // Setters (for LoadSettings)
     // =============================
@@ -370,6 +389,24 @@ public:
     void setIMUenabled(bool p)
     {
         ui.cbIMU->setChecked(p);
+    }
+
+    //--------------------------------------------------------
+    // L2 timebase correction controls
+    //--------------------------------------------------------
+    void SetL2TimeCorrectionEnabled(bool p)
+    {
+        ui.cbL2TSCorrect->setChecked(p);
+    }
+
+    void SetL2TsyncHostEnabled(bool p)
+    {
+        ui.cbL2syncHost->setChecked(p);
+    }
+
+    void setL2syncRate(uint32_t p) const
+    {
+        ui.spinL2syncRate->setValue(p);
     }
 
 signals:

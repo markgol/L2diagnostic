@@ -48,6 +48,7 @@
 // V0.3.6   2026-01-25  correction to load/save settings
 //                      moved 2 settings into PCview group
 //                      removed PCbuffering group
+// V0.3.9   2026-02-01  Added L2 time base corrections parameters
 //
 //--------------------------------------------------------
 
@@ -132,6 +133,11 @@ void MainWindow::saveSettings(bool resetRequested)
     // L2 setup
     settings.beginGroup("L2");
     uint mode =WorkMode.GetWorkmode();
+
+    settings.setValue("TimeCorrection", config.isL2TimeCorrectionEnabled());
+    settings.setValue("SyncHost", config.isL2TsyncHostEnabled());
+    settings.setValue("SyncHostRate", config.getL2syncRate());
+
     settings.setValue("workmode", mode);
 
     // ??? maybe later if we read back UDP config
@@ -211,15 +217,18 @@ void MainWindow::loadSettings(bool resetRequested)
 
     // Network
     settings.beginGroup("net");
-    config.setSRCip(settings.value("srcIP", "192.168.1.2").toString()); // factory default
-    config.setDSTip(settings.value("dstIP", "192.168.1.62").toString()); // factory default
-    config.setSRCport(settings.value("srcPort", 6201).toUInt()); // factory default
-    config.setDSTport(settings.value("dstPort", 6101).toUInt()); // factory default
+        config.setSRCip(settings.value("srcIP", "192.168.1.2").toString()); // factory default
+        config.setDSTip(settings.value("dstIP", "192.168.1.62").toString()); // factory default
+        config.setSRCport(settings.value("srcPort", 6201).toUInt()); // factory default
+        config.setDSTport(settings.value("dstPort", 6101).toUInt()); // factory default
     settings.endGroup();
 
     // L2 setup
     settings.beginGroup("L2");
         WorkMode.SetWorkmode(settings.value("workmode",0).toUInt());
+        config.SetL2TimeCorrectionEnabled(settings.value("TimeCorrection", false).toBool());
+        config.SetL2TsyncHostEnabled(settings.value("SyncHost", false).toBool());
+        config.setL2syncRate(settings.value("SyncHostRate", 50).toUInt()); //20 hz
     settings.endGroup();
 
     // throttling

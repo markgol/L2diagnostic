@@ -56,6 +56,8 @@
 //                      Added display of 2d point cloud data
 // V0.3.6   2026-01-25  Added IMU orientation correction to point cloud data
 //                      Added measure latency button
+// V0.3.8   2026-01-28  removed mesure latency button
+// V0.3.9   2026-01-30  Added Sync L2 timestamp button
 //
 //--------------------------------------------------------
 
@@ -150,6 +152,7 @@ private slots:
     void openConfig();
     void openWorkmode();
     void ClearPCwindow();
+    void SyncL2Clock();
 
     // L2 commands
     void startRotation();

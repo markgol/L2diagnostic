@@ -73,6 +73,7 @@ signals:
     void ResetWindowsRequested();
     void WorkmodeRequested();
     void ClearPCwindowRequested();
+    void SyncL2CLock();
 
 protected:
     void closeEvent(QCloseEvent* event) override;

@@ -7,14 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>699</width>
-    <height>409</height>
+    <height>419</height>
    </rect>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
-     <x>380</x>
-     <y>350</y>
+     <x>510</x>
+     <y>360</y>
      <width>116</width>
      <height>41</height>
     </rect>
@@ -822,9 +822,9 @@
   <widget class="QGroupBox" name="gbVisible">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>300</y>
-     <width>331</width>
+     <x>230</x>
+     <y>310</y>
+     <width>221</width>
      <height>91</height>
     </rect>
    </property>
@@ -839,33 +839,33 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>121</width>
+      <width>101</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Point cloud viewer</string>
+     <string>Pt cloud viewer</string>
     </property>
    </widget>
    <widget class="QCheckBox" name="cbDiag">
     <property name="geometry">
      <rect>
-      <x>160</x>
+      <x>120</x>
       <y>20</y>
-      <width>151</width>
-      <height>16</height>
+      <width>101</width>
+      <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>Calibration and internal state</string>
+     <string>Diagnostic</string>
     </property>
    </widget>
    <widget class="QCheckBox" name="cbIMU">
     <property name="geometry">
      <rect>
-      <x>160</x>
+      <x>120</x>
       <y>60</y>
-      <width>151</width>
+      <width>91</width>
       <height>16</height>
      </rect>
     </property>
@@ -876,9 +876,9 @@
    <widget class="QCheckBox" name="cbStats">
     <property name="geometry">
      <rect>
-      <x>160</x>
+      <x>120</x>
       <y>40</y>
-      <width>151</width>
+      <width>101</width>
       <height>16</height>
      </rect>
     </property>
@@ -891,7 +891,7 @@
      <rect>
       <x>10</x>
       <y>60</y>
-      <width>121</width>
+      <width>111</width>
       <height>16</height>
      </rect>
     </property>
@@ -904,12 +904,83 @@
      <rect>
       <x>10</x>
       <y>40</y>
-      <width>121</width>
+      <width>101</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Packet rate chart</string>
+     <string>Packet rate</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="gbL2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>290</y>
+     <width>191</width>
+     <height>111</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>L2</string>
+   </property>
+   <widget class="QCheckBox" name="cbL2TSCorrect">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>181</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>L2 timebase correction</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="cbL2syncHost">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>181</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>L2 time sync to host</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinL2syncRate">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>0</number>
+    </property>
+    <property name="maximum">
+     <number>30000</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>70</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>msec update rate</string>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>
@@ -921,16 +992,28 @@
   <tabstop>spinRenderRate</tabstop>
   <tabstop>spinPacketrate</tabstop>
   <tabstop>spinDiagrate</tabstop>
+  <tabstop>cbPCviewer</tabstop>
+  <tabstop>cbPacketRate</tabstop>
+  <tabstop>cbACK</tabstop>
+  <tabstop>cbDiag</tabstop>
+  <tabstop>cbStats</tabstop>
+  <tabstop>cbIMU</tabstop>
   <tabstop>spinDistance</tabstop>
   <tabstop>spinYaw</tabstop>
   <tabstop>spinPitch</tabstop>
   <tabstop>btnSetView</tabstop>
   <tabstop>spinColorMin</tabstop>
   <tabstop>spinColorMax</tabstop>
+  <tabstop>spinPointSize</tabstop>
   <tabstop>dstIPedit</tabstop>
   <tabstop>dstPortSpin</tabstop>
   <tabstop>srcIPedit</tabstop>
   <tabstop>srcPortSpin</tabstop>
+  <tabstop>btnConfigureUDP</tabstop>
+  <tabstop>linePort</tabstop>
+  <tabstop>cbL2TSCorrect</tabstop>
+  <tabstop>cbL2syncHost</tabstop>
+  <tabstop>spinL2syncRate</tabstop>
  </tabstops>
  <resources/>
  <connections/>
