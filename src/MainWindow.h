@@ -58,7 +58,7 @@
 //                      Added measure latency button
 // V0.3.8   2026-01-28  removed mesure latency button
 // V0.3.9   2026-01-30  Added Sync L2 timestamp button
-//
+//                      Added SAVE/LOAD point cloud
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -107,6 +107,7 @@
 #include <QVector>
 #include <QQueue>
 #include <QElapsedTimer>
+#include <QFileDialog>
 
 // project specific includes
 #include "ConfigDialog.h"
@@ -153,6 +154,8 @@ private slots:
     void openWorkmode();
     void ClearPCwindow();
     void SyncL2Clock();
+    void SavePC();
+    void LoadPC();
 
     // L2 commands
     void startRotation();

@@ -26,9 +26,10 @@
 //
 //  Solution:
 //  This software skeleton was created using directed ChatGPT AI
-//  conversation targeting a QT Creator development platform.
-//  It reads UPD packets from the L2, categorizes them, performs
-//  error detection for bad packets (lost), live point cloud display.
+//  conversation targetting a QT Creator development platform.
+//  It reads UPD packets from the L2, caterorizes them, performs
+//  error detection for bad packets (lost), display subsample
+//  of packets.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
 //  V0.2.0  2026-01-02  Documentation, start of debugging
@@ -51,13 +52,6 @@
 //                      Added send Latency command packet
 //                      Added requestLatencyMeasurement(), note this is rtt latency
 //                          This is non-blocking.
-//  V0.3.8  2026-01-29  Refined latency mesurements and class interface to them
-//  V0.3.9  2026-01-30  Added
-//                          SyncL2clock() // syncs to the host timestamp
-//                          SyncL2clock(TimeStamp)
-//                          EnableL2TimeCorrection(enableflag);
-//                          SetL2TimeScale(Scale)
-//                          GetL2TimeScale()
 //
 //--------------------------------------------------------
 
@@ -95,23 +89,22 @@
 //
 //  class L2lidar
 //
-//  There is no UART support at this time.  Sample code
-//  exists that is commented out based on the QSerialPort class
+//  See the L2lidar.cpp file for class method() documentaion
+//
 //--------------------------------------------------------
 
 #pragma once
 
-#include <QByteArray>
-#include <QElapsedTimer>
-#include <QMutex>
 #include <QObject>
-//#include <QSerialPort>  This should be replaced with functional UART library
+#include <QByteArray>
 #include <QUdpSocket>
 #include <Qhostaddress>
-#include <QTimer>
+#include <QMutex>
+#include <QSerialPort>
+#include <QElapsedTimer>
 #include <unordered_map>
 
-//#include <cstdint>
+#include <cstdint>
 
 // this is required, DO NOT REMOVE
 #pragma pack(push, 1)
@@ -119,14 +112,6 @@
 #pragma pack(pop)
 // This is typically needed by the parent classes
 #include "unitree_lidar_utilitiesL2.h"
-
-typedef struct {
-    double lastMeasurement;
-    double Average;
-    double Variance;
-    double min;
-    double max;
-} Latency;
 
 //--------------------------------------------------------
 //  L2lidar class definitions
@@ -138,9 +123,9 @@ public:
 
     // Accessors for external data acces in other threads
     // such as a timer based GUI
-    const LidarImuDataPacket imu() const {
+    const LidarImuData imu() const {
         QMutexLocker locker(&PacketMutex);
-        return latestImuPacket_;
+        return latestImu_;
     }
 
     const LidarPointDataPacket Pcl3Dpacket() const {
@@ -174,17 +159,8 @@ public:
     const uint64_t totalPackets() const { return totalPackets_; }
     const uint64_t lostPackets() const { return lostPackets_; }
     const uint64_t totalOther() const { return lostPackets_; }
-    const Latency GetLatency() const {return latestLatency_;}
+
     void ClearCounts(); // clears the packet totals
-
-    // L2 Timstamp correction and controls
-    void EnableL2TimeCorrection(bool enableflag) {enableL2TimeStampFix = enableflag; }
-    void SetL2TimeScale(double Scale) {mL2ScaleTimeStamp = Scale;}
-    double GetL2TimeScale() {return mL2ScaleTimeStamp;}
-
-    // automatic L2 timestamp syncing to host
-    void SetL2TSsyncRate(uint32_t Rate);
-    void EnableL2TSsync(bool enable);
 
     // L2 commands
     bool LidarStartRotation(void);
@@ -195,9 +171,10 @@ public:
     bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
 
     // UDP ethernet communications
+    bool requestLatencyMeasurement();
     bool sendLatencyID(uint32_t SeqeunceID);
-    bool SyncL2Clock() ;    // sync L2 to current system time
-    bool SyncL2Clock(TimeStamp timestamp) ;    // sync L2 to TimeStamp
+
+    uint32_t SequenceID {100};
 
     // this is only to set the UDP parameters in the class
     // It DOES NOT change the L2 configuration settings
@@ -219,6 +196,7 @@ signals:
     void versionReceived();
     void timestampReceived();
     void ackReceived();
+    void latencyMeasured(double ms);
 
 private: // functions
     // Generic Send/receive packets
@@ -232,7 +210,7 @@ private: // functions
 
     // UART packets
     bool SendUARTpacket(uint8_t *Buffer,uint32_t Len);
-    //void readUARTpendingDatagrams();
+    void readUARTpendingDatagrams();
 
     // UDP packet decoders
     void decode3D(const QByteArray& datagram, uint64_t Offset);
@@ -244,22 +222,10 @@ private: // functions
     void handleRaw(uint32_t packetType,
                    const QByteArray& datagram, uint64_t Offset);
 
-    // latency
-    bool requestRTTLatencyMeasurement();
-
-    // L2 time base corrections
-    void SyncClock() {SyncL2Clock();} // triggered by TimerSyncTimer
-
     // helper functions
     void setPacketHeader(FrameHeader *FrameHeader, uint32_t packet_type,
                          uint32_t packet_size);
     void setPacketTail(FrameHeader *FrameTale);
-
-    void UpdateEWMAStats(double alpha,
-                     double Xnew,
-                     double& Xmean,
-                     double& Xvariance
-                     );
 
 private: // variables
     // mutex for critical packet access while copying packet
@@ -273,10 +239,10 @@ private: // variables
     QUdpSocket L2socket;
 
     // Serial UART
-    QString SerialPort {"com27"};
+    QString SerialPort {"com4"};
     // serial port settings are fixed and can not be changed
     // 4M buadrate, 8 bit, even partity, 1 stop, no flow control ?
-    // ??? QSerialPort L2serial;
+    QSerialPort L2serial;
 
     // Packet buffer
     QByteArray PacketBuffer;
@@ -285,7 +251,7 @@ private: // variables
 
     // Latest decoded values
     // Accessing these should use mutex lock, PacketMutex
-    LidarImuDataPacket        latestImuPacket_{};
+    LidarImuData        latestImu_{};
     LidarVersionData    latestVersion_{};
     LidarTimeStampData  latestTimestamp_{};
     Lidar2DPointDataPacket latest2DdataPacket_{};
@@ -314,29 +280,6 @@ private: // variables
 
     // Latency measurement variables
     QElapsedTimer latencyTimer;
-    QTimer LatencyTimer;
     std::unordered_map<uint32_t, qint64> latencyMap; // SeqID → send time (ns)
-    // latest latency measurements
-    uint32_t SequenceID {100};
-    Latency latestLatency_ {-1.0,0.0,-1.0, 999.99,-1.0};
 
-    // enable L2 timestamp correction
-    QTimer TimerSyncTimer;
-    // This only enables correction algorithm
-    // It does not enable timer based updates to
-    // syncing of the L2 timestamp
-    bool enableL2TimeStampFix {false};
-    // last known timestamp sync
-    // This is used as offset along with scale to correct
-    // the L2 timestamp
-    double mLastTimestamp {0};
-    // L2 Fw Version 2.8.11.1, compile date: 2025-07-30
-    // is known to have a timestamp which is slow by
-    // a factor 2.0
-    double mL2ScaleTimeStamp {2.0};
-    bool mL2EnableSyncHost = false;
-    uint32_t mL2TSsyncRate = {0}; // stop timer
-
-
-    bool mConnected {false}; // set true when connected to L2
 };

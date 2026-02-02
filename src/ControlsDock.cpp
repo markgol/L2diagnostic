@@ -36,6 +36,7 @@
 //  V0.3.7  2026-01-28  Added measure latency button
 //  V0.3.8  2026-01-29  Remove measure latency button
 //                      Updated latency measurement
+//  V0.3.9  2026-02-01  Corrected visibility for workmode button
 //
 //--------------------------------------------------------
 #include "ControlsDock.h"
@@ -99,6 +100,14 @@ ControlsDock::ControlsDock(QWidget *parent)
     connect(ui->btnL2SetClock, &QPushButton::clicked,
             this, &ControlsDock::SyncL2CLock);
 
+    // Sync L2 clock button
+    connect(ui->btnSavePC, &QPushButton::clicked,
+            this, &ControlsDock::SavePC);
+
+    // Sync L2 clock button
+    connect(ui->btnLoadPC, &QPushButton::clicked,
+            this, &ControlsDock::LoadPC);
+
     setConnectState(false); // L2 is disconnected at start
 }
 
@@ -126,6 +135,7 @@ void ControlsDock::setConnectState(bool connected)
     ui->btnL2Disconnect->setEnabled(connected);
     ui->btnVersion->setEnabled(connected);
     ui->btnL2SetClock->setEnabled(connected);
+    ui->btnWorkmode->setEnabled(connected);
 
     // this button is always enabled
     ui->btnConfig->setEnabled(true);

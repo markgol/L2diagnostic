@@ -43,6 +43,7 @@
 //                      point cloud window into the class
 //                      Moved much of the closing of the class here
 //  V0.3.6  2026-01-24  Added clear point cloud
+//  V0.3.9  2026-02-01  added LOAD/SAVE point cloud
 //
 //--------------------------------------------------------
 
@@ -697,3 +698,119 @@ void PointCloudWindow::ensureVisibleOnScreen(QRect& geom) const
     QRect primary = QGuiApplication::primaryScreen()->availableGeometry();
     geom.moveCenter(primary.center());
 }
+
+//========================================================
+//  File I/O
+//========================================================
+
+//--------------------------------------------------------
+//  savePointCloudToFile
+//--------------------------------------------------------
+bool PointCloudWindow::savePointCloudToFile(const QString& fileName)
+{
+    // file format
+    //
+    //uint32 magic = 'PCD1'
+    //uint32 pointCount
+    //GLPoint[pointCount]
+
+    if (!isExposed() || !context())
+        return false;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly))
+        return false;
+
+    QDataStream out(&file);
+    out.setByteOrder(QDataStream::LittleEndian);
+
+    constexpr quint32 magic = 0x50434431; // "PCD1"
+    out << magic;
+
+    quint32 count = m_pointCount;
+    out << count;
+
+    makeCurrent();
+    m_vbo.bind();
+
+    GLPoint* src = static_cast<GLPoint*>(
+        m_vbo.map(QOpenGLBuffer::ReadOnly)
+        );
+
+    if (!src) {
+        m_vbo.release();
+        doneCurrent();
+        return false;
+    }
+
+    if (!m_wrapped) {
+        for (int i = 0; i < m_pointCount; ++i)
+            out << src[i].pos << src[i].intensity;
+    }
+    else {
+        for (int i = m_writeOffset; i < m_maxPoints; ++i)
+            out << src[i].pos << src[i].intensity;
+
+        for (int i = 0; i < m_writeOffset; ++i)
+            out << src[i].pos << src[i].intensity;
+    }
+
+    m_vbo.unmap();
+    m_vbo.release();
+    doneCurrent();
+
+    return true;
+}
+
+
+//--------------------------------------------------------
+//  loadPointCloudFromFile
+//--------------------------------------------------------
+bool PointCloudWindow::loadPointCloudFromFile(const QString& fileName)
+{
+    // file format
+    //
+    //uint32 magic = 'PCD1'
+    //uint32 pointCount
+    //GLPoint[pointCount]
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    QDataStream in(&file);
+    in.setByteOrder(QDataStream::LittleEndian);
+
+    quint32 magic;
+    in >> magic;
+    if (magic != 0x50434431)
+        return false;
+
+    quint32 count;
+    in >> count;
+
+    clearPointCloud();
+
+    QVector<GLPoint> loaded;
+    loaded.reserve(count);
+
+    for (quint32 i = 0; i < count; ++i) {
+        GLPoint p;
+        in >> p.pos >> p.intensity;
+        loaded.push_back(p);
+    }
+
+    // Stage into GPU upload queue
+    m_accumulatedPoints = loaded;
+
+    if (isExposed()) {
+        makeCurrent();
+        uploadAccumulatedPoints();
+        doneCurrent();
+    }
+
+    requestUpdate();
+    return true;
+}
+
+

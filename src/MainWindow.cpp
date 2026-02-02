@@ -78,6 +78,7 @@
 //                      Added measure latency button
 // V0.3.9   2026-01-30  Removed measure latency button
 //                      Added Sync L2 timestamp button
+//                      Added SAVE/LOAD point cloud
 //
 //--------------------------------------------------------
 
@@ -535,10 +536,20 @@ void MainWindow::ConnectDocksViewerActions()
     connect(m_controlsDock, &ControlsDock::GetVersionRequested,
             this, &MainWindow::getVersion);
 
-    // reset windows button in ControlsDock window
+    // Save PC button in ControlsDock window
+    connect(m_controlsDock, &ControlsDock::SavePC,
+            this, &MainWindow::SavePC);
+
+    // Load PC button in ControlsDock window
+    connect(m_controlsDock, &ControlsDock::LoadPC,
+            this, &MainWindow::LoadPC);
+
+    // Save PC button in ControlsDock window
     connect(m_controlsDock, &ControlsDock::ResetWindowsRequested,
             this, &MainWindow::resetWindowLayout);
 
+
+    // workmode dialog connects
     connect(&WorkMode, &WorkmodeDialog::RequestSetL2workmode,
             this, &MainWindow::sendSetWorkmode);
 
@@ -588,7 +599,7 @@ void MainWindow::applyDocksVisibilityConstraint()
     resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 
     m_controlsDock->setMinimumWidth(480);
-    m_controlsDock->setMinimumHeight(200);
+    m_controlsDock->setMinimumHeight(220);
     m_controlsDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // can not float or move
     // This would let it float or move but X will not close it
     // m_controlsDock->setFeatures(QDockWidget::DockWidgetMovable |
@@ -1157,6 +1168,30 @@ void MainWindow::getVersion()
 {
     l2lidar.LidarGetVersion();
     return;
+}
+
+//--------------------------------------------------------
+//  SavePC
+//  button press
+//--------------------------------------------------------
+void MainWindow::SavePC()
+{
+    QString file = QFileDialog::getSaveFileName(this,
+                                                "Save Point Cloud", "", "PointCloud (*.pcd)");
+
+    m_pointCloudWindow->savePointCloudToFile(file);
+}
+
+//--------------------------------------------------------
+//  LoadPC
+//  button press
+//--------------------------------------------------------
+void MainWindow::LoadPC()
+{
+    QString file = QFileDialog::getOpenFileName(this,
+                                                "Load Point Cloud", "", "PointCloud (*.pcd)");
+
+    m_pointCloudWindow->loadPointCloudFromFile(file);
 }
 
 //--------------------------------------------------------

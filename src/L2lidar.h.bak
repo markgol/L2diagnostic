@@ -177,12 +177,12 @@ public:
     const Latency GetLatency() const {return latestLatency_;}
     void ClearCounts(); // clears the packet totals
 
-    // L2 Timstamp correction and controls
+    // L2 Timstamp corrections
     void EnableL2TimeCorrection(bool enableflag) {enableL2TimeStampFix = enableflag; }
     void SetL2TimeScale(double Scale) {mL2ScaleTimeStamp = Scale;}
     double GetL2TimeScale() {return mL2ScaleTimeStamp;}
 
-    // automatic L2 timestamp syncing to host
+    // automatic L2 timestamp syncing
     void SetL2TSsyncRate(uint32_t Rate);
     void EnableL2TSsync(bool enable);
 

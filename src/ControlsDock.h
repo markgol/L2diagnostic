@@ -38,6 +38,7 @@
 //  V0.3.7  2026-01-28  Added measure latency button
 //  V0.3.8  2026-01-29  Remove measure latency button
 //                      Updated latency measurement
+//                      Added SAVE/LOAD point cloud buttons
 //
 //--------------------------------------------------------
 #ifndef CONTROLSDOCK_H
@@ -74,6 +75,8 @@ signals:
     void WorkmodeRequested();
     void ClearPCwindowRequested();
     void SyncL2CLock();
+    void LoadPC();
+    void SavePC();
 
 protected:
     void closeEvent(QCloseEvent* event) override;

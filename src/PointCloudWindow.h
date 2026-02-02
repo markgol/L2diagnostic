@@ -43,6 +43,8 @@
 //                      point cloud window into the class
 //                      Moved much of the closing of the class here
 //  V0.3.6  2026-01-24  Added clear point cloud
+//  V0.3.9  2026-02-01  added LOAD/SAVE point cloud
+//
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -130,6 +132,9 @@
 #include <QVector3D>
 #include <QPoint>
 #include <QSettings>
+#include <QFile>
+#include <QDataStream>
+//#include <QMessageBox>
 
 #include "AxisGridRenderer.h"
 
@@ -196,6 +201,11 @@ public:
     void Initialize();
     void getPointSizeRange(float *SizeRange);
     void clearPointCloud();
+
+    // File I/O
+    bool savePointCloudToFile(const QString& fileName);
+    bool loadPointCloudFromFile(const QString& fileName);
+
 
 public slots:
     void onRenderTick(); // timer driven renderer
