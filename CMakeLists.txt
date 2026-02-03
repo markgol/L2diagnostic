@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 0.3.10
+    VERSION 0.3.11
     LANGUAGES CXX
 )
 
@@ -27,7 +27,6 @@ find_package(Qt6 REQUIRED COMPONENTS
     Widgets
     Network
     Charts
-    SerialPort
     OpenGL
     OpenGLWidgets
 )
@@ -78,7 +77,6 @@ target_link_libraries(${PROJECT_NAME}
         Qt6::Widgets
         Qt6::Network
         Qt6::Charts
-        Qt6::SerialPort
         Qt6::OpenGL
         Qt6::OpenGLWidgets
 )
