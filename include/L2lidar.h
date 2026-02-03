@@ -58,6 +58,9 @@
 //                          EnableL2TimeCorrection(enableflag);
 //                          SetL2TimeScale(Scale)
 //                          GetL2TimeScale()
+//  V0.3.10 2026-02-01  Added Get L2 Parameters
+//                      Added GetWorkmode()
+//                      Added enable latency measurement flag
 //
 //--------------------------------------------------------
 
@@ -101,17 +104,17 @@
 
 #pragma once
 
+// The Qt dependencies
 #include <QByteArray>
 #include <QElapsedTimer>
 #include <QMutex>
 #include <QObject>
-//#include <QSerialPort>  This should be replaced with functional UART library
 #include <QUdpSocket>
 #include <Qhostaddress>
 #include <QTimer>
-#include <unordered_map>
 
-//#include <cstdint>
+// other dependencies
+#include <unordered_map>
 
 // this is required, DO NOT REMOVE
 #pragma pack(push, 1)
@@ -152,6 +155,12 @@ public:
         QMutexLocker locker(&PacketMutex);
         return latest2DdataPacket_;
     }
+
+    const LidarParamDataPacket L2ParamsPacket() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestL2ParamsPacket_;
+    }
+
     const LidarAckData ack() const {
         QMutexLocker locker(&PacketMutex);
         return latestACKdata_;
@@ -164,16 +173,24 @@ public:
         QMutexLocker locker(&PacketMutex);
         return latestTimestamp_;
     }
+    const LidarParamDataPacket GetL2WorkParamPacket() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestL2ParamsPacket_;
+    }
+    uint32_t GetL2Workmode() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestWorkmode_;
+    }
 
     // packet stats from L2 (only updates when L2 socket connected)
     // These are not actually critical, only for reporting stats
-    const uint64_t totalIMU() const { return totalIMUpackets_;}
-    const uint64_t total3D() const { return total3Dpackets_;}
-    const uint64_t total2D() const { return total2Dpackets_;}
-    const uint64_t totalACK() const { return totalACKpackets_;}
-    const uint64_t totalPackets() const { return totalPackets_; }
-    const uint64_t lostPackets() const { return lostPackets_; }
-    const uint64_t totalOther() const { return lostPackets_; }
+    uint64_t totalIMU() const { return totalIMUpackets_;}
+    uint64_t total3D() const { return total3Dpackets_;}
+    uint64_t total2D() const { return total2Dpackets_;}
+    uint64_t totalACK() const { return totalACKpackets_;}
+    uint64_t totalPackets() const { return totalPackets_; }
+    uint64_t lostPackets() const { return lostPackets_; }
+    uint64_t totalOther() const { return lostPackets_; }
     const Latency GetLatency() const {return latestLatency_;}
     void ClearCounts(); // clears the packet totals
 
@@ -186,13 +203,17 @@ public:
     void SetL2TSsyncRate(uint32_t Rate);
     void EnableL2TSsync(bool enable);
 
+    // latency measurement
+    void EnableLatencyMeasure(bool enable);
+
     // L2 commands
     bool LidarStartRotation(void);
     bool LidarStopRotation(void);
     bool LidarReset(void);
     bool LidarGetVersion(void);
-    //bool QueryWorkMode(void);  // no method of determing this from L2 has been found
+    bool GetL2Params(void);
     bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
+    bool GetWorkMode();
 
     // UDP ethernet communications
     bool sendLatencyID(uint32_t SeqeunceID);
@@ -219,6 +240,8 @@ signals:
     void versionReceived();
     void timestampReceived();
     void ackReceived();
+    void WorkmodeReceived();
+    void L2ParamsReceived();
 
 private: // functions
     // Generic Send/receive packets
@@ -240,6 +263,7 @@ private: // functions
     void decodeImu(const QByteArray& datagram, uint64_t Offset);
     void decodeVersion(const QByteArray& datagram, uint64_t Offset);
     void decodeTimestamp(const QByteArray& datagram, uint64_t Offset);
+    void decodeL2Params(const QByteArray& datagram, uint64_t Offset);
     void decodeAck(const QByteArray& datagram, uint64_t Offset);
     void handleRaw(uint32_t packetType,
                    const QByteArray& datagram, uint64_t Offset);
@@ -285,11 +309,12 @@ private: // variables
 
     // Latest decoded values
     // Accessing these should use mutex lock, PacketMutex
-    LidarImuDataPacket        latestImuPacket_{};
+    LidarImuDataPacket  latestImuPacket_{};
     LidarVersionData    latestVersion_{};
     LidarTimeStampData  latestTimestamp_{};
     Lidar2DPointDataPacket latest2DdataPacket_{};
     LidarPointDataPacket latest3DdataPacket_{};
+    LidarParamDataPacket latestL2ParamsPacket_{};
     LidarAckData latestACKdata_{};
 
     // Packet counters, these do not have a mutex lock
@@ -319,6 +344,7 @@ private: // variables
     // latest latency measurements
     uint32_t SequenceID {100};
     Latency latestLatency_ {-1.0,0.0,-1.0, 999.99,-1.0};
+    bool mEnableLatency {true};
 
     // enable L2 timestamp correction
     QTimer TimerSyncTimer;
@@ -336,6 +362,9 @@ private: // variables
     double mL2ScaleTimeStamp {2.0};
     bool mL2EnableSyncHost = false;
     uint32_t mL2TSsyncRate = {0}; // stop timer
+
+    // workmode
+    uint32_t latestWorkmode_ {256}; // 256 is invalid
 
 
     bool mConnected {false}; // set true when connected to L2

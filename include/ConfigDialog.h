@@ -45,6 +45,7 @@
 //                      added cloud point size
 //  V0.3.7  2026-01-26  Added set UDP configuration in L2
 //  V0.3.9  2026-01-31  Added L2 timebase and sync controls
+//  V0.3.10 2026-02-02  Added enable latency measurement checkbobx
 //
 //--------------------------------------------------------
 
@@ -146,19 +147,19 @@ public:
         return static_cast<uint32_t>(ui.spinNframe->value());
     }
 
-    uint32_t getDiagUpdateRate() const
+    int getDiagUpdateRate() const
     {
-        return static_cast<uint32_t>(ui.spinDiagrate->value());
+        return static_cast<int>(ui.spinDiagrate->value());
     }
 
-     uint32_t getPacketUpdateRate() const
+     int getPacketUpdateRate() const
     {
-        return static_cast<uint32_t>(ui.spinPacketrate->value());
+        return static_cast<int>(ui.spinPacketrate->value());
     }
 
-    uint32_t getRenderRate() const
+    int getRenderRate() const
     {
-        return static_cast<uint32_t>(ui.spinRenderRate->value());
+        return static_cast<int>(ui.spinRenderRate->value());
     }
 
     //--------------------------------------------------------
@@ -196,9 +197,9 @@ public:
     //--------------------------------------------------------
     // point cloud viewer buffering
     //--------------------------------------------------------
-    uint32_t getMaxPoints()
+    int getMaxPoints()
     {
-        return static_cast<uint32_t>(ui.spinMaxPoints->value());
+        return static_cast<int>(ui.spinMaxPoints->value());
     }
     bool isIMUadjustEnabled()
     {
@@ -255,6 +256,11 @@ public:
     uint32_t getL2syncRate() const
     {
         return static_cast<uint32_t>(ui.spinL2syncRate->value());
+    }
+
+    bool isLatencyEnabled() const
+    {
+        return static_cast<bool>(ui.cbLatency->isChecked());
     }
 
     // =============================
@@ -407,6 +413,11 @@ public:
     void setL2syncRate(uint32_t p) const
     {
         ui.spinL2syncRate->setValue(p);
+    }
+
+    void setEnableLatency(bool p) const
+    {
+        ui.cbLatency->setChecked(p);
     }
 
 signals:

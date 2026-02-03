@@ -114,7 +114,7 @@ void AxisGridRenderer::initialize()
 
     m_vbo.create();
     m_vbo.bind();
-    m_vbo.allocate(vertices.constData(), vertices.size() * sizeof(Vertex));
+    m_vbo.allocate(vertices.constData(), (int)(vertices.size() * sizeof(Vertex)));
 
     glEnableVertexAttribArray(0); // position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);

@@ -74,6 +74,9 @@
 //                      Added requestLatencyMeasurement(), note this is rtt latency
 //                          This is non-blocking.
 //  V0.3.9  2026-01-30  Added SyncL2clock(), SyncL2clock(TimeStamp)
+//  V0.3.10 2026-02-01  Added Get L2 Parameters
+//                      Added GetWorkmode()
+//                      Added enable latency measurement flag
 //
 //--------------------------------------------------------
 
@@ -339,6 +342,11 @@ void L2lidar::processDatagram(const QByteArray& datagram)
                 Offset += header->packet_size;
                 break;
 
+            case LIDAR_PARAM_DATA_PACKET_TYPE:
+                decodeL2Params(PacketBuffer,Offset);
+                Offset += header->packet_size;
+                break;
+
             case LIDAR_ACK_DATA_PACKET_TYPE:
                 decodeAck(PacketBuffer,Offset);
                 Offset += header->packet_size;
@@ -372,7 +380,6 @@ void L2lidar::decode3D(const QByteArray& datagram, uint64_t Offset)
 
     double t1;
     double t2;
-    double DeltaTime;
 
     // critical section
     PacketMutex.lock();
@@ -385,7 +392,6 @@ void L2lidar::decode3D(const QByteArray& datagram, uint64_t Offset)
     // initally for test only changed latest
     // after testing also change packet
     if(enableL2TimeStampFix) {
-        double t1,t2;
         t1 = (double)latest3DdataPacket_.data.info.stamp.sec +
              ((double)latest3DdataPacket_.data.info.stamp.nsec*1.0e-9);
 
@@ -433,7 +439,6 @@ void L2lidar::decode2D(const QByteArray& datagram, uint64_t Offset)
 
     double t1;
     double t2;
-    double DeltaTime;
 
     // critical section
     PacketMutex.lock();
@@ -446,7 +451,6 @@ void L2lidar::decode2D(const QByteArray& datagram, uint64_t Offset)
     // initally for test only changed latest
     // after testing also change packet
     if(enableL2TimeStampFix) {
-        double t1,t2;
         t1 = (double)latest2DdataPacket_.data.info.stamp.sec +
              ((double)latest2DdataPacket_.data.info.stamp.nsec*1.0e-9);
 
@@ -495,7 +499,6 @@ void L2lidar::decodeImu(const QByteArray& datagram, uint64_t Offset)
 
     double t1;
     double t2;
-    double DeltaTime;
 
     // critical section
     PacketMutex.lock();
@@ -507,7 +510,6 @@ void L2lidar::decodeImu(const QByteArray& datagram, uint64_t Offset)
     // initally for test only changed latest
     // after testing also change packet
     if(enableL2TimeStampFix) {
-        double t1,t2;
         t1 = (double)pkt->data.info.stamp.sec +
              ((double)pkt->data.info.stamp.nsec*1.0e-9);
         t2 = ((t1-mLastTimestamp) * mL2ScaleTimeStamp) +mLastTimestamp;
@@ -561,6 +563,7 @@ void L2lidar::decodeVersion(const QByteArray& datagram, uint64_t Offset)
     // send out notice that a VERSION packet received
     emit versionReceived();
 }
+
 //--------------------------------------------------------------------
 // TIMESTAMP Decoder
 // Currently no timestamp packet has been observed being sent
@@ -593,6 +596,39 @@ void L2lidar::decodeTimestamp(const QByteArray& datagram, uint64_t Offset)
 }
 
 //--------------------------------------------------------------------
+// L2 PARAMS Decoder
+// This is for investigating the parameters packet
+//--------------------------------------------------------------------
+void L2lidar::decodeL2Params(const QByteArray& datagram, uint64_t Offset)
+{
+    const auto* header =
+        reinterpret_cast<const FrameHeader*>(datagram.constData() + Offset);
+
+    if ((size_t)header->packet_size != sizeof(LidarParamDataPacket)) {
+        lostPackets_++;
+        return;
+    }
+
+    totalPackets_++;
+
+    const auto* pkt =
+        reinterpret_cast<const LidarParamDataPacket*>(datagram.constData()+Offset);
+
+    // critical section
+    PacketMutex.lock();
+
+    latestL2ParamsPacket_.header = pkt->header;
+    latestL2ParamsPacket_.data = pkt->data;
+    latestL2ParamsPacket_.tail = pkt->tail;
+    latestWorkmode_ = pkt->data.workmode;
+    PacketMutex.unlock();
+    // end of critical section
+    emit WorkmodeReceived();
+    emit L2ParamsReceived();
+    return;
+}
+
+//--------------------------------------------------------------------
 // ACK Decoder
 //--------------------------------------------------------------------
 void L2lidar::decodeAck(const QByteArray& datagram, uint64_t Offset)
@@ -612,41 +648,43 @@ void L2lidar::decodeAck(const QByteArray& datagram, uint64_t Offset)
 
     uint32_t seq = pkt->data.cmd_value;
 
-    // ----- RTT latency calculation -----
-    auto it = latencyMap.find(seq);
-    if (it != latencyMap.end()) {
-        qint64 now = latencyTimer.nsecsElapsed();
-        double latencyMs = (now - it->second) / 1e6;
-        latencyMap.erase(it);
+    if(mEnableLatency) {
+        // ----- RTT latency calculation -----
+        auto it = latencyMap.find(seq);
+        if (it != latencyMap.end()) {
+            qint64 now = latencyTimer.nsecsElapsed();
+            double latencyMs = (now - it->second) / 1e6;
+            latencyMap.erase(it);
 
-        // save results if valid
-        latestLatency_.lastMeasurement = latencyMs;
-        if(latestLatency_.Average<0.0) {
-            // first point is new stats
-            latestLatency_.Average = latencyMs;
-            latestLatency_.Variance = 0.0;
-            latestLatency_.max = latencyMs;
-            latestLatency_.min = latencyMs;
-        } else {
-            // compute stats
-            PacketMutex.lock();
-            if(latencyMs>latestLatency_.max)
+            // save results if valid
+            latestLatency_.lastMeasurement = latencyMs;
+            if(latestLatency_.Average<0.0) {
+                // first point is new stats
+                latestLatency_.Average = latencyMs;
+                latestLatency_.Variance = 0.0;
                 latestLatency_.max = latencyMs;
-            if(latencyMs<latestLatency_.min)
                 latestLatency_.min = latencyMs;
-            // first order exponential moving average
-            const double Aplha {.05};
-            double Xmean = latestLatency_.Average;
-            double Xvariance = latestLatency_.Variance;
+            } else {
+                // compute stats
+                PacketMutex.lock();
+                if(latencyMs>latestLatency_.max)
+                    latestLatency_.max = latencyMs;
+                if(latencyMs<latestLatency_.min)
+                    latestLatency_.min = latencyMs;
+                // first order exponential moving average
+                const double Aplha {.05};
+                double Xmean = latestLatency_.Average;
+                double Xvariance = latestLatency_.Variance;
 
-            UpdateEWMAStats(Aplha,latencyMs,Xmean,Xvariance);
+                UpdateEWMAStats(Aplha,latencyMs,Xmean,Xvariance);
 
-            latestLatency_.Average = Xmean;
-            latestLatency_.Variance = Xvariance;
-            PacketMutex.unlock();
+                latestLatency_.Average = Xmean;
+                latestLatency_.Variance = Xvariance;
+                PacketMutex.unlock();
+            }
         }
-    }
     // ----------------------------------
+    }
 
     // critical section
     PacketMutex.lock();
@@ -985,6 +1023,43 @@ bool L2lidar::LidarGetVersion(void)
 }
 
 //--------------------------------------------------------------------
+//  GetL2Params
+//  This sends a request to the L2 for a Parameters packet
+//  The parameters packet are not defined
+//  This is part of diagnsotic to undertand what they might be
+//--------------------------------------------------------------------
+bool L2lidar::GetL2Params(void)
+{
+    // USER_CMD_VERSION_GET
+
+    // set header
+    LidarUserCtrlCmdPacket cmd;
+    setPacketHeader(&cmd.header,LIDAR_COMMAND_PACKET_TYPE,
+                    sizeof(LidarUserCtrlCmdPacket));
+
+    // set data
+    cmd.data.cmd_type = CMD_PARAM_GET;
+    cmd.data.cmd_value = 1;  // value guess
+
+    // set tail
+    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+
+    cmd.tail.msg_type_check = 0;
+    cmd.tail.reserve[0] = 0x0;
+    cmd.tail.reserve[1] = 0x0;
+    cmd.tail.tail[0] = 0x00;
+    cmd.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
+        qDebug() << "Get Params cmd failed";
+        return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------------------
 //  SetWorkMode
 //  This commands only sets the workmode in the L2.  It does not restart
 //  the L2.  This must be done separately for certain workmode changes
@@ -1030,6 +1105,17 @@ bool L2lidar::SetWorkMode(uint32_t mode)
     }
 
     return true;
+}
+
+//--------------------------------------------------------------------
+//  SetWorkMode
+//  The L2 parasm packet is the only know source of the current L2 workmode
+//  The decodeL2Params will emit the signal that the latestWorkmode_
+//  settings has been received.
+//--------------------------------------------------------------------
+bool L2lidar::GetWorkMode()
+{
+    return GetL2Params();
 }
 
 //--------------------------------------------------------------------
@@ -1205,7 +1291,7 @@ bool L2lidar::SendUDPpacket(uint8_t *Buffer,uint32_t Len)
 //  This is not yet implememted.  It is here just as part of the skeleton
 //  required when it is implemented
 //--------------------------------------------------------------------
-bool L2lidar::SendUARTpacket(uint8_t *Buffer,uint32_t Len)
+bool L2lidar::SendUARTpacket([[maybe_unused]]uint8_t *Buffer,[[maybe_unused]]uint32_t Len)
 {
     return false;
 }
@@ -1424,6 +1510,9 @@ void L2lidar::EnableL2TSsync(bool enable)
 //--------------------------------------------------------------------
 bool L2lidar::requestRTTLatencyMeasurement()
 {
+    if(!mEnableLatency)
+        return false;
+
     // the first timeout is 1 second
     // after the connect
     // subsequent timeouts are 1/4 second
@@ -1439,6 +1528,16 @@ bool L2lidar::requestRTTLatencyMeasurement()
     latencyMap[seq] = latencyTimer.nsecsElapsed();
     return sendLatencyID(seq);
 }
+
+//--------------------------------------------------------------------
+//  EnableLatencyMeasure
+//  This enables/disables the latency measurement
+//--------------------------------------------------------------------
+void L2lidar::EnableLatencyMeasure(bool enable)
+{
+    mEnableLatency = enable;
+}
+
 
 //--------------------------------------------------------------------
 //  UpdateEWMAStats

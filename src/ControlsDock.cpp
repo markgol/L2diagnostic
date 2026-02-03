@@ -37,6 +37,8 @@
 //  V0.3.8  2026-01-29  Remove measure latency button
 //                      Updated latency measurement
 //  V0.3.9  2026-02-01  Corrected visibility for workmode button
+//                      Added SAVE/LOAD point cloud buttons
+//  V0.3.10 2026-02-01  Added Get L2 Params button
 //
 //--------------------------------------------------------
 #include "ControlsDock.h"
@@ -100,13 +102,17 @@ ControlsDock::ControlsDock(QWidget *parent)
     connect(ui->btnL2SetClock, &QPushButton::clicked,
             this, &ControlsDock::SyncL2CLock);
 
-    // Sync L2 clock button
+    //  SavePC clock button
     connect(ui->btnSavePC, &QPushButton::clicked,
             this, &ControlsDock::SavePC);
 
-    // Sync L2 clock button
+    //  LoadPC button
     connect(ui->btnLoadPC, &QPushButton::clicked,
             this, &ControlsDock::LoadPC);
+
+    //  LoadPC button
+    connect(ui->btnL2GetParams, &QPushButton::clicked,
+            this, &ControlsDock::GetL2Params);
 
     setConnectState(false); // L2 is disconnected at start
 }
@@ -136,6 +142,7 @@ void ControlsDock::setConnectState(bool connected)
     ui->btnVersion->setEnabled(connected);
     ui->btnL2SetClock->setEnabled(connected);
     ui->btnWorkmode->setEnabled(connected);
+    ui->btnL2GetParams->setEnabled(connected);
 
     // this button is always enabled
     ui->btnConfig->setEnabled(true);

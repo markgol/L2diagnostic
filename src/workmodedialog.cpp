@@ -33,6 +33,7 @@
 //
 //  V0.2.6  2026-01-13 Add WorkMode dialog
 //  V0.3.4  2026-01-22 Implement WorkMode dialog
+//  V0.3.10 2026-02-02  Added support for Get workmode
 //
 //--------------------------------------------------------
 
@@ -69,7 +70,10 @@
 
 #include "WorkModeDialog.h"
 #include "ui_WorkModeDialog.h"
+// this is required, DO NOT REMOVE
+#pragma pack(push, 1)
 #include "unitree_lidar_protocolL2.h"
+#pragma pack(pop)
 
 //--------------------------------------------------------
 //  RequestSetL2workmode
@@ -85,6 +89,14 @@ void WorkmodeDialog::SendSetL2workmode()
 void WorkmodeDialog::SendL2reset()
 {
     emit RequestL2reset();
+}
+
+//--------------------------------------------------------
+//  RequestSetL2workmode
+//--------------------------------------------------------
+void WorkmodeDialog::SendGetWorkmode()
+{
+    emit RequestGetL2Workmode();
 }
 
 //--------------------------------------------------------

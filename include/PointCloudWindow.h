@@ -250,9 +250,9 @@ private:
     // Up      = +Z = ( 0, 0, 1 )
 
     QVector3D m_target { 0.0f, 0.0f, 0.0f };
-    PCsettings mPCsettings {10.0,145.0,20.0, 2, 0.1, 10.0};
+    PCsettings mPCsettings {10.0f,145.0f,20.0f, 2, 0.1f, 10.0f};
 
-    PCsettings DefaultPCsettings {10.0,145.0,20.0, 2, 0.1, 10.0};
+    PCsettings DefaultPCsettings {10.0f,145.0f,20.0f, 2, 0.1f, 10.0f};
 
     // limits
     float m_pitchMin = -89.0f; // min pitch angle (degress)

@@ -49,6 +49,7 @@
 //                      moved 2 settings into PCview group
 //                      removed PCbuffering group
 // V0.3.9   2026-02-01  Added L2 time base corrections parameters
+// V0.3.10  2026-02-02  Added enable latency measurements flag
 //
 //--------------------------------------------------------
 
@@ -137,6 +138,7 @@ void MainWindow::saveSettings(bool resetRequested)
     settings.setValue("TimeCorrection", config.isL2TimeCorrectionEnabled());
     settings.setValue("SyncHost", config.isL2TsyncHostEnabled());
     settings.setValue("SyncHostRate", config.getL2syncRate());
+    settings.setValue("EnableLatency", config.isLatencyEnabled());
 
     settings.setValue("workmode", mode);
 
@@ -229,6 +231,7 @@ void MainWindow::loadSettings(bool resetRequested)
         config.SetL2TimeCorrectionEnabled(settings.value("TimeCorrection", false).toBool());
         config.SetL2TsyncHostEnabled(settings.value("SyncHost", false).toBool());
         config.setL2syncRate(settings.value("SyncHostRate", 50).toUInt()); //20 hz
+        config.setEnableLatency(settings.value("EnableLatency", true).toBool());
     settings.endGroup();
 
     // throttling

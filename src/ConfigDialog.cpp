@@ -35,6 +35,8 @@
 //  V0.2.0  2026-01-02  Documentation, start of debugging
 //  V0.2.4  2026-01-10  removed CSV checkbox, never fully implemented
 //                      Added SkipFrame spinbox
+//  V0.3.9  2026-01-31  Added L2 timebase and sync controls
+//  V0.3.10 2026-02-02  Added enable latency measurement checkbobx
 //
 //--------------------------------------------------------
 

@@ -38,7 +38,8 @@
 //  V0.3.7  2026-01-28  Added measure latency button
 //  V0.3.8  2026-01-29  Remove measure latency button
 //                      Updated latency measurement
-//                      Added SAVE/LOAD point cloud buttons
+//  V0.3.9  2026-02-01  Added SAVE/LOAD point cloud buttons
+//  V0.3.10 2026-02-01  Added Get L2 Params button
 //
 //--------------------------------------------------------
 #ifndef CONTROLSDOCK_H
@@ -77,6 +78,7 @@ signals:
     void SyncL2CLock();
     void LoadPC();
     void SavePC();
+    void GetL2Params();
 
 protected:
     void closeEvent(QCloseEvent* event) override;

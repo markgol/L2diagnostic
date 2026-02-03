@@ -58,16 +58,24 @@
 //          Added MAX_2DPOINTS_PER_FRAME
 //      Added LidarTimeStampData structure to be consistent
 //          with other data packet structures
+//      Added LIDAR COMMAND PACKET definitions
+//      Added LIDAR PARAMETER DATA PACKET definitions
 //      Removed unused #includes
+//
+//------------------------------------------------
+//
+// When including this file you must do the following:
+//  THIS IS REQUIRED
+//  #pragma pack(push, 1)
+//  #include "unitree_lidar_protocolL2.h"
+//  #pragma pack(pop)
 //
 //------------------------------------------------
 
 #ifndef UNITREE_LIDAR_PROTOCOL_HEADER
 #define UNITREE_LIDAR_PROTOCOL_HEADER
 
-//#include <stdio.h>  // not used here
 #include <stdint.h>
-//#include <string.h>  // not used here
 
 ///////////////////////////////////////////////////////////////////////////////
 // MACRO DEFINITION
@@ -530,6 +538,50 @@ typedef struct
     LidarUserCtrlCmd data;
     FrameTail tail;
 }LidarUserCtrlCmdPacket;
+
+/////////////////////////////////////////////////////////////////////////
+// LIDAR PARAMETER DATA PACKET
+/////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Lidar Parameter Data
+ * @note 172 bytes
+ */
+typedef struct
+{
+    uint8_t Unkown1[4]; //uknown
+    uint16_t Short1;
+    uint16_t Short2;
+    uint16_t Short3;
+    uint16_t Short4;
+
+    uint32_t workmode;
+    uint32_t ParamInt1;
+    uint32_t ParamInt2;
+    float ParamFloat1;
+
+    float RangeMax;
+    float RangeMin;
+    float ParamFloat2;
+
+    LidarCalibParam Calib3DstdFOV;
+    LidarCalibParam Calib3DwideFOV;
+    LidarCalibParam Calib2DstdFOV;
+    LidarCalibParam Calib2DwideFOV;
+    uint8_t Unkown2[4]; //unknown
+
+}LidarParamData;
+
+/**
+ * @brief Lidar Parameter Data Packet
+ * @note 196 bytes
+ */
+typedef struct
+{
+    FrameHeader header;
+    LidarParamData data;
+    FrameTail tail;
+}LidarParamDataPacket;
 
 #endif
 

@@ -59,6 +59,8 @@
 // V0.3.8   2026-01-28  removed mesure latency button
 // V0.3.9   2026-01-30  Added Sync L2 timestamp button
 //                      Added SAVE/LOAD point cloud
+// V0.3.10  2026-02-01  Added Get L2 params
+//                      Added Get L2 workmode button
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -144,6 +146,7 @@ public slots:
     void handleResetView();
     void handleConfigureUDP();
     void sendSetWorkmode();
+    void sendGetL2Workmode();
     void sendReset();
 
 private slots:
@@ -161,6 +164,7 @@ private slots:
     void startRotation();
     void stopRotation();
     void getVersion();
+    void GetL2Params();
 
     // workmode
     void ClosedWorkmodeDialog();
@@ -255,6 +259,9 @@ private:
 
     // workmode dialog
     WorkmodeDialog WorkMode;
+
+    // retrieve workmode from L2
+    void GetL2workmode();
 
     // helper functions
     void L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected

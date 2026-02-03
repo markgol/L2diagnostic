@@ -183,6 +183,19 @@
      <string>Load PC</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="btnL2GetParams">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>110</y>
+      <width>101</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Get L2 Params</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

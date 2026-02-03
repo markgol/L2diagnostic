@@ -55,7 +55,10 @@
 #include <chrono>
 #include <numbers>
 
+// this is required, DO NOT REMOVE
+#pragma pack(push, 1)
 #include "unitree_lidar_protocolL2.h"
+#pragma pack(pop)
 
 namespace unilidar_sdk2{
 
