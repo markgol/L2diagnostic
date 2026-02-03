@@ -120,7 +120,7 @@
 #include "StatsDock.h"
 #include "ACKDock.h"
 #include "ControlsDock.h"
-#include "WorkmodeDialog.h"
+#include "WorkModeDialog.h"
 #include "PacketRateDock.h"
 #include "quaternion.h"
 

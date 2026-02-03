@@ -110,7 +110,7 @@
 #include <QMutex>
 #include <QObject>
 #include <QUdpSocket>
-#include <Qhostaddress>
+#include <QHostAddress>
 #include <QTimer>
 
 // other dependencies
