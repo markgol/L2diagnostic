@@ -137,17 +137,7 @@
 //#include <QMessageBox>
 
 #include "AxisGridRenderer.h"
-
-// ---- Lidar point ----
-struct PCpoint
-{
-    float x;
-    float y;
-    float z;
-    float intensity; //  0-255
-    float time; // timestamp in seconds
-    uint32_t ring;
-};
+#include "PCpoint.h"
 
 struct GLPoint
 {

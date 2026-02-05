@@ -84,7 +84,10 @@
 //                      Updated all uses of "unitree_lidar_protocolL2.h"
 //                      to esnure that the pragma pack(push,1) is used
 //                      so that all packets deinfitions are byte packed
-//
+// V0.3.11  2026-02-4   Moved point clouud conversion to l2lidar class
+//                      Only open point cloud window when first enabled
+//                      Adjusted sizing of ControlsDock and ConfigDialog
+//                          to adjust for use on Ubuntu x64 and ARM64 platforms
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -183,8 +186,12 @@ MainWindow::MainWindow(QWidget* parent)
 
     // create cloud viewer window
     // This is not a Qt window but a OpenGL managed window
-    if(mmaxPoints>=50000) {
-        OpenPointCloudWindow();
+    // Do this immeditaely if point cloud window enabled
+    // otherwise delay it until window is enabled for the first time.
+    if(config.isPCviewerEnabled()) {
+        if(mmaxPoints>=50000) {
+            OpenPointCloudWindow();
+        }
     }
 
     SetupGUIrefreshTimers();
@@ -264,7 +271,9 @@ void MainWindow::SetDefaultView() {
     defaultPCsettings.PointSize = config.getPointSize();
     defaultPCsettings.MinDistance = config.getMinDistance();
     defaultPCsettings.MaxDistance = config.getMaxDistance();
-    m_pointCloudWindow->setDefaultPCsettings(defaultPCsettings);
+    if(m_pointCloudWindow!=nullptr){
+        m_pointCloudWindow->setDefaultPCsettings(defaultPCsettings);
+    }
 }
 
 //--------------------------------------------------------
@@ -613,7 +622,7 @@ void MainWindow::applyDocksVisibilityConstraint()
     resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
     resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 
-    m_controlsDock->setMinimumWidth(480);
+    m_controlsDock->setMinimumWidth(500);
     m_controlsDock->setMinimumHeight(220);
     m_controlsDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // can not float or move
     // This would let it float or move but X will not close it
@@ -651,7 +660,7 @@ void MainWindow::ShowWindows()
 //  L2ConnectedButtonsUIs
 //--------------------------------------------------------
 void MainWindow::L2ConnectedButtonsUIs()
-{ // set buttons and UIs states when L2 disconnected
+{ // set buttons and UIs states when L2 connected
     // disable start, enable stop
     m_controlsDock->setConnectState(true);
 
@@ -665,7 +674,7 @@ void MainWindow::L2ConnectedButtonsUIs()
 //  L2ConnectedButtonsUIs
 //--------------------------------------------------------
 void MainWindow::L2DisconnectedButtonsUIs()
-{ // set buttons and UIs states when L2 connected
+{ // set buttons and UIs states when L2 disconnected
     m_controlsDock->setConnectState(false);
 
     StopPointCloudViewer();
@@ -856,10 +865,6 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
     // ...
     // ...
     static uint32_t frameCounter {0};
-   bool adjustWithIMU {false};
-    double time;
-    LidarImuDataPacket Imu;
-    Quaternion Quat;
 
     if (NumFramesToSkip > 0 &&
         (++frameCounter % (NumFramesToSkip + 1)) != 0)
@@ -867,63 +872,17 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         return;
     }
 
-    // Retrieve packet
-    unilidar_sdk2::PointCloudUnitree cloud;
-
-    if(Frame3D) {
-        // 3D packet
-        LidarPointDataPacket packet = l2lidar.Pcl3Dpacket();
-        unilidar_sdk2::parseFromPacketToPointCloud(
-                    cloud, packet, true, 0, 100);
-        time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
-    } else {
-        // 2D packet
-        Lidar2DPointDataPacket packet = l2lidar.Pcl2Dpacket();
-        unilidar_sdk2::parseFromPacketPointCloud2D(
-                    cloud, packet, true, 0, 100);
-        time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
-    }
-
-    if(mIMUadjust) {
-        // check if latest IMU packet is within 10 msec
-        double IMUtime;
-        Imu = l2lidar.imu();
-        IMUtime = (double)Imu.data.info.stamp.sec +(double)Imu.data.info.stamp.nsec * 1e-9;
-        if(abs(time-IMUtime) < .010) {
-            adjustWithIMU = true;
-            Quat.w = Imu.data.quaternion[0];
-            Quat.x = Imu.data.quaternion[1];
-            Quat.y = Imu.data.quaternion[2];
-            Quat.z = Imu.data.quaternion[3];
-        } else {
-            adjustWithIMU = false;
-        }
-    }
-
     Frame frame;
-    frame.reserve(cloud.points.size());
 
-    for (auto& p : cloud.points)
-    {
-        if(adjustWithIMU) {
-            rotateByQuaternion(Quat,p.x,p.y,p.z);
-        }
-
-        frame.push_back({
-            p.x,
-            p.y,
-            p.z,
-            p.intensity,
-            p.time,
-            p.ring
-        });
+    // convert latestL2 poin cloud packet to Frame of cloud points
+    if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust)) {
+        // if packet is missing or IMU pose correction failed
+        // with mIMUadjust is true
+        // do not add to point cloud
+        return;
     }
 
-
-    // QMutexLocker lock(&m_cloudMutex);
-
-    if (m_pointCloudWindow)
-    {
+    if (m_pointCloudWindow) {
         QMetaObject::invokeMethod(
             m_pointCloudWindow,
             [this, frame]() {
@@ -985,7 +944,12 @@ void MainWindow::openConfig()
     }
 
     float PointSizeRange[2];
-    m_pointCloudWindow->getPointSizeRange((PointSizeRange));
+    if(m_pointCloudWindow!=nullptr){
+        m_pointCloudWindow->getPointSizeRange((PointSizeRange));
+    } else {
+        PointSizeRange[0] = 1;
+        PointSizeRange[1] = 32;
+    }
     config.setPointSizeRange(PointSizeRange);
 
     if (config.exec() == QDialog::Accepted) {
@@ -1039,14 +1003,23 @@ void MainWindow::openConfig()
             }
         }
 
+        if(config.isPCviewerEnabled() && m_pointCloudWindow==nullptr) {
+            if(mmaxPoints>=50000) {
+                OpenPointCloudWindow();
+            }
+        }
+
         // update PC window settings
         PCsettings CurrentPC;
-        m_pointCloudWindow->getPCsettings(CurrentPC);
+        if(m_pointCloudWindow!=nullptr) {
+            m_pointCloudWindow->getPCsettings(CurrentPC);
+        }
         CurrentPC.MinDistance = config.getMinDistance();
         CurrentPC.MaxDistance = config.getMaxDistance();
         CurrentPC.PointSize = config.getPointSize();
-        m_pointCloudWindow->setPCsettings(CurrentPC);
-
+        if(m_pointCloudWindow!=nullptr) {
+            m_pointCloudWindow->setPCsettings(CurrentPC);
+        }
         // Save current user settings
         saveSettings(false); // do not reset window geometries
         SetDefaultView(); // saves the default point cloud view
@@ -1179,7 +1152,9 @@ void MainWindow::sendGetL2Workmode()
 //--------------------------------------------------------
 void MainWindow::ClearPCwindow()
 {
-    m_pointCloudWindow->clearPointCloud();
+    if(m_pointCloudWindow!=nullptr){
+        m_pointCloudWindow->clearPointCloud();
+    }
 }
 
 //--------------------------------------------------------
@@ -1231,10 +1206,17 @@ void MainWindow::GetL2workmode()
 //--------------------------------------------------------
 void MainWindow::SavePC()
 {
-    QString file = QFileDialog::getSaveFileName(this,
-                                                "Save Point Cloud", "", "PointCloud (*.pcd)");
-
-    m_pointCloudWindow->savePointCloudToFile(file);
+    if(m_pointCloudWindow!=nullptr){
+        QString file = QFileDialog::getSaveFileName(this,
+                        "Save Point Cloud", "", "PointCloud (*.pcd)");
+        m_pointCloudWindow->savePointCloudToFile(file);
+    } else {
+        QMessageBox msgBox;
+        msgBox.setText("Can not save point cloud");
+        msgBox.setInformativeText("point cloud window must be enable first");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
 }
 
 //--------------------------------------------------------
@@ -1243,10 +1225,17 @@ void MainWindow::SavePC()
 //--------------------------------------------------------
 void MainWindow::LoadPC()
 {
-    QString file = QFileDialog::getOpenFileName(this,
+    if(m_pointCloudWindow!=nullptr){
+        QString file = QFileDialog::getOpenFileName(this,
                                                 "Load Point Cloud", "", "PointCloud (*.pcd)");
-
-    m_pointCloudWindow->loadPointCloudFromFile(file);
+        m_pointCloudWindow->loadPointCloudFromFile(file);
+    } else {
+        QMessageBox msgBox;
+        msgBox.setText("Can not load point cloud");
+        msgBox.setInformativeText("point cloud window must be enable first");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
 }
 
 //--------------------------------------------------------

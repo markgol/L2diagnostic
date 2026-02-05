@@ -77,6 +77,11 @@
 //  V0.3.10 2026-02-01  Added Get L2 Parameters
 //                      Added GetWorkmode()
 //                      Added enable latency measurement flag
+//  V0.3.10 2026-02-03  Changed get L2 params cmd_value to 3
+//                      to match observed behaviour
+//  V0.3.11 2026-02-04  Added void ConvertL2data2pointcloud()
+//                      to return just actual point cloud
+//                      frame instead of entire unprocessed packet
 //
 //--------------------------------------------------------
 
@@ -1039,7 +1044,7 @@ bool L2lidar::GetL2Params(void)
 
     // set data
     cmd.data.cmd_type = CMD_PARAM_GET;
-    cmd.data.cmd_value = 1;  // value guess
+    cmd.data.cmd_value = 3;  // value guess
 
     // set tail
     cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
@@ -1561,3 +1566,90 @@ void L2lidar::UpdateEWMAStats(double alpha,
     Xvariance = (1.0 - alpha) * Xvariance
                 + alpha * delta * (Xnew - Xmean);
 }
+
+//--------------------------------------------------------------------
+//  ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust)
+//  This returns the latest point cloud Frame
+//      frame is (QVector<PCpoint>)
+//      Frame3D true process latest 3D packet
+//              false process latest 2D packet
+//      IMUadjust   true  Applies pose from IMU to point cloud data
+//                  false Do not applies IMU pose correction
+//      return  true if successful
+//              false if point cloud packet does not exit
+//               false if IMUAdjust is true and not valid IMU data
+//--------------------------------------------------------------------
+bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust)
+{
+    LidarImuDataPacket Imu;
+    double time;
+    bool adjustWithIMU {false};
+    Quaternion Quat;
+
+    // Retrieve packet
+    unilidar_sdk2::PointCloudUnitree cloud;
+
+    if(Frame3D) {
+        // get latest 3D packet
+        LidarPointDataPacket packet = Pcl3Dpacket();
+        if(packet.header.header[0] == (uint8_t)0){
+            // there is no latest packet
+            return false;
+        }
+        unilidar_sdk2::parseFromPacketToPointCloud(
+            cloud, packet, true, 0, 100);
+        time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
+    } else {
+        // get latest 2D packet
+        Lidar2DPointDataPacket packet = Pcl2Dpacket();
+        if(packet.header.header[0] == (uint8_t)0){
+            // there is no latest packet
+            return false;
+        }
+        unilidar_sdk2::parseFromPacketPointCloud2D(
+            cloud, packet, true, 0, 100);
+        time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
+    }
+
+    if(IMUadjust) {
+        // check if latest IMU packet is within 10 msec
+        double IMUtime;
+        Imu = imu();
+        if(Imu.header.header[0] == (uint8_t)0){
+            // there is no latest packet
+            return false;
+        }
+
+        IMUtime = (double)Imu.data.info.stamp.sec +(double)Imu.data.info.stamp.nsec * 1e-9;
+        if(abs(time-IMUtime) < .010) {
+            adjustWithIMU = true;
+            Quat.w = Imu.data.quaternion[0];
+            Quat.x = Imu.data.quaternion[1];
+            Quat.y = Imu.data.quaternion[2];
+            Quat.z = Imu.data.quaternion[3];
+        } else {
+            adjustWithIMU = false;
+        }
+    }
+
+    frame.reserve(cloud.points.size());
+
+    for (auto& p : cloud.points)
+    {
+        if(adjustWithIMU) {
+            rotateByQuaternion(Quat,p.x,p.y,p.z);
+        }
+
+        frame.push_back({
+            p.x,
+            p.y,
+            p.z,
+            p.intensity,
+            p.time,
+            p.ring
+        });
+    }
+
+    return true;
+}
+

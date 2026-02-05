@@ -61,6 +61,9 @@
 //  V0.3.10 2026-02-01  Added Get L2 Parameters
 //                      Added GetWorkmode()
 //                      Added enable latency measurement flag
+//  V0.3.11 2026-02-04  Added void ConvertL2data2pointcloud()
+//                      to return just actual point cloud
+//                      frame instead of entire unprocessed packet
 //
 //--------------------------------------------------------
 
@@ -112,9 +115,12 @@
 #include <QUdpSocket>
 #include <QHostAddress>
 #include <QTimer>
+#include <QVector>
 
 // other dependencies
 #include <unordered_map>
+#include "quaternion.h"
+#include "PCpoint.h"
 
 // this is required, DO NOT REMOVE
 #pragma pack(push, 1)
@@ -130,6 +136,8 @@ typedef struct {
     double min;
     double max;
 } Latency;
+
+using Frame = QVector<PCpoint>;
 
 //--------------------------------------------------------
 //  L2lidar class definitions
@@ -233,6 +241,8 @@ public:
     bool ConnectL2();  // bind to create, bind socket, connect callback for decode
     void DisconnectL2();   // close socket
 
+    bool ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust);
+
 signals:
     void imuReceived();
     void PCL3DReceived();
@@ -309,12 +319,12 @@ private: // variables
 
     // Latest decoded values
     // Accessing these should use mutex lock, PacketMutex
-    LidarImuDataPacket  latestImuPacket_{};
+    LidarImuDataPacket  latestImuPacket_{0,0,0,0,0,0};
     LidarVersionData    latestVersion_{};
     LidarTimeStampData  latestTimestamp_{};
-    Lidar2DPointDataPacket latest2DdataPacket_{};
-    LidarPointDataPacket latest3DdataPacket_{};
-    LidarParamDataPacket latestL2ParamsPacket_{};
+    Lidar2DPointDataPacket latest2DdataPacket_{0,0,0,0,0,0};
+    LidarPointDataPacket latest3DdataPacket_{0,0,0,0,0,0};
+    LidarParamDataPacket latestL2ParamsPacket_{0,0,0,0,0};
     LidarAckData latestACKdata_{};
 
     // Packet counters, these do not have a mutex lock

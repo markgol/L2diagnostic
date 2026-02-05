@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>462</width>
+    <width>498</width>
     <height>229</height>
    </rect>
   </property>
@@ -17,9 +17,9 @@
    <widget class="QPushButton" name="btnL2Disconnect">
     <property name="geometry">
      <rect>
-      <x>120</x>
+      <x>140</x>
       <y>10</y>
-      <width>101</width>
+      <width>121</width>
       <height>31</height>
      </rect>
     </property>
@@ -30,9 +30,9 @@
    <widget class="QPushButton" name="btnVersion">
     <property name="geometry">
      <rect>
-      <x>360</x>
+      <x>380</x>
       <y>60</y>
-      <width>81</width>
+      <width>101</width>
       <height>31</height>
      </rect>
     </property>
@@ -43,7 +43,7 @@
    <widget class="QPushButton" name="btnConfig">
     <property name="geometry">
      <rect>
-      <x>250</x>
+      <x>280</x>
       <y>10</y>
       <width>81</width>
       <height>31</height>
@@ -56,9 +56,9 @@
    <widget class="QPushButton" name="btnStop">
     <property name="geometry">
      <rect>
-      <x>120</x>
+      <x>140</x>
       <y>60</y>
-      <width>101</width>
+      <width>111</width>
       <height>31</height>
      </rect>
     </property>
@@ -71,7 +71,7 @@
      <rect>
       <x>10</x>
       <y>60</y>
-      <width>91</width>
+      <width>111</width>
       <height>31</height>
      </rect>
     </property>
@@ -82,7 +82,7 @@
    <widget class="QPushButton" name="btnReset">
     <property name="geometry">
      <rect>
-      <x>250</x>
+      <x>280</x>
       <y>60</y>
       <width>81</width>
       <height>31</height>
@@ -97,7 +97,7 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>81</width>
+      <width>101</width>
       <height>31</height>
      </rect>
     </property>
@@ -108,9 +108,9 @@
    <widget class="QPushButton" name="btnResetWindows">
     <property name="geometry">
      <rect>
-      <x>360</x>
+      <x>370</x>
       <y>160</y>
-      <width>91</width>
+      <width>111</width>
       <height>31</height>
      </rect>
     </property>
@@ -121,9 +121,9 @@
    <widget class="QPushButton" name="btnWorkmode">
     <property name="geometry">
      <rect>
-      <x>360</x>
+      <x>380</x>
       <y>10</y>
-      <width>81</width>
+      <width>101</width>
       <height>31</height>
      </rect>
     </property>
@@ -136,7 +136,7 @@
      <rect>
       <x>10</x>
       <y>160</y>
-      <width>101</width>
+      <width>121</width>
       <height>31</height>
      </rect>
     </property>
@@ -149,7 +149,7 @@
      <rect>
       <x>10</x>
       <y>110</y>
-      <width>91</width>
+      <width>101</width>
       <height>31</height>
      </rect>
     </property>
@@ -160,7 +160,7 @@
    <widget class="QPushButton" name="btnSavePC">
     <property name="geometry">
      <rect>
-      <x>140</x>
+      <x>160</x>
       <y>160</y>
       <width>81</width>
       <height>31</height>
@@ -173,7 +173,7 @@
    <widget class="QPushButton" name="btnLoadPC">
     <property name="geometry">
      <rect>
-      <x>250</x>
+      <x>260</x>
       <y>160</y>
       <width>81</width>
       <height>31</height>
@@ -186,9 +186,9 @@
    <widget class="QPushButton" name="btnL2GetParams">
     <property name="geometry">
      <rect>
-      <x>120</x>
+      <x>140</x>
       <y>110</y>
-      <width>101</width>
+      <width>111</width>
       <height>31</height>
      </rect>
     </property>

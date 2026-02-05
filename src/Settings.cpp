@@ -50,6 +50,11 @@
 //                      removed PCbuffering group
 // V0.3.9   2026-02-01  Added L2 time base corrections parameters
 // V0.3.10  2026-02-02  Added enable latency measurements flag
+// V0.3.11  2026-02-04  Changed default settings for PC viewer enable
+//                      to false one first time execution of app.
+//                      User must explicitly set PC viewer to enabled
+//                      in config dialog if this is first time run or
+//                      PC viewer was closed the at last time run.
 //
 //--------------------------------------------------------
 
@@ -246,14 +251,14 @@ void MainWindow::loadSettings(bool resetRequested)
     settings.beginGroup("visibility");
         if(resetRequested){  // check if reset to the windows has been requested
             // reset settings to initial state, ignore past settings
-            config.setPCviewerEnabled(true);
+            config.setPCviewerEnabled(false);
             config.setACKenabled(true);
             config.setDiagEnabled(true);
             config.setIMUenabled(true);
             config.setPacketRateChartEnabled(true);
             config.setStatsEnabled(true);
           } else {
-            config.setPCviewerEnabled(settings.value("PCviewer", true).toBool());
+            config.setPCviewerEnabled(settings.value("PCviewer", false).toBool());
             config.setACKenabled(settings.value("ACK", true).toBool());
             config.setDiagEnabled(settings.value("Diag", true).toBool());
             config.setIMUenabled(settings.value("IMU", true).toBool());

@@ -22,6 +22,14 @@ files for license.
 			/include
 			/src
 			CmakeList.txt
+	V0.3.11 release
+		project CMakeLists.txt file updates to include building install
+		project CMakeLists.txt file for supoprt across Windows x64, Linux x64 and Linux ARM64
+			This has been tested on Windows 11 x64, Ubuntu 24.04 x64 and Ubuntu 24.04 ARM64 on a RPI5.
+		The RPI5 implementation does not support the point cloud viewer at this time.  That is planned for V0.4.0.
+		(The RPI5 does not support OpenGL Core 3.3. It uses  OpenGL ES 3.0/3.1 which requires slightly different
+		vertex shader and fragment shader)
+		The processing of the raw L2 point cloud packet into a point cloud frame has been moved into the L2lidar class.
 
 	Current Status
 		UDP only.
@@ -47,6 +55,10 @@ files for license.
 		Sync the L2 to the host time at a user settable rate (default 20Hz)
 		Get and set L2 workmode
 		Get L2 parameters
+		Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform
+		Default is to disable point cloud viewer until explicitly enabled.
+			This is to allow use on RPI5 before OpenGL code updated for RPI5 Ubuntu OpenGL version
+			No plan for support in RPI5 Debian since this is not Qt or ROS2 supported.
 		
 		Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 		unitree_lidar_utilites.h to perform required function needs for using the L2  in the
@@ -78,11 +90,14 @@ files for license.
 	
 	Still to do:
 		Update documentation
-		Cleanup PointCloudWindow class
+		Cleanup PointCloudWindow class (mostly just reorganizing, like sorting in alaphbetical  order to
+			maek finding meothds easier)
 		Add UART commmunications (delayed while researching UART packages)
 		build a release package installer
-		test other target builds
-		Integrate the L2lidar class into a ROS2 application
+		port for RPI5 build (RPI5 doesn't support OpenGL 3.3 Core, requires OpenGL ES 3.0/3.1)
+			Currently functional on RPI5 if Point cloud viewer is disabled.  If you enable it it will cause
+			segment fault.
+		Integrate the L2lidar class into a ROS2 package
 		
 	Issues:
 		L2 UART baudrate is 4M.  The QSerialPort has issues operating at this baud rate
@@ -92,12 +107,18 @@ files for license.
 	Using Qt 6.10.x
 		The project has been developed using Qt Creator 18.0.x  Qt 6.10.x
 		Using MSVC 2022, x86_64
-		I have not tested it for other targets.
+		It has been tested for targets: Windows x64, Ubuntu x64 and ARM64
 		There this a CmakeList.txt project.  I have tried to keep things compatible to other targets.
 		If you are copying the project then copy it using the existing folder structure to whatever
 		folder will be your project folder.
 		When you open Qt Creator -> File -> Open file or project
 				Select the CmakeList.txt file and select open
-		Qt will ask you to select a configuration. I selected Desktop Qt 6.10.1 MSVC2022 64bit
-		This selection will only show up if you have MSVC 2022 already installed
+		Qt will ask you to select a configuration.
+			Select Desktop Qt 6.10.x MSVC2022 64bit for Windows x64
+				This selection will only show up if you have MSVC 2022 already installed
+			Select Desktop QT6.10.x Clang18 for Ubuntu x64
+			Select Desktop Qt6.10.x GCC for Ubuntu ARM64 on RPI5
+				When operating on RPI5 with UBUNTU, Clangd may not be able to be used
+				because of memory limitations on the RPI5.
+			
 		ctrl+b will build the project, f5 will run it.

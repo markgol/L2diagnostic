@@ -6,14 +6,7 @@ project(L2diagnostic
 )
 
 # =============================
-# Build options
-# =============================
-option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
-option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
-option(ENABLE_CLANG_TIDY "Enable clang-tidy checks" OFF)
-
-# =============================
-# Language standard
+# Language / build settings
 # =============================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,9 +24,6 @@ find_package(Qt6 REQUIRED COMPONENTS
     OpenGLWidgets
 )
 
-# =============================
-# Qt autogen
-# =============================
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -44,7 +34,7 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS
 )
 
 # =============================
-# Sources
+# Source files
 # =============================
 file(GLOB_RECURSE PROJECT_SOURCES
     CONFIGURE_DEPENDS
@@ -53,23 +43,29 @@ file(GLOB_RECURSE PROJECT_SOURCES
     forms/*.ui
 )
 
-add_executable(${PROJECT_NAME})
-
-target_sources(${PROJECT_NAME}
-    PRIVATE ${PROJECT_SOURCES}
-)
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 # =============================
 # Include directories
 # =============================
 target_include_directories(${PROJECT_NAME}
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/include
 )
 
 # =============================
-# Link libraries
+# Compiler-specific options
+# =============================
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /MP /Zi)
+    target_link_options(${PROJECT_NAME} PRIVATE /DEBUG)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+# =============================
+# Link Qt libraries
 # =============================
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
@@ -82,49 +78,25 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # =============================
-# Compiler warnings
+# Install rules (for packaging)
 # =============================
-target_compile_options(${PROJECT_NAME} PRIVATE
-    $<$<CXX_COMPILER_ID:MSVC>:/MP /W4>
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic>
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION bin
+)
+
+# Install UI files (optional, for debugging / completeness)
+install(DIRECTORY forms/
+    DESTINATION share/${PROJECT_NAME}/forms
+    FILES_MATCHING PATTERN "*.ui"
 )
 
 # =============================
-# MSVC debug info
+# CPack (optional archive package)
 # =============================
-if(MSVC)
-    target_link_options(${PROJECT_NAME} PRIVATE /DEBUG)
-endif()
+include(InstallRequiredSystemLibraries)
 
-# =============================
-# Sanitizers (GCC/Clang only)
-# =============================
-if(ENABLE_ASAN AND NOT MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        -fsanitize=address
-        -fno-omit-frame-pointer
-    )
-    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-endif()
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_GENERATOR "TGZ")
 
-if(ENABLE_UBSAN AND NOT MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined)
-    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined)
-endif()
-
-# =============================
-# clang-tidy
-# =============================
-if(ENABLE_CLANG_TIDY)
-    set_target_properties(${PROJECT_NAME}
-        PROPERTIES
-            CXX_CLANG_TIDY "clang-tidy"
-    )
-endif()
-
-# =============================
-# Diagnostics
-# =============================
-message(STATUS "System: ${CMAKE_SYSTEM_NAME}")
-message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
-message(STATUS "Qt version: ${Qt6Core_VERSION}")
+include(CPack)

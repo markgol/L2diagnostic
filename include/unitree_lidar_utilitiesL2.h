@@ -39,6 +39,7 @@
 //              Correction to point array size in parseFromPacketPointCloud2D()
 //              should have been MAX_2DPOINT_PER_FRAME not MAX_3DPOINTS_PER_FRAME
 //  2026-01-24  Removed unused #includes
+//
 //-----------------------------------------------------------------------
 
 #pragma once
@@ -82,7 +83,7 @@ typedef struct
     float z;
     float intensity;
     float time;    // relative time of this point from cloud stamp
-    uint32_t ring; // ring
+    uint32_t ring; // ring is always 1
 } PointUnitree;
 
 /**
@@ -90,9 +91,9 @@ typedef struct
  */
 typedef struct
 {
-    double stamp;     // cloud start timestamp, the point timestamp is relative to this
-    uint32_t id;      // sequence id
-    uint32_t ringNum; // number of rings
+    double stamp;    // cloud start timestamp, the point timestamp is relative to this
+    uint32_t id;     // sequence id
+    uint32_t ringNum; // number of rings, for L2 ringnum is always 1
     std::vector<PointUnitree> points;
 } PointCloudUnitree;
 

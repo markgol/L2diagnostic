@@ -37,6 +37,8 @@
 //                      Added SkipFrame spinbox
 //  V0.3.9  2026-01-31  Added L2 timebase and sync controls
 //  V0.3.10 2026-02-02  Added enable latency measurement checkbobx
+//                      Adjusted sizing of ControlsDock and ConfigDialog
+//                          to adjust for use on Ubuntu x64 and ARM64 platforms
 //
 //--------------------------------------------------------
 
