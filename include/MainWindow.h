@@ -61,6 +61,8 @@
 //                      Added SAVE/LOAD point cloud
 // V0.3.10  2026-02-01  Added Get L2 params
 //                      Added Get L2 workmode button
+// V0.3.12  2026-02-05  Moved renderer timer to PointCloudWindow class
+//
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -220,9 +222,6 @@ private:
 
     PCsettings defaultPCsettings {10.0,145.0,20.0};
     void SetDefaultView();
-
-    // Point cloud window renderer Timer
-    QTimer* RendererTimer;
 
     // close point cloud viewer and workmode dialog (non-modal)
     void closeEvent(QCloseEvent* e);

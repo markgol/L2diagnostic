@@ -44,6 +44,7 @@
 //                      Moved much of the closing of the class here
 //  V0.3.6  2026-01-24  Added clear point cloud
 //  V0.3.9  2026-02-01  added LOAD/SAVE point cloud
+//  V0.3.12 2026-02-05  Moved renderer timer to PointCloudWindow class
 //
 //--------------------------------------------------------
 
@@ -135,6 +136,38 @@ void PointCloudWindow::Initialize()
     // Window geometry and state for point cloud window
     restoreWindowState();
     ResetView();
+}
+
+void PointCloudWindow::InitializeRenderTimer(int Rate) {
+    //--------------------------------------------------------
+    // setup timer point cloud renderering
+    //--------------------------------------------------------
+    RendererTimer = new QTimer(this);
+    RendererTimer->setInterval(Rate);
+    connect(RendererTimer,
+        &QTimer::timeout,
+        this, &PointCloudWindow::onRenderTick);
+    RendererTimer->stop(); // started in L2 connect
+}
+
+void PointCloudWindow::RendererTimerStart()
+{
+    RendererTimer->start();
+}
+
+void PointCloudWindow::RendererTimerStop()
+{
+    RendererTimer->stop();
+}
+
+void PointCloudWindow::SetInterval(int Rate)
+{
+    RendererTimer->setInterval(Rate);
+}
+
+int PointCloudWindow::GetInterval()
+{
+    return RendererTimer->interval();
 }
 
 //--------------------------------------------------------

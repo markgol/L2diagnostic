@@ -6,6 +6,16 @@ select the project that matches your platform.  Qt will recognize this as a Cmak
 The 2 files unitree_lidar_protocols.h and unitree_lidar_utlities.h fall under a BSD 3 license.  See those
 files for license.
 
+The Qt distributable modues fall under the Qt LGPL license
+
+For license text see the docs folder associated with this project
+
+A standalone Windows app has been created.  It does not rely on the installation of Qt on the host
+system.  It consists of a Zip download file.  This should be extracted to the directory were you want 
+to save and run rthe app from.  It does not require an installer.  Just run it directly from its directory.
+All dependencies are included.  Always verify your download against the file hash.  This is also
+on the github repo; https://github.com/markgol/L2diagnostic
+
 	Goals
 	1.) Only use unitree_lidar_protocols.h and unitree_lidar_utlities.h files to in application
 	2.) Complete open source to use the L2, no sourceless archive libraries
@@ -30,6 +40,11 @@ files for license.
 		(The RPI5 does not support OpenGL Core 3.3. It uses  OpenGL ES 3.0/3.1 which requires slightly different
 		vertex shader and fragment shader)
 		The processing of the raw L2 point cloud packet into a point cloud frame has been moved into the L2lidar class.
+	V0.3.12
+		Windows standalone app, L2diagnostics0-3-12.zip included
+		Future versions will include the standalone app
+		Moved render timer to PointCloudWindow class
+		Changed app type in CMakeLists.xt for Window apps (Gui without console terminal)
 
 	Current Status
 		UDP only.
@@ -89,9 +104,8 @@ files for license.
 	then use the Config dialog again and renable the windows cna click okay
 	
 	Still to do:
-		Update documentation
-		Cleanup PointCloudWindow class (mostly just reorganizing, like sorting in alaphbetical  order to
-			maek finding meothds easier)
+		Documentation for the PointCloudWindowClass
+		Cleanup PointCloudWindow class (mostly just reorganizing)
 		Add UART commmunications (delayed while researching UART packages)
 		build a release package installer
 		port for RPI5 build (RPI5 doesn't support OpenGL 3.3 Core, requires OpenGL ES 3.0/3.1)
@@ -122,3 +136,31 @@ files for license.
 				because of memory limitations on the RPI5.
 			
 		ctrl+b will build the project, f5 will run it.
+	
+		In QtCreator 18.x the follwing Build Step need to be added:
+			Projects(left pane) ->Build Settings
+			Add Build Steps -> Custom Process Step
+				Command: cmd
+				Arguments:/c installbuild.bat
+				Working Directory:
+			Make sure this comes after Build:cmake.exe step
+
+	
+	Separate build  files:
+	
+	Linux bash
+	installbuild.sh
+		#!/bin/bash
+		set -e
+		linuxdeployqt build/bin/L2diagnostic -appimage
+		
+	Windows
+	installbuild.bat
+		windeployqt build\Release\L2diagnostic.exe
+		
+	Other requirements for Linux
+		sudo apt install fuse libfuse2
+		wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+		chmod +x linuxdeployqt-continuous-x86_64.AppImage
+		sudo mv linuxdeployqt-continuous-x86_64.AppImage /usr/local/bin/linuxdeployqt
+		

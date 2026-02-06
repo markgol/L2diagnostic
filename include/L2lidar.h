@@ -310,7 +310,6 @@ private: // variables
     QString SerialPort {"com27"};
     // serial port settings are fixed and can not be changed
     // 4M buadrate, 8 bit, even partity, 1 stop, no flow control ?
-    // ??? QSerialPort L2serial;
 
     // Packet buffer
     QByteArray PacketBuffer;

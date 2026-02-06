@@ -44,6 +44,7 @@
 //                      Moved much of the closing of the class here
 //  V0.3.6  2026-01-24  Added clear point cloud
 //  V0.3.9  2026-02-01  added LOAD/SAVE point cloud
+//  V0.3.12 2026-02-05  Moved renderer timer to PointCloudWindow class
 //
 //--------------------------------------------------------
 
@@ -134,6 +135,7 @@
 #include <QSettings>
 #include <QFile>
 #include <QDataStream>
+#include <QTimer>
 //#include <QMessageBox>
 
 #include "AxisGridRenderer.h"
@@ -171,6 +173,13 @@ class PointCloudWindow final
 public:
     explicit PointCloudWindow(int maxPoints, QWindow* parent = nullptr);
     ~PointCloudWindow() override;
+
+    // Renderer Timer
+    void InitializeRenderTimer(int Rate);
+    void RendererTimerStart();
+    void RendererTimerStop();
+    void SetInterval(int Rate);
+    int GetInterval();
 
     // Explicit persistence API
     void saveWindowState() const;
@@ -220,6 +229,9 @@ private:
     QOpenGLShaderProgram m_program;
     QOpenGLVertexArrayObject m_vao;
     QOpenGLBuffer m_vbo{ QOpenGLBuffer::VertexBuffer };
+
+    // Point cloud window renderer Timer
+    QTimer* RendererTimer;
 
     AxisGridRenderer m_axisGrid;
 

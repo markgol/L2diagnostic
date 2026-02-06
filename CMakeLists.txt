@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 0.3.11
+    VERSION 0.3.12
     LANGUAGES CXX
 )
 
@@ -43,7 +43,11 @@ file(GLOB_RECURSE PROJECT_SOURCES
     forms/*.ui
 )
 
-add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+if(WIN32)
+    add_executable(${PROJECT_NAME} WIN32 ${PROJECT_SOURCES})
+else()
+    add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+endif()
 
 # =============================
 # Include directories
@@ -53,6 +57,12 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/include
 )
+
+if(WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+endif()
 
 # =============================
 # Compiler-specific options

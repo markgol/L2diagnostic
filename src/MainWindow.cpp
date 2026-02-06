@@ -88,6 +88,8 @@
 //                      Only open point cloud window when first enabled
 //                      Adjusted sizing of ControlsDock and ConfigDialog
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
+// V0.3.12  2026-02-05  Moved renderer timer to PointCloudWindow class
+//
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -191,6 +193,7 @@ MainWindow::MainWindow(QWidget* parent)
     if(config.isPCviewerEnabled()) {
         if(mmaxPoints>=50000) {
             OpenPointCloudWindow();
+            m_pointCloudWindow->RendererTimerStart();
         }
     }
 
@@ -240,6 +243,9 @@ MainWindow::~MainWindow()
 
 //--------------------------------------------------------
 // OpenPointCloudWindow
+// ???
+// This needs rework should migrate it to the
+//  PointCloudWindows()
 //--------------------------------------------------------
 void MainWindow::OpenPointCloudWindow()
 {
@@ -259,6 +265,7 @@ void MainWindow::OpenPointCloudWindow()
     SetDefaultView();
     m_pointCloudWindow->setTransientParent(windowHandle());
     m_pointCloudWindow->Initialize();
+    m_pointCloudWindow->InitializeRenderTimer(config.getRenderRate());
 }
 
 //--------------------------------------------------------
@@ -300,17 +307,6 @@ void MainWindow::SetupGUIrefreshTimers()
     // It does not tigger and signals
     m_rateTimer = new QElapsedTimer;
     m_rateTimer->restart();
-
-    //--------------------------------------------------------
-    // setup timer point cloud renderering
-    //--------------------------------------------------------
-    RendererTimer = new QTimer(this);
-    RendererTimer->setInterval(config.getRenderRate());
-    connect(RendererTimer,
-            &QTimer::timeout,
-            m_pointCloudWindow,
-            &PointCloudWindow::onRenderTick);
-    RendererTimer->stop(); // started in L2 connect
 }
 
 //--------------------------------------------------------
@@ -706,7 +702,9 @@ void  MainWindow::StopPacketChart()
 //--------------------------------------------------------
 void MainWindow::StartPointCloudViewer()
 {
-    RendererTimer->start();
+    if(m_pointCloudWindow==nullptr)
+        return;
+    m_pointCloudWindow->RendererTimerStart();
 }
 
 //--------------------------------------------------------
@@ -714,7 +712,10 @@ void MainWindow::StartPointCloudViewer()
 //--------------------------------------------------------
 void MainWindow::StopPointCloudViewer()
 {
-    RendererTimer->stop();
+    if(m_pointCloudWindow==nullptr)
+        return;
+
+    m_pointCloudWindow->RendererTimerStop();
 }
 
 //========================================================
@@ -991,14 +992,12 @@ void MainWindow::openConfig()
 
         if(m_controlsDock->GetConnectedState()) {
             if(config.getDiagUpdateRate()!=mHeartBeat->interval() ||
-                config.getPacketUpdateRate()!=mPacketBeat->interval() ||
-                config.getRenderRate()!=RendererTimer->interval() ){
+                config.getPacketUpdateRate()!=mPacketBeat->interval()) {
 
                 // of any timer changes then stop all, reset all, restart
                 L2DisconnectedButtonsUIs(); // this stops everything
                 mHeartBeat->setInterval(config.getDiagUpdateRate());
                 mPacketBeat->setInterval(config.getPacketUpdateRate());
-                RendererTimer->setInterval(config.getRenderRate());
                 L2ConnectedButtonsUIs(); // this restarts everything
             }
         }
@@ -1006,7 +1005,12 @@ void MainWindow::openConfig()
         if(config.isPCviewerEnabled() && m_pointCloudWindow==nullptr) {
             if(mmaxPoints>=50000) {
                 OpenPointCloudWindow();
+                m_pointCloudWindow->RendererTimerStart();
             }
+        }
+
+        if(m_pointCloudWindow!=nullptr && config.getRenderRate()!=m_pointCloudWindow->GetInterval()){
+            m_pointCloudWindow->SetInterval(config.getRenderRate());
         }
 
         // update PC window settings
