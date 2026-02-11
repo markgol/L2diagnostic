@@ -50,9 +50,10 @@
 class AxisGridRenderer : protected QOpenGLFunctions
 {
 public:
-    void initialize();
+    bool initialize();
     void render(const QMatrix4x4& mvp);
     void reset();
+    void setOpenGLES(bool opengles) { isOpenGLES = opengles;}
 
 private:
     QOpenGLShaderProgram m_program;   // ✅ MUST be this type
@@ -60,4 +61,5 @@ private:
     QOpenGLBuffer m_vbo{ QOpenGLBuffer::VertexBuffer };
 
     int m_vertexCount = 0;
+    bool isOpenGLES = {false};
 };

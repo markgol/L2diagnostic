@@ -140,8 +140,22 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    //MainWindow::MainWindow(bool OpenGLES,int major, int minor, maQWidget* parent)
+    explicit MainWindow(bool OpenGLES = false,
+                        int major = 3,
+                        int minor = 3,
+                        QWidget* parent = nullptr);
     ~MainWindow();
+
+    void SetOpenGLVersion(bool OpenGLtype, int MajorVersion, int MinorVersion) {
+        mOpenGLES=OpenGLtype;
+        mOpenGLmajorV = MajorVersion;
+        mOpenGLminorV = MinorVersion;
+    }
+
+    bool IsOpenGlES() {return mOpenGLES;}
+    int GetOpenGLmajorV() { return mOpenGLmajorV;}
+    int GetOpenGLminorV() { return mOpenGLminorV;}
 
 public slots:
     // this is in response to set view button in the config dialog
@@ -174,6 +188,11 @@ private slots:
 private:
     // Application MainWindow ui
     Ui::MainWindow* ui;
+
+    bool mOpenGLES {false}; // true if OpenGL ES, else OpenGL Core
+    int mOpenGLmajorV {0};
+    int mOpenGLminorV {0};
+    int mNoGraphics {false};
 
     //-----------------------------------------------------
     // dockable diagnostics. imu and  stats ui
@@ -210,6 +229,7 @@ private:
     QElapsedTimer*  m_rateTimer; // this measures actual elpased time
     QTimer*         mPacketBeat; // this is heartbeat for the packet rate chart
     uint64_t        m_lastPacketCount = 0;
+    float           mPacketRate{0.0}; // current packet rate
 
     //-----------------------------------------------------
     // Point cloud veiwer
@@ -218,9 +238,9 @@ private:
 
     // This does all the dirty work for opening
     // The PointCloudWindow class
-    void OpenPointCloudWindow();
+    bool OpenPointCloudWindow();
 
-    PCsettings defaultPCsettings {10.0,145.0,20.0};
+    PCsettings defaultPCsettings {10.0,145.0,20.0,1.0,0.0,40.0};
     void SetDefaultView();
 
     // close point cloud viewer and workmode dialog (non-modal)

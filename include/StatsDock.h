@@ -86,6 +86,7 @@ typedef struct
         uint64_t countACK;
         uint64_t countOther;
         uint64_t lostPackets;
+        float PacketRate;
 }PacketStats;
 
 //--------------------------------------------------------

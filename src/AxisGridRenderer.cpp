@@ -32,6 +32,8 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V0.2.3  2026-01-09  Added Point Cloud Renderer
+//  V0.4.0  2026-02-06  Added support for both OpenGL Core 3.3
+//                      and OpenGLES 3.x
 //
 //--------------------------------------------------------
 #include "AxisGridRenderer.h"
@@ -39,37 +41,81 @@
 #include <QVector>
 #include <QOpenGLShader>
 
+
 // ----------------- initialize() -----------------
-void AxisGridRenderer::initialize()
+bool AxisGridRenderer::initialize()
 {
+    bool isGLES = isOpenGLES;
+
     reset();
 
     // Must be called once a valid context is current
     initializeOpenGLFunctions();
 
-    // ----- Shader sources -----
-    static const char* vertexSrc = R"(#version 330 core
-        layout(location = 0) in vec3 a_pos;
-        layout(location = 1) in vec3 a_color;
-        uniform mat4 u_mvp;
-        out vec3 v_color;
-        void main()
-        {
-            gl_Position = u_mvp * vec4(a_pos, 1.0);
-            v_color = a_color;
-        })";
+    const char* vertexSrc = isGLES ?
+        R"(#version 300 es
+            precision mediump float;
 
-    static const char* fragmentSrc = R"(#version 330 core
-        in vec3 v_color;
-        out vec4 fragColor;
-        void main()
-        {
-            fragColor = vec4(v_color, 1.0);
-        })";
+            layout(location = 0) in vec3 a_pos;
+            layout(location = 1) in vec3 a_color;
 
-    m_program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexSrc);
-    m_program.addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentSrc);
-    m_program.link();
+            uniform mat4 u_mvp;
+            out vec3 v_color;
+
+            void main()
+            {
+                gl_Position = u_mvp * vec4(a_pos, 1.0);
+                v_color = a_color;
+            }
+        )"
+    :
+        R"(#version 330 core
+            layout(location = 0) in vec3 a_pos;
+            layout(location = 1) in vec3 a_color;
+
+            uniform mat4 u_mvp;
+            out vec3 v_color;
+
+            void main()
+            {
+                gl_Position = u_mvp * vec4(a_pos, 1.0);
+                v_color = a_color;
+            }
+        )";
+
+    const char* fragmentSrc = isGLES ?
+        R"(#version 300 es
+            precision mediump float;
+
+            in vec3 v_color;
+            out vec4 fragColor;
+
+            void main()
+            {
+                fragColor = vec4(v_color, 1.0);
+            }
+        )"
+    :
+        R"(#version 330 core
+            in vec3 v_color;
+            out vec4 fragColor;
+
+            void main()
+            {
+                fragColor = vec4(v_color, 1.0);
+            }
+        )";
+
+    if(!m_program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexSrc)) {
+        return false;
+    }
+    if(!m_program.addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentSrc)){
+        return false;
+    }
+
+    if(!m_program.link()) {
+        return false;
+    }
 
     // ----- Build vertex data -----
     struct Vertex { QVector3D pos; QVector3D color; };
@@ -125,6 +171,8 @@ void AxisGridRenderer::initialize()
 
     m_vbo.release();
     m_vao.release();
+
+    return true;
 }
 
 // ----------------- reset() -----------------

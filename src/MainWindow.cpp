@@ -89,6 +89,12 @@
 //                      Adjusted sizing of ControlsDock and ConfigDialog
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
 // V0.3.12  2026-02-05  Moved renderer timer to PointCloudWindow class
+// V0.4.0   2026-02-06  Added initialization of OpenGL
+//                      If no cmd line arguments are present then
+//                          OpenGL Core 3.3 is used.
+//                      if one command line argument is present then
+//                          OpenGLES V3.0 is used
+//                      if 2 or more command line arguement then no graphics
 //
 //--------------------------------------------------------
 
@@ -172,9 +178,17 @@
 //--------------------------------------------------------
 //  MainWIndow class constructor
 //--------------------------------------------------------
-MainWindow::MainWindow(QWidget* parent)
+//--------------------------------------------------------
+// PointCloudWindow::PointCloudWindow(int maxPoints, bool OpenGLES, QWindow* parent)
+//     : QOpenGLWindow(NoPartialUpdate, parent), m_maxPoints(maxPoints), mOpenGLES(OpenGLES)
+
+MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , ui(new Ui::MainWindow),
+    mOpenGLES(OpenGLES),
+    mOpenGLmajorV(major),
+    mOpenGLminorV(minor)
+
 {
     ui->setupUi(this);
 
@@ -186,18 +200,32 @@ MainWindow::MainWindow(QWidget* parent)
     loadSettings(GetSettingsReset());
     SetSettingsReset(false);
 
+    if(!mOpenGLES && mOpenGLmajorV==0 && mOpenGLminorV==0) {
+        mNoGraphics = true;
+    }
+
+    if(mNoGraphics) {
+        config.setPCviewerEnabled(false);
+        config.setPacketRateChartEnabled(false);
+    }
+
     // create cloud viewer window
     // This is not a Qt window but a OpenGL managed window
     // Do this immeditaely if point cloud window enabled
     // otherwise delay it until window is enabled for the first time.
     if(config.isPCviewerEnabled()) {
         if(mmaxPoints>=50000) {
-            OpenPointCloudWindow();
-            m_pointCloudWindow->RendererTimerStart();
+            if(OpenPointCloudWindow()) {
+                m_pointCloudWindow->RendererTimerStart();
+            } else {
+                // opnGL is not available
+                config.setPCviewerEnabled(false);
+            }
         }
     }
 
     SetupGUIrefreshTimers();
+
     ConnectDocksViewerActions();
 
     // these are only done after loadsettings()
@@ -247,25 +275,36 @@ MainWindow::~MainWindow()
 // This needs rework should migrate it to the
 //  PointCloudWindows()
 //--------------------------------------------------------
-void MainWindow::OpenPointCloudWindow()
+bool MainWindow::OpenPointCloudWindow()
 {
-    // only open point cloud window if there is a minimum
-    // number point cloud buffer size
-    // configure OpenGL before creating PointCloudWindow class
-    // so that it has the correct OpenGL context
-    QSurfaceFormat format;
-    format.setVersion(3, 3);
-    format.setProfile(QSurfaceFormat::CoreProfile);
-    format.setDepthBufferSize(24);
-    format.setRenderableType(QSurfaceFormat::OpenGL);
+    if(mNoGraphics) return false;
 
-    QSurfaceFormat::setDefaultFormat(format);
-    m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
+    // prerequesite for application
+    // point cloud window requires OpenGLES V3.x
+    // or Open Core 3.3
+    // Check against version requested at startup
+    if(!mOpenGLES &&  (mOpenGLmajorV!=3 || mOpenGLminorV!=3)) {
+        return false;
+    } else {
+        if(mOpenGLES && mOpenGLmajorV!=3)
+            return false;
+    }
+
+    m_pointCloudWindow = new PointCloudWindow(mmaxPoints,mOpenGLES);
+    // indicates problem or wrong version of OpenGL
+    if(m_pointCloudWindow->PointCouldInitFailed()) {
+        delete m_pointCloudWindow;
+        m_pointCloudWindow = nullptr;
+        return false;
+    }
+
     // set default view settings
     SetDefaultView();
     m_pointCloudWindow->setTransientParent(windowHandle());
     m_pointCloudWindow->Initialize();
     m_pointCloudWindow->InitializeRenderTimer(config.getRenderRate());
+
+    return true;
 }
 
 //--------------------------------------------------------
@@ -299,6 +338,7 @@ void MainWindow::SetupGUIrefreshTimers()
     //--------------------------------------------------------
     //  These timers are used to trigger updates
     //  for packet rate chart update
+    //  only for graphics enableds
     //--------------------------------------------------------
     mPacketBeat = new QTimer(this);
     mPacketBeat->setInterval(config.getPacketUpdateRate());
@@ -337,7 +377,9 @@ void MainWindow::createDocksViewer()
     //--------------------------------------------------------
     //  packetRateDock setup
     //--------------------------------------------------------
-    m_packetRateDock = new PacketRateDock(this);
+    if(!mNoGraphics) {
+        m_packetRateDock = new PacketRateDock(this);
+    }
 }
 
 //--------------------------------------------------------
@@ -464,7 +506,9 @@ void MainWindow::AssignDocksObjectNames()
     //--------------------------------------------------------
     //  packetRateDock setup
     //--------------------------------------------------------
-    m_packetRateDock->setObjectName("PacketRateDock");
+    if(m_packetRateDock!=nullptr) {
+        m_packetRateDock->setObjectName("PacketRateDock");
+    }
     //--------------------------------------------------------
 }
 
@@ -487,19 +531,24 @@ void MainWindow::AddDocksViewer()
     //--------------------------------------------------------
     m_controlsDock->setAllowedAreas(Qt::LeftDockWidgetArea);
     addDockWidget(Qt::LeftDockWidgetArea, m_controlsDock);
+
     //--------------------------------------------------------
     //  setup dockable packet Stats gui
     //--------------------------------------------------------
     addDockWidget(Qt::LeftDockWidgetArea, m_StatsDock);
+
     //--------------------------------------------------------
     //  setup dockable ACK gui (this is not timer driven)
     //--------------------------------------------------------
-   addDockWidget(Qt::LeftDockWidgetArea, m_ACKDock);
+    addDockWidget(Qt::LeftDockWidgetArea, m_ACKDock);
+
     //--------------------------------------------------------
     //  packetRateDock setup
     //--------------------------------------------------------
-    m_packetRateDock->setAllowedAreas(Qt::BottomDockWidgetArea);
-    addDockWidget(Qt::BottomDockWidgetArea, m_packetRateDock);
+    if(m_packetRateDock!=nullptr){
+        m_packetRateDock->setAllowedAreas(Qt::BottomDockWidgetArea);
+        addDockWidget(Qt::BottomDockWidgetArea, m_packetRateDock);
+   }
 }
 
 //--------------------------------------------------------
@@ -636,7 +685,9 @@ void MainWindow::ShowWindows()
     m_diagnosticsDock->setVisible(config.isDiagEnabled());
     m_IMUDock->setVisible(config.isIMUenabled());
     m_ACKDock->setVisible(config.isACKenabled());
-    m_packetRateDock->setVisible(config.isPacketRateChartEnabled());
+    if(m_packetRateDock!=nullptr) {
+        m_packetRateDock->setVisible(config.isPacketRateChartEnabled());
+    }
     m_StatsDock->setVisible(config.isStatsEnabled());
 
     if(config.isPCviewerEnabled()) {
@@ -685,6 +736,8 @@ void MainWindow::L2DisconnectedButtonsUIs()
 //--------------------------------------------------------
 void  MainWindow::StartPacketChart()
 {
+    if(m_packetRateDock==nullptr) return;
+
     m_packetRateDock->reset();
      mPacketBeat->start();
 }
@@ -748,6 +801,7 @@ void MainWindow::updateStats()
     Stats.countIMU = l2lidar.totalIMU();
     Stats.countACK = l2lidar.totalACK();
     Stats.countOther = l2lidar.totalOther();
+    Stats.PacketRate = mPacketRate;
     LidarTimeStampData timestamp = l2lidar.timestamp();
     Stats.TimeSec = timestamp.data.sec;
     Stats.TimeNsec = timestamp.data.nsec;
@@ -775,10 +829,12 @@ void MainWindow::updatePacketRate()
     const double rate =
         (deltaPackets * 1000.0) / static_cast<double>(elapsedMs);
 
-    m_packetRateDock->addSample(rate); // add time, sample rate
-
-    m_lastPacketCount = total;
+    if(m_packetRateDock!=nullptr) {
+        m_packetRateDock->addSample(rate); // add time, sample rate
+    }
+    mPacketRate = (float)rate;
     m_rateTimer->restart();
+    m_lastPacketCount = total;
 }
 
 //--------------------------------------------------------
@@ -1002,10 +1058,18 @@ void MainWindow::openConfig()
             }
         }
 
+        if(config.isPacketRateChartEnabled() && mNoGraphics) {
+            config.setPacketRateChartEnabled(false);
+        }
+
         if(config.isPCviewerEnabled() && m_pointCloudWindow==nullptr) {
             if(mmaxPoints>=50000) {
-                OpenPointCloudWindow();
-                m_pointCloudWindow->RendererTimerStart();
+                if(OpenPointCloudWindow()) {
+                    m_pointCloudWindow->RendererTimerStart();
+                } else {
+                    // opnGL is not available
+                    config.setPCviewerEnabled(false);
+                }
             }
         }
 
@@ -1213,7 +1277,8 @@ void MainWindow::SavePC()
     if(m_pointCloudWindow!=nullptr){
         QString file = QFileDialog::getSaveFileName(this,
                         "Save Point Cloud", "", "PointCloud (*.pcd)");
-        m_pointCloudWindow->savePointCloudToFile(file);
+        if(file=="") return;
+        m_pointCloudWindow->savePCD(file);
     } else {
         QMessageBox msgBox;
         msgBox.setText("Can not save point cloud");
@@ -1232,7 +1297,15 @@ void MainWindow::LoadPC()
     if(m_pointCloudWindow!=nullptr){
         QString file = QFileDialog::getOpenFileName(this,
                                                 "Load Point Cloud", "", "PointCloud (*.pcd)");
-        m_pointCloudWindow->loadPointCloudFromFile(file);
+        if(file=="") return;
+        if(!m_pointCloudWindow->loadPCD(file)){
+            QMessageBox msgBox;
+            msgBox.setText("Can not load point cloud");
+            msgBox.setInformativeText("bad file format");
+            msgBox.setStandardButtons(QMessageBox::Ok);
+            msgBox.exec();
+        }
+
     } else {
         QMessageBox msgBox;
         msgBox.setText("Can not load point cloud");

@@ -555,9 +555,9 @@
    <widget class="QLabel" name="label_21">
     <property name="geometry">
      <rect>
-      <x>20</x>
+      <x>0</x>
       <y>90</y>
-      <width>111</width>
+      <width>91</width>
       <height>41</height>
      </rect>
     </property>
@@ -574,9 +574,9 @@
    <widget class="QSpinBox" name="spinMaxPoints">
     <property name="geometry">
      <rect>
-      <x>140</x>
+      <x>110</x>
       <y>90</y>
-      <width>81</width>
+      <width>111</width>
       <height>41</height>
      </rect>
     </property>

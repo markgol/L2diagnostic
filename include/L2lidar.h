@@ -318,12 +318,12 @@ private: // variables
 
     // Latest decoded values
     // Accessing these should use mutex lock, PacketMutex
-    LidarImuDataPacket  latestImuPacket_{0,0,0,0,0,0};
+    LidarImuDataPacket  latestImuPacket_{};
     LidarVersionData    latestVersion_{};
     LidarTimeStampData  latestTimestamp_{};
-    Lidar2DPointDataPacket latest2DdataPacket_{0,0,0,0,0,0};
-    LidarPointDataPacket latest3DdataPacket_{0,0,0,0,0,0};
-    LidarParamDataPacket latestL2ParamsPacket_{0,0,0,0,0};
+    Lidar2DPointDataPacket latest2DdataPacket_{};
+    LidarPointDataPacket latest3DdataPacket_{};
+    LidarParamDataPacket latestL2ParamsPacket_{};
     LidarAckData latestACKdata_{};
 
     // Packet counters, these do not have a mutex lock

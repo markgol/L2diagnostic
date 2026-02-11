@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=L2diagnostic
+Exec=L2diagnostic
+Icon=L2diagnostic
+Comment=L2 diagnostics and point cloud viewer
+Terminal=false
+Categories=Utility;

@@ -32,17 +32,26 @@
 //  of packet.
 //
 //  V0.1.0  2025-12-27  compilable skeleton created by ChatGPT
+//  V0.4.0  2026-02-06  Added initialization of OpenGL
+//                      If no cmd line arguments are present then
+//                          OpenGL Core 3.3 is used.
+//                      if one command line argument is present then
+//                          OpenGLES V3.0 is used
+//                      if 2 or more command lne argumented then
+//                          do not display graphics
 //
 //--------------------------------------------------------
 
 //--------------------------------------------------------
-// This uses the following Unitree L2 sources modules:
+// This app uses the following Unitree L2 sources modules:
 //      unitree_lidar_protocol.h
-//      unitree_lidar_utilities
+//      unitree_lidar_utilities.h
 // They have been modifed from the original sources
 // to correct for errors, missing definitions and
 // inconsistencies.  These have been minor in most
-// instances.
+// instances. These are what are acutally being used:
+//      unitree_lidar_protocolL2.h
+//      unitree_lidar_utilitiesL2.h
 //
 // Copyright (c) 2024, Unitree Robotics
 // The orignal source can be found at:
@@ -75,11 +84,45 @@
 #include <QApplication>
 #include "MainWindow.h"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+    QSurfaceFormat fmt;
+
+    if(argc!=1) {
+    // Use OpenGLES 3.0
+        fmt.setRenderableType(QSurfaceFormat::OpenGLES);
+        fmt.setVersion(3, 0);
+        fmt.setProfile(QSurfaceFormat::NoProfile);
+    } else {
+    // Use OpenGL Core 3.3
+        fmt.setRenderableType(QSurfaceFormat::OpenGL);
+        fmt.setVersion(3, 3);
+        fmt.setProfile(QSurfaceFormat::CoreProfile);
+    }
+
+    fmt.setDepthBufferSize(24);
+    fmt.setStencilBufferSize(8);
+    fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+    fmt.setSamples(0);
+
+    QSurfaceFormat::setDefaultFormat(fmt);   // MUST be before QApplication
+
     QApplication app(argc, argv);
 
-    MainWindow w;
-    w.show();
+    MainWindow* w;
+    if(argc==1) {
+        // no args then OpenGL Core 3.3
+        w = new MainWindow(false,3,3);
+    } else if(argc==2) {
+        // 1 arg then OpenGL ES 3.x
+        w = new MainWindow(true,3,0);
+    } else {
+        // 2 or more args, no graphics
+        // disable point cloud viewer and rate chart
+        w = new MainWindow(false,0,0);
+   }
+    w->show();
 
     return app.exec();
 }
+

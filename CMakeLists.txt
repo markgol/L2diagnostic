@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 0.3.12
+    VERSION 0.4.0
     LANGUAGES CXX
 )
 
@@ -28,7 +28,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Tell AUTOUIC where .ui files live
 set(CMAKE_AUTOUIC_SEARCH_PATHS
     ${CMAKE_SOURCE_DIR}/forms
 )
@@ -94,7 +93,6 @@ install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION bin
 )
 
-# Install UI files (optional, for debugging / completeness)
 install(DIRECTORY forms/
     DESTINATION share/${PROJECT_NAME}/forms
     FILES_MATCHING PATTERN "*.ui"
@@ -110,3 +108,78 @@ set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_GENERATOR "TGZ")
 
 include(CPack)
+
+# =========================================================
+# AppImage packaging (Linux only, safe for Windows builds)
+# =========================================================
+if(UNIX AND NOT APPLE)
+
+    set(APPDIR ${CMAKE_BINARY_DIR}/AppDir)
+
+    # set QT_PLATFORM_PLUGIN_PATH
+    # to source folder, aarch64-linux-gnu, /x86_64-linux-gnu
+	# for the Qt6 platform plugins
+
+    if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
+        set(QT_PLATFORM_PLUGIN_PATH /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms)
+    elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
+        set(QT_PLATFORM_PLUGIN_PATH /usr/lib/aarch64-linux-gnu/qt6/plugins/platforms)
+    elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
+        set(QT_PLATFORM_PLUGIN_PATH /usr/lib/aarch64-linux-gnu/qt6/plugins/platforms)
+    endif()
+	
+	#set(QT_PLATFORM_PLUGIN_PATH /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms)
+
+    add_custom_target(appimage
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${APPDIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${APPDIR}/usr/bin
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${APPDIR}/usr/lib
+
+        # Copy executable
+        COMMAND ${CMAKE_COMMAND} -E copy
+                $<TARGET_FILE:${PROJECT_NAME}>
+                ${APPDIR}/usr/bin/${PROJECT_NAME}
+
+        #copy platforms files to usr/lib directory
+        #linuxdeploy does not find these
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${QT_PLATFORM_PLUGIN_PATH} ${APPDIR}/usr/lib
+
+        # Run linuxdeploy with Qt plugin
+        COMMAND linuxdeploy -v0
+                --appdir ${APPDIR}
+                --executable ${APPDIR}/usr/bin/${PROJECT_NAME}
+                --desktop-file ${CMAKE_SOURCE_DIR}/packaging/${PROJECT_NAME}.desktop
+                --create-desktop-file
+                --icon-file ${CMAKE_SOURCE_DIR}/packaging/${PROJECT_NAME}.png
+                --output appimage
+
+        DEPENDS ${PROJECT_NAME}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+
+        #create bundle foler
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bundle
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bundle/docs
+
+        #copy appimage to bundle folder
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${CMAKE_HOST_SYSTEM_PROCESSOR}.AppImage
+                ${CMAKE_BINARY_DIR}/bundle/${PROJECT_NAME}-${CMAKE_HOST_SYSTEM_PROCESSOR}.AppImage
+
+        #copy docs folder to bundle folder
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_SOURCE_DIR}/docs ${CMAKE_BINARY_DIR}/bundle/docs
+
+        #copy readme.md and readmore.md to bundle folder
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_SOURCE_DIR}/README.md
+                ${CMAKE_BINARY_DIR}/bundle/README.md
+
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_SOURCE_DIR}/READMore.md
+                ${CMAKE_BINARY_DIR}/bundle/READMore.md
+
+        COMMENT "Building AppImage using linuxdeploy + Qt plugin"
+    )
+
+endif()

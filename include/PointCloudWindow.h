@@ -45,6 +45,15 @@
 //  V0.3.6  2026-01-24  Added clear point cloud
 //  V0.3.9  2026-02-01  added LOAD/SAVE point cloud
 //  V0.3.12 2026-02-05  Moved renderer timer to PointCloudWindow class
+//  V0.4.0  2026-02-06  Added implementation for specific OpenGL
+//                      If no cmd line arguments are present then
+//                          OpenGL Core 3.3 is used.
+//                      if any command line argument is present then
+//                          OpenGLES V3.0 is used
+//                      Added error checking for intializeGL()
+//                      Saving the point time got lost, added back in
+//                      Changed file save/load to use standard
+//                          PCL PCD formatted file
 //
 //--------------------------------------------------------
 
@@ -83,26 +92,7 @@
 //
 // #include "PointCloudWindow.h"
 //
-// create cloud viewer window
-// This is not a Qt window but a OpenGL managed window
-// if(mmaxPoints>=50000) {
-//     // only open point cloud window if there is a minimum
-//     // number point cloud buffer size
-//     // configure OpenGL before creating PointCloudWindow class
-//     // so that it has the correct OpenGL context
-//     QSurfaceFormat format;
-//     format.setVersion(3, 3);
-//     format.setProfile(QSurfaceFormat::CoreProfile);
-//     format.setDepthBufferSize(24);
-//     format.setRenderableType(QSurfaceFormat::OpenGL);
-
-//     QSurfaceFormat::setDefaultFormat(format);
-//     m_pointCloudWindow = new PointCloudWindow(mmaxPoints);
-//     // set default view settings
-//     SetDefaultView();
-//     m_pointCloudWindow->setTransientParent(windowHandle());
-//     m_pointCloudWindow->Initialize();
-// }
+// this needs updating
 //
 //--------------------------------------------------------
 
@@ -127,7 +117,7 @@
 #pragma once
 
 #include <QOpenGLWindow>
-#include <QOpenGLFunctions_3_3_Core>
+#include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
 #include <QMatrix4x4>
 #include <QVector3D>
@@ -141,10 +131,19 @@
 #include "AxisGridRenderer.h"
 #include "PCpoint.h"
 
+// this identifies file format
+// x,y,z,i
+#define PCD1 0x50434431
+
+// this identifies file format
+// x,y,z,i,time
+#define PCD2 0x50434432
+
 struct GLPoint
 {
     QVector3D pos;
     float intensity;
+    float time;
 };
 
 // struct for the point cloud viewer state
@@ -166,13 +165,18 @@ using Frame = QVector<PCpoint>;
 
 // class PointCloudWindow
 
-class PointCloudWindow final
-    : public QOpenGLWindow
-    , protected QOpenGLFunctions_3_3_Core
+class PointCloudWindow : public QOpenGLWindow
+    , protected QOpenGLFunctions
+
 {
 public:
-    explicit PointCloudWindow(int maxPoints, QWindow* parent = nullptr);
+    explicit PointCloudWindow(int maxPoints, bool OpenGLES, QWindow* parent = nullptr);
     ~PointCloudWindow() override;
+
+    // intialization failed
+    // This should always be called after creation of the class
+    // if it has failed the class shouldbe deleted
+    bool PointCouldInitFailed() {return mInitializeGLsuccess;}
 
     // Renderer Timer
     void InitializeRenderTimer(int Rate);
@@ -202,9 +206,10 @@ public:
     void clearPointCloud();
 
     // File I/O
-    bool savePointCloudToFile(const QString& fileName);
-    bool loadPointCloudFromFile(const QString& fileName);
+    bool savePCD(const QString& fileName);
+    bool loadPCD(const QString& fileName);
 
+    void setPointCloud(const QVector<GLPoint>& cloud);
 
 public slots:
     void onRenderTick(); // timer driven renderer
@@ -226,9 +231,12 @@ private:
     void uploadAccumulatedPoints();
 
 private:
+    bool mOpenGLES;
+
     QOpenGLShaderProgram m_program;
     QOpenGLVertexArrayObject m_vao;
     QOpenGLBuffer m_vbo{ QOpenGLBuffer::VertexBuffer };
+    bool mInitializeGLsuccess{false};
 
     // Point cloud window renderer Timer
     QTimer* RendererTimer;

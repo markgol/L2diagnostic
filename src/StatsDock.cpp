@@ -93,36 +93,39 @@ void StatsDock::updateStats(PacketStats& Stats, TimeStamp Now)
     // Calibration
     QString ResultString;
 
-    ResultString = ResultString.asprintf("%6llu",Now.sec);
+    ResultString = ResultString.asprintf("%6u",Now.sec);
     ui->lblSysTimeSecValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%9llu",Now.nsec);
+    ResultString = ResultString.asprintf("%9u",Now.nsec);
     ui->lblSysTimeNsecValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",Stats.TimeSec);
+    ResultString = ResultString.asprintf("%6u",Stats.TimeSec);
     ui->lblTimeSecValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%9llu",Stats.TimeNsec);
+    ResultString = ResultString.asprintf("%9u",Stats.TimeNsec);
     ui->lblTimeNSecValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",Stats.countPackets);
+    ResultString = ResultString.asprintf("%6lu",Stats.countPackets);
     ui->lblTotalValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",Stats.count3DPCL);
+    ResultString = ResultString.asprintf("%6lu",Stats.count3DPCL);
     ui->lbl3DValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",Stats.count2DPCL);
+    ResultString = ResultString.asprintf("%6lu",Stats.count2DPCL);
     ui->lbl2DValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",Stats.countIMU);
+    ResultString = ResultString.asprintf("%6lu",Stats.countIMU);
     ui->lblIMUValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",Stats.countACK);
+    ResultString = ResultString.asprintf("%6lu",Stats.countACK);
     ui->lblACKValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",Stats.countOther);
+    ResultString = ResultString.asprintf("%6lu",Stats.countOther);
     ui->lblOtherValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%6llu",Stats.lostPackets);
+    ResultString = ResultString.asprintf("%6lu",Stats.lostPackets);
     ui->lblLostValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%6.1f pkt/sec",Stats.PacketRate);
+    ui->lblPacketRateValue->setText(ResultString);
 }
