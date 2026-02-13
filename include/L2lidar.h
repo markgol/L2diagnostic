@@ -64,6 +64,9 @@
 //  V0.3.11 2026-02-04  Added void ConvertL2data2pointcloud()
 //                      to return just actual point cloud
 //                      frame instead of entire unprocessed packet
+//  V0.4.1  2026-02-11  Added Set MAC command
+//                      Added decode for the 3 config packets, MAC, workmode, IPaddress
+//                      Sorted alphabetically in groups for public class members
 //
 //--------------------------------------------------------
 
@@ -149,19 +152,25 @@ public:
 
     // Accessors for external data acces in other threads
     // such as a timer based GUI
+
+    const LidarAckData ack() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestACKdata_;
+    }
+
+    uint32_t GetL2Workmode() const {
+        QMutexLocker locker(&PacketMutex);
+        return latestWorkmode_;
+    }
+
     const LidarImuDataPacket imu() const {
         QMutexLocker locker(&PacketMutex);
         return latestImuPacket_;
     }
 
-    const LidarPointDataPacket Pcl3Dpacket() const {
+    const LidarIpAddressConfig IPaddress() const {
         QMutexLocker locker(&PacketMutex);
-        return latest3DdataPacket_;
-    }
-
-    const Lidar2DPointDataPacket Pcl2Dpacket() const {
-        QMutexLocker locker(&PacketMutex);
-        return latest2DdataPacket_;
+        return latestIPaddress_;
     }
 
     const LidarParamDataPacket L2ParamsPacket() const {
@@ -169,62 +178,72 @@ public:
         return latestL2ParamsPacket_;
     }
 
-    const LidarAckData ack() const {
+    // This has never been observed but is here just in case
+    const LidarMacAddressConfig MAC() const {
         QMutexLocker locker(&PacketMutex);
-        return latestACKdata_;
+        return latestMACdata_;
     }
-    const LidarVersionData version() const {
+
+    const Lidar2DPointDataPacket Pcl2Dpacket() const {
         QMutexLocker locker(&PacketMutex);
-        return latestVersion_;
+        return latest2DdataPacket_;
     }
+
+    const LidarPointDataPacket Pcl3Dpacket() const {
+        QMutexLocker locker(&PacketMutex);
+        return latest3DdataPacket_;
+    }
+
     const LidarTimeStampData timestamp() const {
         QMutexLocker locker(&PacketMutex);
         return latestTimestamp_;
     }
-    const LidarParamDataPacket GetL2WorkParamPacket() const {
+
+    const LidarVersionData version() const {
         QMutexLocker locker(&PacketMutex);
-        return latestL2ParamsPacket_;
-    }
-    uint32_t GetL2Workmode() const {
-        QMutexLocker locker(&PacketMutex);
-        return latestWorkmode_;
+        return latestVersion_;
     }
 
     // packet stats from L2 (only updates when L2 socket connected)
     // These are not actually critical, only for reporting stats
-    uint64_t totalIMU() const { return totalIMUpackets_;}
-    uint64_t total3D() const { return total3Dpackets_;}
-    uint64_t total2D() const { return total2Dpackets_;}
-    uint64_t totalACK() const { return totalACKpackets_;}
-    uint64_t totalPackets() const { return totalPackets_; }
-    uint64_t lostPackets() const { return lostPackets_; }
-    uint64_t totalOther() const { return lostPackets_; }
-    const Latency GetLatency() const {return latestLatency_;}
     void ClearCounts(); // clears the packet totals
+    const Latency GetLatency() const {return latestLatency_;}
+    uint64_t lostPackets() const { return lostPackets_; }
+    uint64_t total2D() const { return total2Dpackets_;}
+    uint64_t total3D() const { return total3Dpackets_;}
+    uint64_t totalACK() const { return totalACKpackets_;}
+    uint64_t totalIMU() const { return totalIMUpackets_;}
+    uint64_t totalPackets() const { return totalPackets_; }
+    uint64_t totalOther() const { return lostPackets_; }
+
+    // L2 commands
+    bool GetL2Params(void);
+    bool GetWorkMode(void);
+    bool LidarGetVersion(void);
+    bool LidarReset(void);
+    bool LidarStartRotation(void);
+    bool LidarStopRotation(void);
+    bool sendLatencyID(uint32_t SeqeunceID);
+    bool SetL2MAC(LidarMacAddressConfig MACsettings); // requires reset or power cycle after setting
+    // This set the stored UDP configuration on the L2
+    // a power cycle is required after this for it to take effect
+    bool setL2UDPconfig(QString hostIP, uint32_t hostPort,
+                        QString LidarIP, uint32_t LidarPort);
+    bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
 
     // L2 Timstamp correction and controls
     void EnableL2TimeCorrection(bool enableflag) {enableL2TimeStampFix = enableflag; }
-    void SetL2TimeScale(double Scale) {mL2ScaleTimeStamp = Scale;}
     double GetL2TimeScale() {return mL2ScaleTimeStamp;}
+    void SetL2TimeScale(double Scale) {mL2ScaleTimeStamp = Scale;}
 
-    // automatic L2 timestamp syncing to host
-    void SetL2TSsyncRate(uint32_t Rate);
+    // L2 timestamp syncing to host (timer driven)
     void EnableL2TSsync(bool enable);
+    void SetL2TSsyncRate(uint32_t Rate);
 
     // latency measurement
     void EnableLatencyMeasure(bool enable);
 
-    // L2 commands
-    bool LidarStartRotation(void);
-    bool LidarStopRotation(void);
-    bool LidarReset(void);
-    bool LidarGetVersion(void);
-    bool GetL2Params(void);
-    bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
-    bool GetWorkMode();
-
-    // UDP ethernet communications
-    bool sendLatencyID(uint32_t SeqeunceID);
+    // Time sync of L2 to host
     bool SyncL2Clock() ;    // sync L2 to current system time
     bool SyncL2Clock(TimeStamp timestamp) ;    // sync L2 to TimeStamp
 
@@ -233,25 +252,24 @@ public:
     void LidarSetCmdConfig(QString srcIP, uint32_t srcPort,
                            QString dstIP, uint32_t dstPort);
 
-    // This set the stored UDP configuration on the L2
-    // a power cycle is required after this for it to take effect
-    bool setL2UDPconfig(QString hostIP, uint32_t hostPort,
-                           QString LidarIP, uint32_t LidarPort);
 
     bool ConnectL2();  // bind to create, bind socket, connect callback for decode
     void DisconnectL2();   // close socket
 
+    // convert point frame data from L2 to point cloud
     bool ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust);
 
 signals:
-    void imuReceived();
-    void PCL3DReceived();
-    void PCL2DReceived();
-    void versionReceived();
-    void timestampReceived();
     void ackReceived();
-    void WorkmodeReceived();
+    void imuReceived();
+    void IPreceived();
+    void MACReceived();
     void L2ParamsReceived();
+    void PCL2DReceived();
+    void PCL3DReceived();
+    void timestampReceived();
+    void versionReceived();
+    void WorkmodeReceived();
 
 private: // functions
     // Generic Send/receive packets
@@ -274,12 +292,17 @@ private: // functions
     void decodeVersion(const QByteArray& datagram, uint64_t Offset);
     void decodeTimestamp(const QByteArray& datagram, uint64_t Offset);
     void decodeL2Params(const QByteArray& datagram, uint64_t Offset);
+    void decodeMAC(const QByteArray& datagram, uint64_t Offset);
+    void decodeWorkmode(const QByteArray& datagram, uint64_t Offset);
+    void decodeIPaddress(const QByteArray& datagram, uint64_t Offset);
     void decodeAck(const QByteArray& datagram, uint64_t Offset);
     void handleRaw(uint32_t packetType,
                    const QByteArray& datagram, uint64_t Offset);
 
     // latency
     bool requestRTTLatencyMeasurement();
+    void StartLatency();
+    void StopLatency();
 
     // L2 time base corrections
     void SyncClock() {SyncL2Clock();} // triggered by TimerSyncTimer
@@ -324,7 +347,9 @@ private: // variables
     Lidar2DPointDataPacket latest2DdataPacket_{};
     LidarPointDataPacket latest3DdataPacket_{};
     LidarParamDataPacket latestL2ParamsPacket_{};
+    LidarMacAddressConfig latestMACdata_{};
     LidarAckData latestACKdata_{};
+    LidarIpAddressConfig latestIPaddress_ {};
 
     // Packet counters, these do not have a mutex lock
     // and should not be relied on for downstream processing

@@ -126,7 +126,6 @@
 #include <QFile>
 #include <QDataStream>
 #include <QTimer>
-//#include <QMessageBox>
 
 #include "AxisGridRenderer.h"
 #include "PCpoint.h"

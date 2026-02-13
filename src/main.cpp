@@ -39,6 +39,7 @@
 //                          OpenGLES V3.0 is used
 //                      if 2 or more command lne argumented then
 //                          do not display graphics
+//  V0.4.1  2026-02-11  Disabled QPA THEME GNOME
 //
 //--------------------------------------------------------
 
@@ -82,30 +83,49 @@
 //  Application is in MainWindow Class
 //--------------------------------------------------------
 #include <QApplication>
+#include <QLoggingCategory>
 #include "MainWindow.h"
 
 int main(int argc, char* argv[])
 {
     QSurfaceFormat fmt;
 
-    if(argc!=1) {
-    // Use OpenGLES 3.0
-        fmt.setRenderableType(QSurfaceFormat::OpenGLES);
-        fmt.setVersion(3, 0);
-        fmt.setProfile(QSurfaceFormat::NoProfile);
-    } else {
-    // Use OpenGL Core 3.3
-        fmt.setRenderableType(QSurfaceFormat::OpenGL);
-        fmt.setVersion(3, 3);
-        fmt.setProfile(QSurfaceFormat::CoreProfile);
+    // When OpenGL is used it needs to have
+    // the surface initialized
+    // This MUST be before QApplication
+    //
+    //  argc = 1 no command line argmuments use OpenGL Core 3.3
+    //  argc = 2 one command line argument use OpenGL ES V3.x
+    //  argc > 2 2 or more arguments then no graphics windows
+    //
+    if(argc<3) {
+        if(argc==1) {
+            // Use OpenGL Core 3.3
+            fmt.setRenderableType(QSurfaceFormat::OpenGL);
+            fmt.setVersion(3, 3);
+            fmt.setProfile(QSurfaceFormat::CoreProfile);
+        } else {
+            // Use OpenGLES 3.0
+            fmt.setRenderableType(QSurfaceFormat::OpenGLES);
+            fmt.setVersion(3, 0);
+            fmt.setProfile(QSurfaceFormat::NoProfile);
+        }
+
+        fmt.setDepthBufferSize(24);
+        fmt.setStencilBufferSize(8);
+        fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+        fmt.setSamples(0);
+
+        QSurfaceFormat::setDefaultFormat(fmt);
     }
 
-    fmt.setDepthBufferSize(24);
-    fmt.setStencilBufferSize(8);
-    fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-    fmt.setSamples(0);
-
-    QSurfaceFormat::setDefaultFormat(fmt);   // MUST be before QApplication
+    // not using this theme
+    // This is a Linux thing not a Windows thing
+    // This gets rid of meaningless Qt log output
+    // since it may not find a theme through DBUS
+    QLoggingCategory::setFilterRules(
+        "qt.qpa.theme.gnome=false\n"
+        );
 
     QApplication app(argc, argv);
 

@@ -82,6 +82,13 @@
 //  V0.3.11 2026-02-04  Added void ConvertL2data2pointcloud()
 //                      to return just actual point cloud
 //                      frame instead of entire unprocessed packet
+//  V0.4.1  2026-02-11  Remove Qdebug statements
+//                      Added MAC packet decode
+//                      Set MAC command
+//                      Added sending a datagram to unblock
+//                      the Qt readyRead signal
+//                      Added decode for the 3 config packets, MAC, workmode, IPaddress
+//                      Sorted alphabetically in groups for public class members
 //
 //--------------------------------------------------------
 
@@ -129,7 +136,6 @@
 //--------------------------------------------------------
 
 #include "L2lidar.h"
-#include <QDebug>
 
 //--------------------------------------------------------------------
 // L2lidar class constructor
@@ -201,8 +207,6 @@ void L2lidar::readUDPpendingDatagrams()
 //--------------------------------------------------------
 //void L2lidar::readUARTpendingDatagrams()
 //{
-//    qDebug() << "UART Not yet implemented\n"
-//             << "readUARTpendingDatagram()";
     // // only process incoming UPD packets
     // while (L2SerialPort.hasPendingDatagrams()) {
     //     QByteArray datagram;
@@ -349,6 +353,21 @@ void L2lidar::processDatagram(const QByteArray& datagram)
 
             case LIDAR_PARAM_DATA_PACKET_TYPE:
                 decodeL2Params(PacketBuffer,Offset);
+                Offset += header->packet_size;
+                break;
+
+            case LIDAR_MAC_ADDRESS_CONFIG_PACKET_TYPE:
+                decodeMAC(PacketBuffer,Offset);
+                Offset += header->packet_size;
+                break;
+
+            case LIDAR_WORK_MODE_CONFIG_PACKET_TYPE:
+                decodeWorkmode(PacketBuffer,Offset);
+                Offset += header->packet_size;
+                break;
+
+            case LIDAR_IP_ADDRESS_CONFIG_PACKET_TYPE:
+                decodeIPaddress(PacketBuffer,Offset);
                 Offset += header->packet_size;
                 break;
 
@@ -601,6 +620,93 @@ void L2lidar::decodeTimestamp(const QByteArray& datagram, uint64_t Offset)
 }
 
 //--------------------------------------------------------------------
+// MAC Decoder
+//--------------------------------------------------------------------
+void L2lidar::decodeMAC(const QByteArray& datagram, uint64_t Offset)
+{
+    const auto* header =
+        reinterpret_cast<const FrameHeader*>(datagram.constData() + Offset);
+
+    if ((size_t)header->packet_size != sizeof(LidarMacAddressConfigPacket)) {
+        lostPackets_++;
+        return;
+    }
+
+    totalOther_++;
+    totalPackets_++;
+
+    const auto* pkt =
+        reinterpret_cast<const LidarMacAddressConfigPacket*>(datagram.constData()+Offset);
+
+    // critical section
+    PacketMutex.lock();
+    latestMACdata_ = pkt->data;
+    PacketMutex.unlock();
+    // end of critical section
+
+    // send out notice that a MAC config packet received
+    emit MACReceived();
+}
+
+//--------------------------------------------------------------------
+// workmode Decoder
+//--------------------------------------------------------------------
+void L2lidar::decodeWorkmode(const QByteArray& datagram, uint64_t Offset)
+{
+    const auto* header =
+        reinterpret_cast<const FrameHeader*>(datagram.constData() + Offset);
+
+    if ((size_t)header->packet_size != sizeof(LidarWorkModeConfigPacket)) {
+        lostPackets_++;
+        return;
+    }
+
+    totalOther_++;
+    totalPackets_++;
+
+    const auto* pkt =
+        reinterpret_cast<const LidarWorkModeConfigPacket*>(datagram.constData()+Offset);
+
+    // critical section
+    PacketMutex.lock();
+    latestWorkmode_ = pkt->data.mode;
+    PacketMutex.unlock();
+    // end of critical section
+
+    // send out notice that a workmode config packet received
+    emit WorkmodeReceived();
+}
+
+//--------------------------------------------------------------------
+// IP address Decoder
+//--------------------------------------------------------------------
+void L2lidar::decodeIPaddress(const QByteArray& datagram, uint64_t Offset)
+{
+    const auto* header =
+        reinterpret_cast<const FrameHeader*>(datagram.constData() + Offset);
+
+    if ((size_t)header->packet_size != sizeof(LidarIpAddressConfigPacket)) {
+        lostPackets_++;
+        return;
+    }
+
+    totalOther_++;
+    totalPackets_++;
+
+    const auto* pkt =
+        reinterpret_cast<const LidarIpAddressConfigPacket*>(datagram.constData()+Offset);
+
+    // critical section
+    PacketMutex.lock();
+    latestIPaddress_ = pkt->data;
+    PacketMutex.unlock();
+    // end of critical section
+
+    // send out notice that a IP address config packet received
+    emit IPreceived();
+}
+
+//--------------------------------------------------------------------
 // L2 PARAMS Decoder
 // This is for investigating the parameters packet
 //--------------------------------------------------------------------
@@ -710,17 +816,11 @@ void L2lidar::decodeAck(const QByteArray& datagram, uint64_t Offset)
 //          2D PC
 //          3D PC
 //--------------------------------------------------------------------
-void L2lidar::handleRaw(uint32_t packetType,
+void L2lidar::handleRaw([[maybe_unused]]uint32_t packetType,
                              const QByteArray& datagram, uint64_t Offset)
 {
-    const auto* header =
+    [[maybe_unused]] const auto* header =
         reinterpret_cast<const FrameHeader*>(datagram.constData() + Offset);
-
-    // report this in program output only in debug mode
-    QString hex = datagram.toHex(' ').toUpper();
-    qDebug() << "RAW packet type:" << packetType
-             << "size:" << header->packet_size
-             << hex.left(128) << "...";
 
     totalOther_++;
     totalPackets_++;
@@ -765,139 +865,35 @@ void L2lidar::ClearCounts()
 //====================================================================
 
 //--------------------------------------------------------------------
-//  SyncL2Clock()
-//  SyncL2Clock(TimeStamp timestamp)
-//  Sets the L2 clock either to the current system time or
-//  the passed timestamp parameter
+//  GetL2Params
+//  This sends a request to the L2 for a Parameters packet
+//  The parameters packet are not defined
+//  This is part of diagnsotic to undertand what they might be
 //--------------------------------------------------------------------
-bool L2lidar::SyncL2Clock()
+bool L2lidar::GetL2Params(void)
 {
-    // set header
-    LidarTimeStampPacket pkt;
-    setPacketHeader(&pkt.header,LIDAR_TIME_STAMP_PACKET_TYPE,
-                    sizeof(LidarTimeStampPacket));
+    // USER_CMD_VERSION_GET
 
-    // set data
-    TimeStamp Now;
-    unilidar_sdk2::getSystemTimeStamp(Now);
-    pkt.data.data.sec = Now.sec;
-    pkt.data.data.nsec = Now.nsec;
-
-    // set tail
-    pkt.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &pkt.data, sizeof(pkt.data));
-    pkt.tail.msg_type_check = 0;
-    pkt.tail.reserve[0] = 0;
-    pkt.tail.reserve[1] = 0;
-    pkt.tail.tail[0] = 0x00;
-    pkt.tail.tail[1] = 0xff;
-
-    // send packet
-    if(!SendPacket((uint8_t *) &pkt, sizeof(LidarTimeStampPacket))) {
-        qDebug() << "Send timestanp failed";
-        return false;
-    }
-
-    mLastTimestamp = (double)Now.sec + (Now.nsec * 1.0e-9);
-
-    return true;
-}
-
-bool L2lidar::SyncL2Clock(TimeStamp timestamp)
-{
-    // set header
-    LidarTimeStampPacket pkt;
-    setPacketHeader(&pkt.header,LIDAR_TIME_STAMP_PACKET_TYPE,
-                    sizeof(LidarTimeStampPacket));
-
-    // set data
-    pkt.data.data.sec = timestamp.sec;
-    pkt.data.data.nsec = timestamp.nsec;
-
-    // set tail
-    pkt.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &pkt.data, sizeof(pkt.data));
-    pkt.tail.msg_type_check = 0;
-    pkt.tail.reserve[0] = 0;
-    pkt.tail.reserve[1] = 0;
-    pkt.tail.tail[0] = 0x00;
-    pkt.tail.tail[1] = 0xff;
-
-    // send packet
-    if(!SendPacket((uint8_t *) &pkt, sizeof(LidarTimeStampPacket))) {
-        qDebug() << "Send timestanp failed";
-        return false;
-    }
-
-    mLastTimestamp = (double)timestamp.sec + (timestamp.nsec * 1.0e-9);
-
-    return true;
-}
-
-//--------------------------------------------------------------------
-//  sendLatencyID
-//  sets packet sequence ID
-//  This is used in measuring the latency of packets over the UDP interface
-//  Note: Command packets and User command packets use the same packet structure
-//--------------------------------------------------------------------
-bool L2lidar::sendLatencyID(uint32_t SeqID)
-{
     // set header
     LidarUserCtrlCmdPacket cmd;
     setPacketHeader(&cmd.header,LIDAR_COMMAND_PACKET_TYPE,
                     sizeof(LidarUserCtrlCmdPacket));
 
     // set data
-    cmd.data.cmd_type = CMD_LATENCY_TYPE;
-    cmd.data.cmd_value = SeqID;
+    cmd.data.cmd_type = CMD_PARAM_GET;
+    cmd.data.cmd_value = 3;  // observed usage
 
     // set tail
     cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+
     cmd.tail.msg_type_check = 0;
-    cmd.tail.reserve[0] = 0;
-    cmd.tail.reserve[1] = 0;
+    cmd.tail.reserve[0] = 0x0;
+    cmd.tail.reserve[1] = 0x0;
     cmd.tail.tail[0] = 0x00;
     cmd.tail.tail[1] = 0xff;
 
     // send packet
     if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Send latency failed";
-        return false;
-    }
-
-    latencyMap[SeqID] = latencyTimer.nsecsElapsed();
-    return true;
-}
-
-//--------------------------------------------------------------------
-//  LidarStartRotation
-//  sends a run command to the L2
-//  if the L2 was in standby then it should start scanning
-//  it can take >20 seconds to come up to speed and start
-//  sending point cloud data
-//--------------------------------------------------------------------
-bool L2lidar::LidarStartRotation(void)
-{
-    // USER_CMD_STANDBY_TYPE, value = 0
-
-    // set header
-    LidarUserCtrlCmdPacket cmd;
-    setPacketHeader(&cmd.header,LIDAR_USER_CMD_PACKET_TYPE,
-                    sizeof(LidarUserCtrlCmdPacket));
-
-    // set data
-    cmd.data.cmd_type = USER_CMD_STANDBY_TYPE;
-    cmd.data.cmd_value = 0;
-    
-    // set tail
-    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
-    cmd.tail.msg_type_check = 0;
-    cmd.tail.reserve[0] = 0xff; // known value from recorded command
-    cmd.tail.reserve[1] = 0x7f; // known value from recorded command
-    cmd.tail.tail[0] = 0x00;
-    cmd.tail.tail[1] = 0xff;
-
-    // send packet
-    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Start rotataion failed";
         return false;
     }
 
@@ -905,15 +901,14 @@ bool L2lidar::LidarStartRotation(void)
 }
 
 //--------------------------------------------------------------------
-//  LidarStopRotation
-//  Send a standby command to the L2
-//  This causes the L2 to stop the motors and go into low power mode
-//  Issues have been seen with not being able to bring the L2
-//  out of standby mode without a power cycle
+//  GetWorkMode
+//  The L2 parasm packet is the only know source of the current L2 workmode
+//  The decodeL2Params will emit the signal that the latestWorkmode_
+//  settings has been received.
 //--------------------------------------------------------------------
-bool L2lidar::LidarStopRotation(void)
+bool L2lidar::GetWorkMode()
 {
-    // USER_CMD_STANDBY_TYPE, value = 1
+    // USER_CMD_VERSION_GET
 
     // set header
     LidarUserCtrlCmdPacket cmd;
@@ -921,63 +916,25 @@ bool L2lidar::LidarStopRotation(void)
                     sizeof(LidarUserCtrlCmdPacket));
 
     // set data
-    cmd.data.cmd_type = USER_CMD_STANDBY_TYPE;
-    cmd.data.cmd_value = 1;  // 1 puts the L2 into standby
+    cmd.data.cmd_type = USER_CMD_CONFIG_GET;
+    int value = 0;
+    cmd.data.cmd_value = value;  // value guess
 
     // set tail
     cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+
     cmd.tail.msg_type_check = 0;
-    cmd.tail.reserve[0] = 0xff; // known value from recorded command
-    cmd.tail.reserve[1] = 0x7f; // known value from recorded command
+    cmd.tail.reserve[0] = 0x0;
+    cmd.tail.reserve[1] = 0x0;
     cmd.tail.tail[0] = 0x00;
     cmd.tail.tail[1] = 0xff;
 
     // send packet
     if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Stop rotation failed";
         return false;
     }
 
     return true;
-}
-
-//--------------------------------------------------------------------
-//  LidarReset
-//  This causes the L2 to restart (should be equivalent to power cycle)
-//  Some workmode changes are only effective after a restart
-//  Note:
-//   The L2 restart is immediate and does not send and ACK packet
-//   that confirms receipt of the command
-//--------------------------------------------------------------------
-bool L2lidar::LidarReset(void)
-{
-    // USER_CMD_RESET_TYPE
-
-    // set header
-    LidarUserCtrlCmdPacket cmd;
-    setPacketHeader(&cmd.header,LIDAR_USER_CMD_PACKET_TYPE,
-                    sizeof(LidarUserCtrlCmdPacket));
-
-    // set data
-    cmd.data.cmd_type = USER_CMD_RESET_TYPE;
-    cmd.data.cmd_value = 1;
-
-    // set tail
-    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
-    cmd.tail.msg_type_check = 0;
-    cmd.tail.reserve[0] = 0xff; // known value from recorded command
-    cmd.tail.reserve[1] = 0x7f; // known value from recorded command
-    cmd.tail.tail[0] = 0x00;
-    cmd.tail.tail[1] = 0xff;
-
-    // send packet
-    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Rest cmd failed";
-        return false;
-    }
-
-
-   return true;
 }
 
 //--------------------------------------------------------------------
@@ -1020,7 +977,6 @@ bool L2lidar::LidarGetVersion(void)
 
     // send packet
     if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Get Version cmd failed";
         return false;
     }
 
@@ -1028,118 +984,184 @@ bool L2lidar::LidarGetVersion(void)
 }
 
 //--------------------------------------------------------------------
-//  GetL2Params
-//  This sends a request to the L2 for a Parameters packet
-//  The parameters packet are not defined
-//  This is part of diagnsotic to undertand what they might be
+//  LidarReset
+//  This causes the L2 to restart (should be equivalent to power cycle)
+//  Some workmode changes are only effective after a restart
+//  Note:
+//   The L2 restart is immediate and does not send and ACK packet
+//   that confirms receipt of the command
 //--------------------------------------------------------------------
-bool L2lidar::GetL2Params(void)
+bool L2lidar::LidarReset(void)
 {
-    // USER_CMD_VERSION_GET
+    // USER_CMD_RESET_TYPE
 
+    // set header
+    LidarUserCtrlCmdPacket cmd;
+    setPacketHeader(&cmd.header,LIDAR_USER_CMD_PACKET_TYPE,
+                    sizeof(LidarUserCtrlCmdPacket));
+
+    // set data
+    cmd.data.cmd_type = USER_CMD_RESET_TYPE;
+    cmd.data.cmd_value = 1;
+
+    // set tail
+    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+    cmd.tail.msg_type_check = 0;
+    cmd.tail.reserve[0] = 0xff; // known value from recorded command
+    cmd.tail.reserve[1] = 0x7f; // known value from recorded command
+    cmd.tail.tail[0] = 0x00;
+    cmd.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
+        return false;
+    }
+
+
+    return true;
+}
+
+//--------------------------------------------------------------------
+//  LidarStartRotation
+//  sends a run command to the L2
+//  if the L2 was in standby then it should start scanning
+//  it can take >20 seconds to come up to speed and start
+//  sending point cloud data
+//--------------------------------------------------------------------
+bool L2lidar::LidarStartRotation(void)
+{
+    // USER_CMD_STANDBY_TYPE, value = 0
+
+    // set header
+    LidarUserCtrlCmdPacket cmd;
+    setPacketHeader(&cmd.header,LIDAR_USER_CMD_PACKET_TYPE,
+                    sizeof(LidarUserCtrlCmdPacket));
+
+    // set data
+    cmd.data.cmd_type = USER_CMD_STANDBY_TYPE;
+    cmd.data.cmd_value = 0;
+    
+    // set tail
+    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+    cmd.tail.msg_type_check = 0;
+    cmd.tail.reserve[0] = 0xff; // known value from recorded command
+    cmd.tail.reserve[1] = 0x7f; // known value from recorded command
+    cmd.tail.tail[0] = 0x00;
+    cmd.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
+        return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------------------
+//  LidarStopRotation
+//  Send a standby command to the L2
+//  This causes the L2 to stop the motors and go into low power mode
+//  Issues have been seen with not being able to bring the L2
+//  out of standby mode without a power cycle
+//--------------------------------------------------------------------
+bool L2lidar::LidarStopRotation(void)
+{
+    // USER_CMD_STANDBY_TYPE, value = 1
+
+    // set header
+    LidarUserCtrlCmdPacket cmd;
+    setPacketHeader(&cmd.header,LIDAR_USER_CMD_PACKET_TYPE,
+                    sizeof(LidarUserCtrlCmdPacket));
+
+    // set data
+    cmd.data.cmd_type = USER_CMD_STANDBY_TYPE;
+    cmd.data.cmd_value = 1;  // 1 puts the L2 into standby
+
+    // set tail
+    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+    cmd.tail.msg_type_check = 0;
+    cmd.tail.reserve[0] = 0xff; // known value from recorded command
+    cmd.tail.reserve[1] = 0x7f; // known value from recorded command
+    cmd.tail.tail[0] = 0x00;
+    cmd.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
+        return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------------------
+//  sendLatencyID
+//  sets packet sequence ID
+//  This is used in measuring the latency of packets over the UDP interface
+//  Note: Command packets and User command packets use the same packet structure
+//--------------------------------------------------------------------
+bool L2lidar::sendLatencyID(uint32_t SeqID)
+{
     // set header
     LidarUserCtrlCmdPacket cmd;
     setPacketHeader(&cmd.header,LIDAR_COMMAND_PACKET_TYPE,
                     sizeof(LidarUserCtrlCmdPacket));
 
     // set data
-    cmd.data.cmd_type = CMD_PARAM_GET;
-    cmd.data.cmd_value = 3;  // value guess
+    cmd.data.cmd_type = CMD_LATENCY_TYPE;
+    cmd.data.cmd_value = SeqID;
 
     // set tail
     cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
-
     cmd.tail.msg_type_check = 0;
+    cmd.tail.reserve[0] = 0;
+    cmd.tail.reserve[1] = 0;
+    cmd.tail.tail[0] = 0x00;
+    cmd.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
+        return false;
+    }
+
+    latencyMap[SeqID] = latencyTimer.nsecsElapsed();
+    return true;
+}
+
+//--------------------------------------------------------------------
+//  SetL2MAC
+//
+//--------------------------------------------------------------------
+bool L2lidar::SetL2MAC(LidarMacAddressConfig MACsettings)
+{
+    // set header
+    LidarMacAddressConfigPacket cmd;
+    setPacketHeader(&cmd.header,LIDAR_MAC_ADDRESS_CONFIG_PACKET_TYPE,
+                    sizeof(LidarMacAddressConfigPacket));
+
+    // set data
+    cmd.data.mac[0] = MACsettings.mac[0];
+    cmd.data.mac[1] = MACsettings.mac[1];
+    cmd.data.mac[2] = MACsettings.mac[2];
+    cmd.data.mac[3] = MACsettings.mac[3];
+    cmd.data.mac[4] = MACsettings.mac[4];
+    cmd.data.mac[5] = MACsettings.mac[5];
+    cmd.data.reserve[0] = MACsettings.reserve[0];
+    cmd.data.reserve[1] = MACsettings.reserve[1];
+
+    // set tail
+    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+    cmd.tail.msg_type_check = 0x0;
     cmd.tail.reserve[0] = 0x0;
     cmd.tail.reserve[1] = 0x0;
     cmd.tail.tail[0] = 0x00;
     cmd.tail.tail[1] = 0xff;
 
     // send packet
-    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarUserCtrlCmdPacket))) {
-        qDebug() << "Get Params cmd failed";
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarMacAddressConfigPacket))) {
         return false;
     }
 
     return true;
-}
-
-//--------------------------------------------------------------------
-//  SetWorkMode
-//  This commands only sets the workmode in the L2.  It does not restart
-//  the L2.  This must be done separately for certain workmode changes
-//  Note:
-//      Immediately effective workmode settings that have observed are:
-//          Std/Wide FOV
-//          IMU disable/enable
-//      Effective after restart or reset
-//          2D/3D mode
-//          serial/UPD mode
-//          start automatically or wait for start command after power on
-//
-//  NOTE: This uses an undocumented command to perform this function
-//  It was discovered using Wireshark to see how the
-//  Unitree software sends commands
-//  This is how the Unitree software sets workmode
-//  The define LIDAR_PARAM_WORK_MODE_TYPE
-//  was added to be consistent with the documented commands
-//
-//--------------------------------------------------------------------
-bool L2lidar::SetWorkMode(uint32_t mode)
-{
-    // set header
-    LidarWorkModeConfigPacket cmd;
-    setPacketHeader(&cmd.header,LIDAR_PARAM_WORK_MODE_TYPE,
-                    sizeof(LidarWorkModeConfigPacket));
-
-    // set data
-    cmd.data.mode = mode;
-
-    // set tail
-    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
-    cmd.tail.msg_type_check = 0x00007fff;
-    cmd.tail.reserve[0] = 0x5b; // known value from recorded command
-    cmd.tail.reserve[1] = 0x5f; // known value from recorded command
-    cmd.tail.tail[0] = 0x00;
-    cmd.tail.tail[1] = 0xff;
-
-    // send packet
-    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarWorkModeConfigPacket))) {
-        qDebug() << "Set work mode failed";
-        return false;
-    }
-
-    return true;
-}
-
-//--------------------------------------------------------------------
-//  SetWorkMode
-//  The L2 parasm packet is the only know source of the current L2 workmode
-//  The decodeL2Params will emit the signal that the latestWorkmode_
-//  settings has been received.
-//--------------------------------------------------------------------
-bool L2lidar::GetWorkMode()
-{
-    return GetL2Params();
-}
-
-//--------------------------------------------------------------------
-//  LidarSetConfig
-//  This command does not communicate with the L2
-//  It saves the IP setup required to connect to the
-//  L2 through UDP.
-//  This will be extended to include the serial com port
-//  if UART communications when is implemented
-//  This must be set before the L2connect() method is used.
-//--------------------------------------------------------------------
-void L2lidar::LidarSetCmdConfig(QString srcIP, uint32_t srcPort,
-                                QString dstIP, uint32_t dstPort)
-{
-    src_ip = srcIP;
-    src_port = srcPort;
-    dst_ip = dstIP;
-    dst_port = dstPort;
-    return;
 }
 
 //--------------------------------------------------------------------
@@ -1247,9 +1269,140 @@ bool L2lidar::setL2UDPconfig(QString hostIP, uint32_t hostPort,
 
     // send packet
     if(!SendPacket((uint8_t *) &config, sizeof(LidarIpAddressConfigPacket))) {
-        qDebug() << "Set UDP config failed";
         return false;
     }
+
+    return true;
+}
+
+//--------------------------------------------------------------------
+//  SetWorkMode
+//  This commands only sets the workmode in the L2.  It does not restart
+//  the L2.  This must be done separately for certain workmode changes
+//  Note:
+//      Immediately effective workmode settings that have observed are:
+//          Std/Wide FOV
+//          IMU disable/enable
+//      Effective after restart or reset
+//          2D/3D mode
+//          serial/UPD mode
+//          start automatically or wait for start command after power on
+//
+//  NOTE: This uses an undocumented command to perform this function
+//  It was discovered using Wireshark to see how the
+//  Unitree software sends commands
+//  This is how the Unitree software sets workmode
+//  The define LIDAR_PARAM_WORK_MODE_TYPE
+//  was added to be consistent with the documented commands
+//
+//--------------------------------------------------------------------
+bool L2lidar::SetWorkMode(uint32_t mode)
+{
+    // set header
+    LidarWorkModeConfigPacket cmd;
+    setPacketHeader(&cmd.header,LIDAR_PARAM_WORK_MODE_TYPE,
+                    sizeof(LidarWorkModeConfigPacket));
+
+    // set data
+    cmd.data.mode = mode;
+
+    // set tail
+    cmd.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &cmd.data, sizeof(cmd.data));
+    cmd.tail.msg_type_check = 0x00007fff;
+    cmd.tail.reserve[0] = 0x5b; // known value from recorded command
+    cmd.tail.reserve[1] = 0x5f; // known value from recorded command
+    cmd.tail.tail[0] = 0x00;
+    cmd.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &cmd, sizeof(LidarWorkModeConfigPacket))) {
+        return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------------------
+//  LidarSetConfig
+//  This command does not communicate with the L2
+//  It saves the IP setup required to connect to the
+//  L2 through UDP.
+//  This will be extended to include the serial com port
+//  if UART communications when is implemented
+//  This must be set before the L2connect() method is used.
+//--------------------------------------------------------------------
+void L2lidar::LidarSetCmdConfig(QString srcIP, uint32_t srcPort,
+                                QString dstIP, uint32_t dstPort)
+{
+    src_ip = srcIP;
+    src_port = srcPort;
+    dst_ip = dstIP;
+    dst_port = dstPort;
+    return;
+}
+
+//--------------------------------------------------------------------
+//  SyncL2Clock()
+//  SyncL2Clock(TimeStamp timestamp)
+//  Sets the L2 clock either to the current system time or
+//  the passed timestamp parameter
+//--------------------------------------------------------------------
+bool L2lidar::SyncL2Clock()
+{
+    // set header
+    LidarTimeStampPacket pkt;
+    setPacketHeader(&pkt.header,LIDAR_TIME_STAMP_PACKET_TYPE,
+                    sizeof(LidarTimeStampPacket));
+
+    // set data
+    TimeStamp Now;
+    unilidar_sdk2::getSystemTimeStamp(Now);
+    pkt.data.data.sec = Now.sec;
+    pkt.data.data.nsec = Now.nsec;
+
+    // set tail
+    pkt.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &pkt.data, sizeof(pkt.data));
+    pkt.tail.msg_type_check = 0;
+    pkt.tail.reserve[0] = 0;
+    pkt.tail.reserve[1] = 0;
+    pkt.tail.tail[0] = 0x00;
+    pkt.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &pkt, sizeof(LidarTimeStampPacket))) {
+        return false;
+    }
+
+    mLastTimestamp = (double)Now.sec + (Now.nsec * 1.0e-9);
+
+    return true;
+}
+
+bool L2lidar::SyncL2Clock(TimeStamp timestamp)
+{
+    // set header
+    LidarTimeStampPacket pkt;
+    setPacketHeader(&pkt.header,LIDAR_TIME_STAMP_PACKET_TYPE,
+                    sizeof(LidarTimeStampPacket));
+
+    // set data
+    pkt.data.data.sec = timestamp.sec;
+    pkt.data.data.nsec = timestamp.nsec;
+
+    // set tail
+    pkt.tail.crc32 = unilidar_sdk2::crc32((uint8_t *) &pkt.data, sizeof(pkt.data));
+    pkt.tail.msg_type_check = 0;
+    pkt.tail.reserve[0] = 0;
+    pkt.tail.reserve[1] = 0;
+    pkt.tail.tail[0] = 0x00;
+    pkt.tail.tail[1] = 0xff;
+
+    // send packet
+    if(!SendPacket((uint8_t *) &pkt, sizeof(LidarTimeStampPacket))) {
+        return false;
+    }
+
+    mLastTimestamp = (double)timestamp.sec + (timestamp.nsec * 1.0e-9);
 
     return true;
 }
@@ -1279,13 +1432,11 @@ bool L2lidar::SendUDPpacket(uint8_t *Buffer,uint32_t Len)
     QByteArray byteArray(reinterpret_cast<const char*>(Buffer), Len);
 
     if(L2socket.state()!= QAbstractSocket::BoundState) {
-        qDebug() << "Socket not open";
         return false;
     }
     // write to target ip:port
     qint64 bytesWritten = L2socket.writeDatagram(byteArray,QHostAddress(dst_ip),dst_port);
     if( bytesWritten == -1) {
-        qDebug() << "Error sending datagram:" << L2socket.errorString();
         return false;
     }
     return true;
@@ -1350,30 +1501,27 @@ bool L2lidar::ConnectL2()
     if(!UseSerial) {
         // Receive packets from L2 UDP
         if (!L2socket.bind(QHostAddress(src_ip),src_port)) {
-            qWarning() << "Failed to bind UDP socket to port" << src_port;
             return false;
         }
 
         // Connect readyRead signal
         connect(&L2socket, &QUdpSocket::readyRead, this, &L2lidar::readUDPpendingDatagrams);
 
+        // readyread may not trigger until after a datagram is first sent
+        // on the socket. Unless one of the timer driven processes
+        // like latency measurement, or timesync is enabled or
+        // a command is sent then nothing will ever be received
+        // This is an issue with Qt's implementation of readReady()
+        // Sending a packet doesn't even need to be received by the L2
+        // It just needs to be sent.
+        GetWorkMode(); // dummy request to unblock readyRead
+
         // setup for latency measurements
-        latestLatency_.Average = -1.0; // invalid
-        latestLatency_.Variance = 0.0;   // invalid
-        latestLatency_.lastMeasurement = -1.0;  // inva;od
-        latestLatency_.min = 999.99; // invlaid
-        latestLatency_.max = -1.0; // invlaid
-
-        connect(&LatencyTimer, &QTimer::timeout,
-                this, &L2lidar::requestRTTLatencyMeasurement);
-
-        LatencyTimer.start(1000); // first timeout is 1 sec
-                                // to allow everything to statup
-
-        connect(&TimerSyncTimer, &QTimer::timeout,
-                this, &L2lidar::SyncClock);
+        StartLatency();
 
         if(mL2EnableSyncHost && mL2TSsyncRate>0){
+            connect(&TimerSyncTimer, &QTimer::timeout,
+                    this, &L2lidar::SyncClock);
             TimerSyncTimer.start(mL2TSsyncRate);
         } else {
             TimerSyncTimer.stop();
@@ -1423,6 +1571,37 @@ bool L2lidar::ConnectL2()
 }
 
 //--------------------------------------------------------------------
+//  StartLatency
+//--------------------------------------------------------------------
+void L2lidar::StartLatency()
+{
+    // setup for latency measurements
+    latestLatency_.Average = -1.0; // invalid
+    latestLatency_.Variance = 0.0;   // invalid
+    latestLatency_.lastMeasurement = -1.0;  // inva;od
+    latestLatency_.min = 999.99; // invlaid
+    latestLatency_.max = -1.0; // invlaid
+
+    connect(&LatencyTimer, &QTimer::timeout,
+            this, &L2lidar::requestRTTLatencyMeasurement);
+
+    LatencyTimer.start(1000); // first timeout is 1 sec
+    // to allow everything to statup
+}
+
+//--------------------------------------------------------------------
+//  StopLatency
+//--------------------------------------------------------------------
+void L2lidar::StopLatency()
+{
+    disconnect(&LatencyTimer, &QTimer::timeout,
+            this, &L2lidar::requestRTTLatencyMeasurement);
+
+    LatencyTimer.stop(); // first timeout is 1 sec
+    // to allow everything to statup
+}
+
+//--------------------------------------------------------------------
 //  DisconnectL2
 //--------------------------------------------------------------------
 void L2lidar::DisconnectL2()
@@ -1439,8 +1618,7 @@ void L2lidar::DisconnectL2()
         latestLatency_.min = 999.99; // invlaid
         latestLatency_.max = -1.0; // invlaid
 
-        disconnect(&LatencyTimer, &QTimer::timeout,
-                this, &L2lidar::requestRTTLatencyMeasurement);
+        StopLatency();
 
         // end timebase syncing
         TimerSyncTimer.stop();

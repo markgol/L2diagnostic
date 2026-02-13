@@ -161,6 +161,7 @@ public slots:
     // this is in response to set view button in the config dialog
     void handleResetView();
     void handleConfigureUDP();
+    void handleSetL2MAC();
     void sendSetWorkmode();
     void sendGetL2Workmode();
     void sendReset();
@@ -186,6 +187,9 @@ private slots:
     void ClosedWorkmodeDialog();
 
 private:
+    // helper conversion functions
+    QByteArray convertMacStringToByteArray(const QString &macString);
+
     // Application MainWindow ui
     Ui::MainWindow* ui;
 

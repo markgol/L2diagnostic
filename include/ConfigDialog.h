@@ -48,6 +48,7 @@
 //  V0.3.10 2026-02-02  Added enable latency measurement checkbobx
 //                      Adjusted sizing of ControlsDock and ConfigDialog
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
+//  V0.4.0  2026-02-11  Added set L2 MAC address
 //
 //--------------------------------------------------------
 
@@ -101,6 +102,10 @@ public:
         connect(ui.btnConfigureUDP, &QPushButton::clicked,
                 this, &ConfigDialog::ConfigureUDP);
 
+        // Get L2 UDP config
+        connect(ui.btnGetL2config, &QPushButton::clicked,
+                this, &ConfigDialog::SetL2MAC);
+
         // Reasonable defaults / limits
         // UDP ports
         ui.srcPortSpin->setRange(1, 65535);
@@ -139,6 +144,11 @@ public:
     uint32_t getDSTport() const
     {
         return static_cast<uint32_t>(ui.dstPortSpin->value());
+    }
+
+    QString GetMAC() const
+    {
+        return ui.editMAC->text().trimmed();
     }
 
     //--------------------------------------------------------
@@ -295,6 +305,11 @@ public:
         ui.dstPortSpin->setValue(p);
     }
 
+    void SetMAC(const QString& l2MAC)
+    {
+        ui.editMAC->setText(l2MAC);
+    }
+
     //--------------------------------------------------------
     // Application throttling parameters
     //--------------------------------------------------------
@@ -425,11 +440,13 @@ public:
 signals:
     void requestViewReset();
     void requestConfigureUDP();
+    void requestSetL2MAC();
 
 
 private slots:
     void ResetPCview();
     void ConfigureUDP();
+    void SetL2MAC();
 
 
 private:

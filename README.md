@@ -59,6 +59,16 @@ on the github repo; https://github.com/markgol/L2diagnostic
 		To run on OpeGLES system like the RPI5.  You must start the app with a command line argument like:
 			L2diagnostic OpenGLES
 		If you don't you it will operate properly and likely crash.
+	V0.4.1
+		Set MAC address added
+		More code cleanup
+		Removed debug output
+		Decode all known packets (including 2 that have no been onserved)
+		Added send to start packet receive (Qt needed a send UDP before it could start receiving packets)
+		Added code to stop QPA theme warnings
+		Allow disable of graphics display which allows operation on system without GPU support, use command line:
+			L2diagnsotics No Graphics
+		
 
 	Current Status
 		UDP only. (serial workmode planned for later release)
@@ -77,12 +87,14 @@ on the github repo; https://github.com/markgol/L2diagnostic
 		PointCloudWindow class useable in other apps
 		IMU orientation correction for L2 pose applied to point cloud data (optional)
 		Set UDP configuration in L2 (requires restart of the L2 and restart of the app)
+		Set MAC address of L2 (requires restart of the L2 and restart of the app)
 		Measurement of RTT latency (instanteous, average, minimum, maximu, variance)
 		Correction of L2 timestamp to account for incorrect time clock on the L2
 			(L2 time clock reports 1 second for every 2 real world seconds)
 		Sync the L2 to the host time at a user settable rate (default 20Hz)
 		Get and set L2 workmode
-		Get L2 parameters ( the only use found for this was retrieving the current workmode)
+		Get L2 parameters
+		Allow use on system without GPU support (disables the grpahics windows)
 		Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform
 		Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform
 		Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform

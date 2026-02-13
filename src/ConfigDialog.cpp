@@ -39,6 +39,7 @@
 //  V0.3.10 2026-02-02  Added enable latency measurement checkbobx
 //                      Adjusted sizing of ControlsDock and ConfigDialog
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
+//  V0.4.0  2026-02-11  Added set L2 MAC address
 //
 //--------------------------------------------------------
 
@@ -70,11 +71,17 @@
 //--------------------------------------------------------
 void ConfigDialog::ConfigureUDP()
 {
-    // Distance
-    // Yaw
-    // Pitch
-
     emit requestConfigureUDP();
+
+}
+
+//--------------------------------------------------------
+//  private slot
+//  ConfigureUDP
+//--------------------------------------------------------
+void ConfigDialog::SetL2MAC()
+{
+    emit requestSetL2MAC();
 
 }
 
@@ -84,12 +91,7 @@ void ConfigDialog::ConfigureUDP()
 //--------------------------------------------------------
 void ConfigDialog::ResetPCview()
 {
-    // Distance
-    // Yaw
-    // Pitch
-
     emit requestViewReset();
-
 }
 
 //--------------------------------------------------------

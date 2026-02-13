@@ -52,6 +52,7 @@
 //                          OpenGLES V3.0 is used
 //                      Added error checking for intializeGL()
 //                      Saving the point time got lost, added back in
+//  V0.4.1  2026-02-11  Remove Qdebug statements
 //
 //--------------------------------------------------------
 
@@ -233,12 +234,12 @@ void PointCloudWindow::initializeGL()
         mInitializeGLsuccess = false;
         return;
     }
-    auto ctx = QOpenGLContext::currentContext();
-    Q_ASSERT(ctx);
+    // auto ctx = QOpenGLContext::currentContext();
+    // Q_ASSERT(ctx);
 
-    qDebug() << "OpenGL:" << ctx->format().majorVersion()
-             << ctx->format().minorVersion()
-             << "GLES?" << ctx->isOpenGLES();
+    // qDebug() << "OpenGL:" << ctx->format().majorVersion()
+    //          << ctx->format().minorVersion()
+    //          << "GLES?" << ctx->isOpenGLES();
 
     initializeOpenGLFunctions();
 
@@ -256,7 +257,7 @@ void PointCloudWindow::initializeGL()
     glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 
     // mOpenGLES is set when the class is created
-    // It shoudl be set to match the version of OpenGL
+    // It should be set to match the version of OpenGL
     // on the system
     //      mOpenGLES   true  OpenGL ES 3.0
     //                  false OpenGL Core 3.3
@@ -404,7 +405,7 @@ void PointCloudWindow::initializeGL()
     }
 
     if (!m_program.link()) {
-        qDebug() << m_program.log();
+        //qDebug() << m_program.log();
         mInitializeGLsuccess = false;
         return;
     }
@@ -623,12 +624,6 @@ void PointCloudWindow::uploadAccumulatedPoints()
 //--------------------------------------------------------
 void PointCloudWindow::setPointCloud(const QVector<GLPoint>& cloud)
 {
-    qDebug() << "setPointCloud:"
-             << "exposed=" << isExposed()
-             << "vbo=" << m_vbo.isCreated()
-             << "glReady=" << mInitializeGLsuccess
-             << "points=" << cloud.size();
-
     if (!m_vbo.isCreated())
         return;
 

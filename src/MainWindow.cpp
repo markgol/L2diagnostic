@@ -169,7 +169,7 @@
 #include <QDateTime>
 #include <QSettings>
 #include <QStandardPaths>
-#include <QDebug>
+//#include <QDebug>
 #include <QMessageBox>
 //--------------------------------------------------------
 //  Project specific includes not part of MainWindow.h
@@ -244,9 +244,13 @@ MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
     connect(&config, &ConfigDialog::requestViewReset,
             this, &MainWindow::handleResetView);
 
-    // connect config request from set view button
+    // connect config request from Set L2 UDP config button
     connect(&config, &ConfigDialog::requestConfigureUDP,
             this, &MainWindow::handleConfigureUDP);
+
+    // connect config request Get L2 UDP config button
+    connect(&config, &ConfigDialog::requestSetL2MAC,
+            this, &MainWindow::handleSetL2MAC);
 
     ShowWindows(); // show windows effects all windows including point cloud window
 }
@@ -469,13 +473,102 @@ void MainWindow::handleConfigureUDP()
     if(!result) return;
     if(Hip[3]<0 || Hip[3]>255) return;
 
-    l2lidar.setL2UDPconfig(hostIP, hostPort, LidarIP, LidarPort);
-    // add message box to restart app and cycle power on L2
+    if(l2lidar.setL2UDPconfig(hostIP, hostPort, LidarIP, LidarPort)) {
+        QMessageBox msgBox;
+        msgBox.setText("Restart application");
+        msgBox.setInformativeText("L2 must be powered cycle and app restarted");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    } else {
+        QMessageBox msgBox;
+        msgBox.setText("command failed");
+        msgBox.setInformativeText("L2 is not turned on or not connected");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
+}
+
+//--------------------------------------------------------
+//  handleConfigureUDP from config dialog Configure UDP button
+//  This requires a power cycle of the L2
+//--------------------------------------------------------
+void MainWindow::handleSetL2MAC()
+{
+    LidarMacAddressConfig MACconfig {};
+    QString MACstring;
+    QByteArray MACid;
+    MACstring = config.GetMAC();
+
+    MACid = convertMacStringToByteArray(MACstring);
+    if(MACid.size()!=6) {
+        // bad format
+        QMessageBox msgBox;
+        msgBox.setText("MAC address NOT SET");
+        msgBox.setInformativeText("This is not a MAC address\nformat should 6 hex values separated\nby :");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+        return;
+    }
+
+    if(!(MACid[0] & 0x02) || (MACid[0] & 0x01)) {
+        // not a locally managed and unicast cast MAC ID
+        QMessageBox msgBox;
+
+        msgBox.setWindowTitle("Confirmation required");
+        msgBox.setText("First hex value bit 0x02 must be 1 for locally managed MAC\nFirst hex value bit 0x01 must be 0 for unicast device\nDo you really want to proceed?");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::No);
+
+        // Execute the message box and capture the user's response
+        int ret = msgBox.exec();
+
+        if(ret == QMessageBox::No ) {
+            return;
+        }
+    }
+
+    MACconfig.mac[0] = MACid[0];
+    MACconfig.mac[1] = MACid[1];
+    MACconfig.mac[2] = MACid[2];
+    MACconfig.mac[3] = MACid[3];
+    MACconfig.mac[4] = MACid[4];
+    MACconfig.mac[5] = MACid[5];
+    MACconfig.reserve[0] = 0;
+    MACconfig.reserve[1] = 0;
+
+    if(!l2lidar.SetL2MAC(MACconfig)){
+        QMessageBox msgBox;
+        msgBox.setText("command failed");
+        msgBox.setInformativeText("L2 is not turned on or not connected");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
+
     QMessageBox msgBox;
-    msgBox.setText("Restart application");
-    msgBox.setInformativeText("L2 must be powered cycle and app restarted");
+    msgBox.setWindowTitle("Settting MAC");
+    msgBox.setText("This requires a rest or power cycle to take effect");
     msgBox.setStandardButtons(QMessageBox::Ok);
     msgBox.exec();
+}
+
+//--------------------------------------------------------
+// convertMacStringToByteArray
+// helper function
+//--------------------------------------------------------
+QByteArray MainWindow::convertMacStringToByteArray(const QString &macString) {
+    QByteArray byteArray;
+    QStringList macParts = macString.split(':');
+
+    for (const QString &part : macParts) {
+        bool ok;
+        byteArray.append(part.toUInt(&ok, 16)); // Convert hex string to byte
+        if (!ok) {
+            //qWarning() << "Invalid MAC address part:" << part;
+            return QByteArray(); // Return empty if conversion fails
+        }
+    }
+
+    return byteArray;
 }
 
 //--------------------------------------------------------
@@ -931,7 +1024,7 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
 
     Frame frame;
 
-    // convert latestL2 poin cloud packet to Frame of cloud points
+    // convert latestL2 point cloud packet to Frame of cloud points
     if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust)) {
         // if packet is missing or IMU pose correction failed
         // with mIMUadjust is true

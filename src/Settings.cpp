@@ -55,6 +55,7 @@
 //                      User must explicitly set PC viewer to enabled
 //                      in config dialog if this is first time run or
 //                      PC viewer was closed the at last time run.
+// V0.4.1   2026-02-12  Added MAC address
 //
 //--------------------------------------------------------
 
@@ -98,7 +99,7 @@
 #include <QDateTime>
 #include <QSettings>
 #include <QStandardPaths>
-#include <QDebug>
+//#include <QDebug>
 
 //#include "unitree_lidar_protocol.h"
 
@@ -134,6 +135,7 @@ void MainWindow::saveSettings(bool resetRequested)
     settings.setValue("dstIP", config.getDSTip());
     settings.setValue("srcPort", config.getSRCport());
     settings.setValue("dstPort", config.getDSTport());
+    settings.setValue("MACaddress",config.GetMAC());
     settings.endGroup();
 
     // L2 setup
@@ -228,6 +230,7 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setDSTip(settings.value("dstIP", "192.168.1.62").toString()); // factory default
         config.setSRCport(settings.value("srcPort", 6201).toUInt()); // factory default
         config.setDSTport(settings.value("dstPort", 6101).toUInt()); // factory default
+        config.SetMAC(settings.value("MACaddress", "0c:29:ab:7c:00:01").toString());
     settings.endGroup();
 
     // L2 setup
