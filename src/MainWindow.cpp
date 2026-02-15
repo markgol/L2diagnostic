@@ -537,9 +537,10 @@ void MainWindow::handleSetL2MAC()
     MACconfig.reserve[1] = 0;
 
     if(!l2lidar.SetL2MAC(MACconfig)){
+        QString errorstr = l2lidar.GetLastUDPError();
         QMessageBox msgBox;
-        msgBox.setText("command failed");
-        msgBox.setInformativeText("L2 is not turned on or not connected");
+        msgBox.setText("Set MAC failed");
+        msgBox.setInformativeText("Error: "+errorstr);
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.exec();
     }
@@ -1114,6 +1115,7 @@ void MainWindow::openConfig()
         l2lidar.EnableL2TimeCorrection(config.isL2TimeCorrectionEnabled());
         l2lidar.EnableL2TSsync(config.isL2TsyncHostEnabled());
         l2lidar.SetL2TSsyncRate(config.getL2syncRate());
+
         // latency measurements
         l2lidar.EnableLatencyMeasure(config.isLatencyEnabled());
 
@@ -1223,9 +1225,10 @@ void MainWindow::L2connect()
     l2lidar.EnableLatencyMeasure(config.isLatencyEnabled());
 
     if(!l2lidar.ConnectL2()) {
+        QString errorstr = l2lidar.GetLastUDPError();
         QMessageBox msgBox;
-        msgBox.setText("Connect to L2 LiDAR");
-        msgBox.setInformativeText("Could not open");
+        msgBox.setText("Connect failed");
+        msgBox.setInformativeText("Error: "+errorstr);
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.exec();
         return;
@@ -1259,7 +1262,14 @@ void MainWindow::L2disconnect()
 //--------------------------------------------------------
 void MainWindow::startRotation()
 {
-    l2lidar.LidarStartRotation();
+    if(!l2lidar.LidarStartRotation()) {
+        QString errorstr = l2lidar.GetLastUDPError();
+        QMessageBox msgBox;
+        msgBox.setText("Start rotation failed");
+        msgBox.setInformativeText("Error: "+errorstr);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
     return;
 }
 
@@ -1269,7 +1279,14 @@ void MainWindow::startRotation()
 //--------------------------------------------------------
 void MainWindow::stopRotation()
 {
-    l2lidar.LidarStopRotation();
+    if(!l2lidar.LidarStopRotation()) {
+        QString errorstr = l2lidar.GetLastUDPError();
+        QMessageBox msgBox;
+        msgBox.setText("Stop rotation failed");
+        msgBox.setInformativeText("Error: "+errorstr);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
     return;
 }
 
@@ -1279,7 +1296,14 @@ void MainWindow::stopRotation()
 //--------------------------------------------------------
 void MainWindow::sendReset()
 {
-    l2lidar.LidarReset();
+    if(!l2lidar.LidarReset()) {
+        QString errorstr = l2lidar.GetLastUDPError();
+        QMessageBox msgBox;
+        msgBox.setText("L2 reset failed");
+        msgBox.setInformativeText("Error: "+errorstr);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
     return;
 }
 
@@ -1291,7 +1315,14 @@ void MainWindow::sendSetWorkmode()
 {
     uint32_t workmode;
     workmode = WorkMode.GetWorkmode();
-    l2lidar.SetWorkMode(workmode);
+    if(!l2lidar.SetWorkMode(workmode)){
+        QString errorstr = l2lidar.GetLastUDPError();
+        QMessageBox msgBox;
+        msgBox.setText("Set workmode failed");
+        msgBox.setInformativeText("Error: "+errorstr);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
     return;
 }
 
@@ -1303,7 +1334,15 @@ void MainWindow::sendGetL2Workmode()
 {
     // this will trigger a slot when the
     // the workmode is captured
-    l2lidar.GetWorkMode();
+    if(!l2lidar.GetWorkMode()){
+        QString errorstr = l2lidar.GetLastUDPError();
+        QMessageBox msgBox;
+        msgBox.setText("Get workmode failed");
+        msgBox.setInformativeText("Error: "+errorstr);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+
+    }
     return;
 }
 
@@ -1333,7 +1372,14 @@ void MainWindow::SyncL2Clock()
 //--------------------------------------------------------
 void MainWindow::getVersion()
 {
-    l2lidar.LidarGetVersion();
+    if(!l2lidar.LidarGetVersion()) {
+        QString errorstr = l2lidar.GetLastUDPError();
+        QMessageBox msgBox;
+        msgBox.setText("Request Version failed");
+        msgBox.setInformativeText("Error: "+errorstr);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
     return;
 }
 
@@ -1343,7 +1389,14 @@ void MainWindow::getVersion()
 //--------------------------------------------------------
 void MainWindow::GetL2Params()
 {
-    l2lidar.GetL2Params();
+    if(!l2lidar.GetL2Params()){
+        QString errorstr = l2lidar.GetLastUDPError();
+        QMessageBox msgBox;
+        msgBox.setText("Requets L2 params failed");
+        msgBox.setInformativeText("Error: "+errorstr);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
     // after ack recived you can use L2ParamsPacket()
     // to get
     return;

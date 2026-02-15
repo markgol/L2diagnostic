@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 0.4.1
+    VERSION 0.4.2
     LANGUAGES CXX
 )
 
@@ -121,17 +121,18 @@ if(UNIX AND NOT APPLE)
 	# for the Qt6 platform plugins
 
     if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
-        set(QT_PLATFORM_PLUGIN_PATH /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms)
+        set(QT_PLATFORM_PLUGIN_PATH /home/markstegall/Qt/6.10.2/gcc_64/plugins/platforms)
     elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
         set(QT_PLATFORM_PLUGIN_PATH /usr/lib/aarch64-linux-gnu/qt6/plugins/platforms)
     elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
         set(QT_PLATFORM_PLUGIN_PATH /usr/lib/aarch64-linux-gnu/qt6/plugins/platforms)
     endif()
-	
-	#set(QT_PLATFORM_PLUGIN_PATH /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms)
+
+    message(STATUS "QT_PLATFORM_PLUGIN_PATH: " ${QT_PLATFORM_PLUGIN_PATH})
 
     add_custom_target(appimage
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${APPDIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${APPDIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${APPDIR}/usr/bin
         COMMAND ${CMAKE_COMMAND} -E make_directory ${APPDIR}/usr/lib
 
@@ -144,6 +145,15 @@ if(UNIX AND NOT APPLE)
         #linuxdeploy does not find these
         COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${QT_PLATFORM_PLUGIN_PATH} ${APPDIR}/usr/lib
+        #COMMAND ${CMAKE_COMMAND} -E copy
+        #        ${QT_PLATFORM_PLUGIN_PATH}/libqxcb.so
+        #        ${APPDIR}/usr/lib
+        #COMMAND ${CMAKE_COMMAND} -E copy
+        #        ${QT_PLATFORM_PLUGIN_PATH}/libqvnc.so
+        #       ${APPDIR}/usr/lib
+        #COMMAND ${CMAKE_COMMAND} -E copy
+        #        ${QT_PLATFORM_PLUGIN_PATH}/libqwayland.so
+        #        ${APPDIR}/usr/lib
 
         # Run linuxdeploy with Qt plugin
         COMMAND linuxdeploy -v0
@@ -157,7 +167,7 @@ if(UNIX AND NOT APPLE)
         DEPENDS ${PROJECT_NAME}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 
-        #create bundle foler
+        #create bundle folder
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bundle
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bundle/docs
 

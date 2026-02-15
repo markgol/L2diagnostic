@@ -89,6 +89,11 @@
 //                      the Qt readyRead signal
 //                      Added decode for the 3 config packets, MAC, workmode, IPaddress
 //                      Sorted alphabetically in groups for public class members
+//  V0.4.2  2026-02-13  Bug correction, connectL2() mConnected was after all intialization
+//                      instead of just after the socket connection.  Moved to just after
+//                      socket connection where it belongs.
+//                      Added error string for communication connect failure
+//                      or send error
 //
 //--------------------------------------------------------
 
@@ -1329,7 +1334,7 @@ bool L2lidar::SetWorkMode(uint32_t mode)
 //  L2 through UDP.
 //  This will be extended to include the serial com port
 //  if UART communications when is implemented
-//  This must be set before the L2connect() method is used.
+//  This must be set before the connectL2() method is used.
 //--------------------------------------------------------------------
 void L2lidar::LidarSetCmdConfig(QString srcIP, uint32_t srcPort,
                                 QString dstIP, uint32_t dstPort)
@@ -1437,6 +1442,7 @@ bool L2lidar::SendUDPpacket(uint8_t *Buffer,uint32_t Len)
     // write to target ip:port
     qint64 bytesWritten = L2socket.writeDatagram(byteArray,QHostAddress(dst_ip),dst_port);
     if( bytesWritten == -1) {
+        stringErrorCOMM = L2socket.errorString();
         return false;
     }
     return true;
@@ -1501,8 +1507,11 @@ bool L2lidar::ConnectL2()
     if(!UseSerial) {
         // Receive packets from L2 UDP
         if (!L2socket.bind(QHostAddress(src_ip),src_port)) {
+            stringErrorCOMM = L2socket.errorString();
             return false;
         }
+
+        mConnected = true;
 
         // Connect readyRead signal
         connect(&L2socket, &QUdpSocket::readyRead, this, &L2lidar::readUDPpendingDatagrams);
@@ -1519,6 +1528,7 @@ bool L2lidar::ConnectL2()
         // setup for latency measurements
         StartLatency();
 
+        // setup host sync timer
         if(mL2EnableSyncHost && mL2TSsyncRate>0){
             connect(&TimerSyncTimer, &QTimer::timeout,
                     this, &L2lidar::SyncClock);
@@ -1527,7 +1537,6 @@ bool L2lidar::ConnectL2()
             TimerSyncTimer.stop();
         }
 
-        mConnected = true;
         return true;
 
     } else {

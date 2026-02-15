@@ -67,6 +67,8 @@
 //  V0.4.1  2026-02-11  Added Set MAC command
 //                      Added decode for the 3 config packets, MAC, workmode, IPaddress
 //                      Sorted alphabetically in groups for public class members
+//  V0.4.2  2026-02-13  Added error string for communication connect failure
+//                      or send error
 //
 //--------------------------------------------------------
 
@@ -203,6 +205,8 @@ public:
         QMutexLocker locker(&PacketMutex);
         return latestVersion_;
     }
+
+    const QString GetLastUDPError() {return stringErrorCOMM;}
 
     // packet stats from L2 (only updates when L2 socket connected)
     // These are not actually critical, only for reporting stats
@@ -400,6 +404,7 @@ private: // variables
     // workmode
     uint32_t latestWorkmode_ {256}; // 256 is invalid
 
-
+    // L2 connected
+    QString stringErrorCOMM {};
     bool mConnected {false}; // set true when connected to L2
 };

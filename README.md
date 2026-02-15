@@ -1,3 +1,4 @@
+Updated: 2026-02-14
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt
 file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it
@@ -68,7 +69,12 @@ on the github repo; https://github.com/markgol/L2diagnostic
 		Added code to stop QPA theme warnings
 		Allow disable of graphics display which allows operation on system without GPU support, use command line:
 			L2diagnsotics No Graphics
-		
+	V0.4.2
+		Added error messaging for UDP connection and send errors
+		Bug fix, L2L2lidar::connectL2()  was setting flag later than when it was suppoded to be set.
+		Added binary release for Ubuntu x86_64 and aarch64.  Note: These are executables only
+		and are not .appimage files.  They require Qt 6.10.2 to be installed before they will work.
+		.AppImage version are being worked on but not yet included.
 
 	Current Status
 		UDP only. (serial workmode planned for later release)
@@ -175,31 +181,38 @@ on the github repo; https://github.com/markgol/L2diagnostic
 	You may need to modify this batch file to match your exact Qt installation.
 	
 	buildInstall4Windows.bat
-		echo on
-		rem Save current directory
-		set ProjectDirTemp=%cd%
+	echo on
+	rem Save current directory
+	set ProjectDirTemp=%cd%
 
-		rem make sure the Qt environment is set
-		call C:\Qt\6.10.1\msvc2022_64\bin\qtenv2.bat
+	rem make sure the Qt environment is set
+	call C:\Qt\6.10.2\msvc2022_64\bin\qtenv2.bat
 
-		echo on
-		rem change back to original dir
-		cd /d %ProjectDirTemp%
+	echo on
+	rem change back to original dir
+	cd /d %ProjectDirTemp%
 
-		rem copy docs and license files to release directory
-		mkdir build\Desktop_Qt_6_10_1_MSVC2022_64bit\Release\docs
+	mkdir build\Desktop_Qt_6_10_2_MSVC2022_64bit\Release\bundle
+	rem copy docs and license files to release directory
+	mkdir build\Desktop_Qt_6_10_2_MSVC2022_64bit\Release\bundle\docs
 
-		copy docs build\Desktop_Qt_6_10_1_MSVC2022_64bit\Release\docs
-		copy read*.md build\Desktop_Qt_6_10_1_MSVC2022_64bit\Release
+	copy docs build\Desktop_Qt_6_10_2_MSVC2022_64bit\Release\bundle\docs
+	copy read*.md build\Desktop_Qt_6_10_2_MSVC2022_64bit\Release\bundle
 
-		rem copy all required dependencies to release directory
-		cd build\Desktop_Qt_6_10_1_MSVC2022_64bit\Release
+	rem copy all required dependencies to release directory
+	cd build\Desktop_Qt_6_10_2_MSVC2022_64bit\Release
+	copy L2diagnostic.exe bundle
+	cd bundle
 
-		windeployqt L2diagnostic.exe
+	windeployqt L2diagnostic.exe
 
-		rem change back to original dir
-		cd /d %ProjectDirTemp%
+	rem  The Release/bundle folder contains the files for the complete release
+	rem  It should be copied into to a folder such as L2diagnosticVa-b-c
+	rem that folder zipped as the final distribution file
+	rem
 
+	rem change back to original dir
+	cd /d %ProjectDirTemp%
 
 	LINUX RELEASE BUILDS (in progress)
 	
