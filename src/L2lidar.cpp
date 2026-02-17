@@ -94,6 +94,15 @@
 //                      socket connection where it belongs.
 //                      Added error string for communication connect failure
 //                      or send error
+//  V0.4.3  2026-02-16  Added more logic to the timestamping of the point cloud data
+//  V0.4.3  2026-02-16  Added more logic to the timestamping of the point cloud data
+//                          mL2EnableSyncHost && enableL2TimeStampFix
+//                              true  use L2 timestamping for each cloud point
+//                              false use system time for each cloud point
+//                      If adjust cloud packet using IMU is enabled
+//                      then is the point cloud packet is differnt from
+//                      IMU packet time by more than 50 msec the point cloud
+//                      packet will be dropped.
 //
 //--------------------------------------------------------
 
@@ -1776,6 +1785,8 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
     // Retrieve packet
     unilidar_sdk2::PointCloudUnitree cloud;
 
+    bool UseSystemTime = !(mL2EnableSyncHost && enableL2TimeStampFix);
+
     if(Frame3D) {
         // get latest 3D packet
         LidarPointDataPacket packet = Pcl3Dpacket();
@@ -1783,8 +1794,9 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
             // there is no latest packet
             return false;
         }
+
         unilidar_sdk2::parseFromPacketToPointCloud(
-            cloud, packet, true, 0, 100);
+            cloud, packet, UseSystemTime, 0, 100);
         time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
     } else {
         // get latest 2D packet
@@ -1793,8 +1805,9 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
             // there is no latest packet
             return false;
         }
+        // if !mL2EnableSyncHost then use system time (now)
         unilidar_sdk2::parseFromPacketPointCloud2D(
-            cloud, packet, true, 0, 100);
+            cloud, packet, UseSystemTime, 0, 100);
         time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
     }
 
@@ -1808,18 +1821,23 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
         }
 
         IMUtime = (double)Imu.data.info.stamp.sec +(double)Imu.data.info.stamp.nsec * 1e-9;
-        if(abs(time-IMUtime) < .010) {
+        if(abs(time-IMUtime) < 0.05) {
             adjustWithIMU = true;
             Quat.w = Imu.data.quaternion[0];
             Quat.x = Imu.data.quaternion[1];
             Quat.y = Imu.data.quaternion[2];
             Quat.z = Imu.data.quaternion[3];
         } else {
-            adjustWithIMU = false;
+            // if IMU adjustment requested and time differnce to high
+            // then drop packet
+            return false;
         }
     }
 
     frame.reserve(cloud.points.size());
+    float adjustedTime {0};
+
+    adjustedTime = cloud.stamp;
 
     for (auto& p : cloud.points)
     {
@@ -1832,7 +1850,7 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
             p.y,
             p.z,
             p.intensity,
-            p.time,
+            p.time+adjustedTime,
             p.ring
         });
     }

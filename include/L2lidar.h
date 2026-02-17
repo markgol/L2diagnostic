@@ -69,6 +69,10 @@
 //                      Sorted alphabetically in groups for public class members
 //  V0.4.2  2026-02-13  Added error string for communication connect failure
 //                      or send error
+//  V0.4.3  2026-02-16  Added more logic to the timestamping of the point cloud data
+//                          mL2EnableSyncHost && enableL2TimeStampFix
+//                              true  use L2 timestamping for each cloud point
+//                              false use system time for each cloud point
 //
 //--------------------------------------------------------
 
