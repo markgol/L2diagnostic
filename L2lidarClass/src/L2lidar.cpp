@@ -108,6 +108,7 @@
 //                      in a user app.  PCpoint.h has been changed to include this field.
 //  V1.0.0  2026-02-20  Separated L2lidar class from the L2diagnostic app and l2lidar_ros2 app
 //                      This is the initial release of the standalone L2lidar class
+//  V1.0.1  2026-02-21  Added [[maybe_unused]] to params for HandleRaw() packet decode
 //
 //--------------------------------------------------------
 
@@ -841,14 +842,20 @@ void L2lidar::decodeAck(const QByteArray& datagram, uint64_t Offset)
 //--------------------------------------------------------------------
 // Raw Packet Handler
 // This is called when the packet type is NOT:
-//          ACK
-//          VERSION
-//          IMU
-//          2D PC
-//          3D PC
+//          LIDAR_IMU_DATA_PACKET_TYPE
+//          LIDAR_POINT_DATA_PACKET_TYPE
+//          LIDAR_2D_POINT_DATA_PACKET_TYPE
+//          LIDAR_VERSION_PACKET_TYPE
+//          LIDAR_TIME_STAMP_PACKET_TYPE
+//          LIDAR_PARAM_DATA_PACKET_TYPE
+//          LIDAR_MAC_ADDRESS_CONFIG_PACKET_TYPE
+//          LIDAR_WORK_MODE_CONFIG_PACKET_TYPE
+//          LIDAR_IP_ADDRESS_CONFIG_PACKET_TYPE
+//          LIDAR_ACK_DATA_PACKET_TYPE
 //--------------------------------------------------------------------
 void L2lidar::handleRaw([[maybe_unused]]uint32_t packetType,
-                             const QByteArray& datagram, uint64_t Offset)
+                        [[maybe_unused]]const QByteArray& datagram,
+                        [[maybe_unused]]uint64_t Offset)
 {
     //const auto* header =
     //   reinterpret_cast<const FrameHeader*>(datagram.constData() + Offset);
