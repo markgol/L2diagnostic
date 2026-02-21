@@ -603,16 +603,6 @@ void PointCloudWindow::uploadAccumulatedPoints()
     // update visible point count
     m_pointCount = m_wrapped ? m_maxPoints : m_writeOffset;
 
-    // m_writeOffset = (m_writeOffset + count) % m_maxPoints;
-
-    // if (count >= m_maxPoints) {
-    //     m_wrapped = true;
-    //     m_pointCount = m_maxPoints;
-    // } else {
-    //     m_wrapped = false;
-    //     m_pointCount = m_writeOffset;
-    // }
-
     m_vbo.release();
     m_accumulatedPoints.clear();
 
@@ -661,6 +651,7 @@ void PointCloudWindow::appendFrame(const Frame& frame)
         converted.push_back({
             QVector3D(p.x, p.y, p.z),
             p.intensity,
+            p.range,
             p.time
         });
     }
