@@ -21,12 +21,13 @@ on the github repo; https://github.com/markgol/L2diagnostic
 	Goals
 	1.) Only use unitree_lidar_protocols.h and unitree_lidar_utlities.h files to in application
 	2.) Open source fro the L2 along with open source L2lidar class instead of Unitree archive library
+			This class has a ROS2 compatible architecture.
 	3.) A diagnostic app to tell if the L2 is operating properly
 			Display packet, info, calibration and other stats
 			Point cloud data viewer
 	4.) A L2lidar class open source implementation that can correct some of the issues observed
 		with the L2 such as keeping the L2 time base constantly synced to the host.  This helps resolved
-		the problem with the L2 timebase running 1/2 time (one second on L2 is 2 seconds in eal world).
+		the problem with the L2 timebase running 1/2 time (one second on L2 is 2 seconds in real world).
 	
 	V0.3.10 release
 		The project started with only a few files so the project folder structure was flat.
@@ -75,6 +76,16 @@ on the github repo; https://github.com/markgol/L2diagnostic
 		Added binary release for Ubuntu x86_64 and aarch64.  Note: These are executables only
 		and are not .appimage files.  They require Qt 6.10.2 to be installed before they will work.
 		.AppImage version are being worked on but not yet included.
+	V0.4.3
+		Updated L2lidar class error handling,  removal of all gui and ui interaction and added 
+		range to point cloud data.  Even though range can be recalculated from x,y,z data it
+		is already availabe directly in the point data from the L2.  This allows downstream usage
+		without have to recalculate each time.  
+		Updated conversion from L2 packet to point cloud to include range, and time stamping
+		of each cloud point.  Added more stats to L2lidar class to assist in verifucation of a ROS2
+		publisher node.
+		Sycnhronized usage of the L2lidar calss between L2diagnostic app and l2lidar_ros2 publisher
+		node app
 
 	Current Status
 		UDP only. (serial workmode planned for later release)
@@ -105,6 +116,8 @@ on the github repo; https://github.com/markgol/L2diagnostic
 		Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform
 		Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform
 		No plan for support in RPI5 Debian since this is not Qt and ROS2 supported.
+		ROS2 support completed through the l2lidar_ros2 app
+			see: https://github.com/markgol/l2lidar_ros2
 		
 		Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and
 		unitree_lidar_utilites.h to perform required function needs for using the L2  in the
@@ -142,7 +155,6 @@ on the github repo; https://github.com/markgol/L2diagnostic
 		Documentation for the PointCloudWindowClass
 		Cleanup PointCloudWindow class (mostly just reorganizing)
 		Add UART commmunications (delayed while researching UART packages)
-		Integrate the L2lidar class into a ROS2 package
 		
 	Issues:
 		L2 UART baudrate is 4M.  The QSerialPort has issues operating at this baud rate

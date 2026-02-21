@@ -53,6 +53,7 @@
 //                      Added error checking for intializeGL()
 //                      Saving the point time got lost, added back in
 //  V0.4.1  2026-02-11  Remove Qdebug statements
+//  V0.4.3  2026-02-18  Added range to cloud point
 //
 //--------------------------------------------------------
 
@@ -971,10 +972,10 @@ bool PointCloudWindow::savePCD(const QString& fileName)
     // ---- Header ----
     out << "# .PCD v0.7 - Point Cloud Data file format\n";
     out << "VERSION 0.7\n";
-    out << "FIELDS x y z intensity time\n";
-    out << "SIZE 4 4 4 4 4\n";
-    out << "TYPE F F F F F\n";
-    out << "COUNT 1 1 1 1 1\n";
+    out << "FIELDS x y z intensity range time\n";
+    out << "SIZE 4 4 4 4 4 4\n";
+    out << "TYPE F F F F F F\n";
+    out << "COUNT 1 1 1 1 1 1\n";
     out << "WIDTH " << count << "\n";
     out << "HEIGHT 1\n";
     out << "VIEWPOINT 0 0 0 1 0 0 0\n";
@@ -1122,6 +1123,7 @@ bool PointCloudWindow::loadPCD(const QString& fileName)
     int idxY = fields.indexOf("y");
     int idxZ = fields.indexOf("z");
     int idxIntensity = fields.indexOf("intensity");
+    int idxRange = fields.indexOf("range");
     int idxTime = fields.indexOf("time");
 
     if (idxX < 0 || idxY < 0 || idxZ < 0) {
@@ -1154,7 +1156,7 @@ bool PointCloudWindow::loadPCD(const QString& fileName)
 
         const char* ptr = raw.constData();
 
-        float x=0,y=0,z=0,intensity=1.0f,time=0.0f;
+        float x=0,y=0,z=0,intensity=1.0f,range=0.0f, time=0.0f;
 
         for (int f = 0; f < fieldCount; ++f) {
             const char* fieldPtr = ptr;
@@ -1164,6 +1166,7 @@ bool PointCloudWindow::loadPCD(const QString& fileName)
             if (f == idxY) memcpy(&y, fieldPtr, sizeof(float));
             if (f == idxZ) memcpy(&z, fieldPtr, sizeof(float));
             if (f == idxIntensity) memcpy(&intensity, fieldPtr, sizeof(float));
+            if (f == idxRange) memcpy(&range, fieldPtr, sizeof(float));
             if (f == idxTime) memcpy(&time, fieldPtr, sizeof(float));
 
             ptr += fieldSize * counts[f];
@@ -1171,6 +1174,7 @@ bool PointCloudWindow::loadPCD(const QString& fileName)
 
         cloud[i].pos = QVector3D(x,y,z);
         cloud[i].intensity = intensity;
+        cloud[i].range = range;
         cloud[i].time = time;
     }
 

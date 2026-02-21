@@ -37,6 +37,8 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS
 # =============================
 file(GLOB_RECURSE PROJECT_SOURCES
     CONFIGURE_DEPENDS
+    L2lidarClass/include/*.h
+    L2lidarClass/src/*.cpp
     src/*.cpp
     include/*.h
     forms/*.ui
@@ -55,6 +57,8 @@ target_include_directories(${PROJECT_NAME}
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/L2lidarClass/src
+        ${CMAKE_SOURCE_DIR}/L2lidarClass/include
 )
 
 if(WIN32)

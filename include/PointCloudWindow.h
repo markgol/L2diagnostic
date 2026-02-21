@@ -54,6 +54,7 @@
 //                      Saving the point time got lost, added back in
 //                      Changed file save/load to use standard
 //                          PCL PCD formatted file
+//  V0.4.3  2026-02-18  Added range to cloud point
 //
 //--------------------------------------------------------
 
@@ -138,10 +139,12 @@
 // x,y,z,i,time
 #define PCD2 0x50434432
 
+// These fields be kept in consistent with PCpoint struct
 struct GLPoint
 {
     QVector3D pos;
     float intensity;
+    float range;
     float time;
 };
 

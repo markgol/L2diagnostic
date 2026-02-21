@@ -56,6 +56,8 @@
 //                      in config dialog if this is first time run or
 //                      PC viewer was closed the at last time run.
 // V0.4.1   2026-02-12  Added MAC address
+// V0.4.3   2026-02-20  Changed default sync time to host to 30 msec
+//                      Added 'n' frame aggregation for point cloud frame
 //
 //--------------------------------------------------------
 
@@ -194,6 +196,9 @@ void MainWindow::saveSettings(bool resetRequested)
         settings.setValue("IMUadjust",IMUadjust);
         mIMUadjust = IMUadjust;
 
+        NumFramestoAggregate = config.getAggFrames();
+        settings.setValue("NumFramestoAggregate",NumFramestoAggregate);
+
     settings.endGroup();
 }
 
@@ -236,9 +241,11 @@ void MainWindow::loadSettings(bool resetRequested)
     // L2 setup
     settings.beginGroup("L2");
         WorkMode.SetWorkmode(settings.value("workmode",0).toUInt());
-        config.SetL2TimeCorrectionEnabled(settings.value("TimeCorrection", false).toBool());
-        config.SetL2TsyncHostEnabled(settings.value("SyncHost", false).toBool());
-        config.setL2syncRate(settings.value("SyncHostRate", 50).toUInt()); //20 hz
+        config.SetL2TimeCorrectionEnabled(settings.value("TimeCorrection", true).toBool());
+        config.SetL2TsyncHostEnabled(settings.value("SyncHost", true).toBool());
+        // default sync to host 6 times per one horizontal revoultion
+        // 30 msec <= 5.55Hz * 6
+        config.setL2syncRate(settings.value("SyncHostRate", 30).toUInt());
         config.setEnableLatency(settings.value("EnableLatency", true).toBool());
     settings.endGroup();
 
@@ -292,6 +299,10 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setMaxPoints(mmaxPoints);
         mIMUadjust = settings.value("IMUadjust", false).toBool();
         config.setIMUadjustEnabled(mIMUadjust);
+
+        NumFramestoAggregate = settings.value("NumFramestoAggregate", 39).toInt();
+        config.setAggFrames(NumFramestoAggregate);
+
     settings.endGroup();
 }
 

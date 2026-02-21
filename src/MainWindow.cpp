@@ -95,6 +95,24 @@
 //                      if one command line argument is present then
 //                          OpenGLES V3.0 is used
 //                      if 2 or more command line arguement then no graphics
+// V0.4.3   2026-02-19  Added point cloud frame aggregation
+//                          This only only applies to 3D point cloud data
+//                          Aggregates up to 'n' frames
+//                          Aggregation requires enableL2TimeStampFix and
+//                              mL2EnableSyncHost to be true
+//                          Aggregation uses first scan time as base time
+//                              and all cloud points relative to that time.
+//                          The aggregation process is used here to show
+//                              correct implementation for use in a ROS2
+//                              publisher node that needs to publish
+//                              aggregated frames to be compatible with
+//                              LIO-SAM and Fast-LIO processing
+//                      Refactored folders/files to folder L2lidarClass
+//                          to be able to split repo so L2Lidar class has
+//                          its own repo
+//                      Added 'n' frame aggregation for point cloud frame
+//                      0 is no aggregation, 39 matches one hemishpere scan
+//                      Moved L2lidar class into its own release
 //
 //--------------------------------------------------------
 
@@ -214,7 +232,7 @@ MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
     // Do this immeditaely if point cloud window enabled
     // otherwise delay it until window is enabled for the first time.
     if(config.isPCviewerEnabled()) {
-        if(mmaxPoints>=50000) {
+        if(mmaxPoints>=7200) {
             if(OpenPointCloudWindow()) {
                 m_pointCloudWindow->RendererTimerStart();
             } else {
@@ -274,10 +292,7 @@ MainWindow::~MainWindow()
 //========================================================
 
 //--------------------------------------------------------
-// OpenPointCloudWindow
-// ???
-// This needs rework should migrate it to the
-//  PointCloudWindows()
+// OpenPointCloudWind
 //--------------------------------------------------------
 bool MainWindow::OpenPointCloudWindow()
 {
@@ -1006,6 +1021,14 @@ void MainWindow::updateACK()
 //  The frame is converted to a point cloud format and then
 //  appended to the point cloud display.
 //
+//  This includes a demonstration of frame aggregation for 3D
+//  point cloud frames.
+//  Requirements:
+//      The l2lidar settings for
+//          enableSynHost = true,
+//          enableTScorrection = true
+//      NumFramesToSkip must be 0
+//      This only applies to 3D point cloud data
 //--------------------------------------------------------
 void MainWindow::onNewLidarFrame(bool Frame3D)
 {
@@ -1023,8 +1046,45 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         return;
     }
 
-    Frame frame;
 
+    if(NumFramesToSkip>0 || NumFramestoAggregate==0 || !Frame3D) {
+        // no aggregation, basic per frame update of point cloud
+        Frame frame;
+        // convert latestL2 point cloud packet to Frame of cloud points
+        if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust)) {
+            // if packet is missing or IMU pose correction failed
+            // with mIMUadjust is true
+            // do not add to point cloud
+            return;
+        }
+        if (m_pointCloudWindow) {
+            QMetaObject::invokeMethod(
+                m_pointCloudWindow,
+                [this, frame]() {
+                    m_pointCloudWindow->appendFrame(frame);
+                },
+                Qt::QueuedConnection
+                );
+        }
+        return;
+    }
+
+    // if we get here we are aggregating frames
+
+    static Frame aggframe;
+    static int CurrentAggFrame {0};
+
+    // since the call m_pointCloudWindow->appendFrame(frame)
+    // is queued then time must be allowed for execution
+    // before clearing aggframe.
+    // This allows one frame time to occur which should be
+    // enough time
+    if(CurrentAggFrame >= NumFramestoAggregate) {
+        CurrentAggFrame=0;
+        aggframe.clear();
+    }
+
+    Frame frame;
     // convert latestL2 point cloud packet to Frame of cloud points
     if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust)) {
         // if packet is missing or IMU pose correction failed
@@ -1032,12 +1092,44 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         // do not add to point cloud
         return;
     }
+    // add frame to aggframe
+    static float starttime;
+    int64_t oldAggsize = aggframe.size();
+    int64_t newFramesize = frame.size();
+    int64_t InsertPos;
 
+    if(CurrentAggFrame == 0) {
+        InsertPos = 0;
+        // this sets up for the time entry to be true time
+        // and all other entries to be relative time to first entry
+        // if you were using this in ROS2 LIO SAM then the frame stamp
+        // for publising would be set to the frame[0].time
+        // and the starttime = frame[0].time instead of 2x
+        starttime = frame[0].time;
+    } else {
+        InsertPos = oldAggsize;
+        //starttime = aggframe[0].time;
+    }
+
+    aggframe.resize(oldAggsize+newFramesize); // increase aggframe for new points
+
+    for(int64_t i=0; i<newFramesize; i++, InsertPos++) {
+        aggframe[InsertPos] = frame[i];
+        aggframe[InsertPos].time = aggframe[InsertPos].time - starttime;
+    }
+
+    CurrentAggFrame++;
+    if(CurrentAggFrame < NumFramestoAggregate) {
+        // keep building up aggregated frame
+        return;
+    }
+
+    // Once fully aggregated send aggframe
     if (m_pointCloudWindow) {
         QMetaObject::invokeMethod(
             m_pointCloudWindow,
             [this, frame]() {
-                m_pointCloudWindow->appendFrame(frame);
+                m_pointCloudWindow->appendFrame(aggframe);
             },
             Qt::QueuedConnection
             );
@@ -1158,7 +1250,7 @@ void MainWindow::openConfig()
         }
 
         if(config.isPCviewerEnabled() && m_pointCloudWindow==nullptr) {
-            if(mmaxPoints>=50000) {
+            if(mmaxPoints>=7200) {
                 if(OpenPointCloudWindow()) {
                     m_pointCloudWindow->RendererTimerStart();
                 } else {
