@@ -111,8 +111,13 @@
 //                          to be able to split repo so L2Lidar class has
 //                          its own repo
 //                      Added 'n' frame aggregation for point cloud frame
-//                      0 is no aggregation, 39 matches one hemishpere scan
+//                      0 is no aggregation, 38 matches one hemishpere scan
 //                      Moved L2lidar class into its own release
+//  V0.4.4  2026-02-22  Changes in L2lidar class propogated into onNewLidarFrame()
+//                      and the point cloud data
+//                      These changes relate to the point timestamps
+//                      to prevent truncation error because of lack of
+//                      precision using doubles and float in time calculations
 //
 //--------------------------------------------------------
 

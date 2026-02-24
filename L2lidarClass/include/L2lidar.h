@@ -84,6 +84,12 @@
 //                      in a user app.  PCpoint.h has been changed to include this field.
 //  V1.0.0  2026-02-20  Separated L2lidar class from the L2diagnostic app and l2lidar_ros2 app
 //                      This is the initial release of the standalone L2lidar class
+//                      Changed the unitree_lidar_utilities.h,  the parse function for the
+//  V1.1.0  2026-02-22  Corrected ConvertL2data2pointcloud() to generate more accurate timestamps.
+//                      Changed the timestamp units in the cloud point array returned by
+//                      ConvertL2data2pointcloud().
+//                      PCpoint structure member time change from float to long long
+//                      PCpoint structure member time units are now nanoseconds since Epoch
 //
 //--------------------------------------------------------
 
@@ -436,4 +442,5 @@ private: // variables
     // L2 connected
     QString stringErrorCOMM {};
     bool mConnected {false}; // set true when connected to L2
+
 };

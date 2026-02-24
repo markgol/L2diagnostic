@@ -629,7 +629,7 @@
      <number>7200</number>
     </property>
     <property name="maximum">
-     <number>3000000</number>
+     <number>8000000</number>
     </property>
     <property name="singleStep">
      <number>10000</number>

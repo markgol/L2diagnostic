@@ -63,7 +63,7 @@
 //                      Added Get L2 workmode button
 // V0.3.12  2026-02-05  Moved renderer timer to PointCloudWindow class
 // V0.4.3   2026-02-20  Added 'n' frame aggregation for point cloud frame
-//                      0 is no aggregation, 39 matches one hemishpere scan
+//                      0 is no aggregation, 38 matches one hemishpere scan
 //                      Moved L2lidar class into its own release
 //
 //--------------------------------------------------------
@@ -250,7 +250,7 @@ private:
     PCsettings defaultPCsettings {10.0,145.0,20.0,1.0,0.0,40.0};
     void SetDefaultView();
 
-    int NumFramestoAggregate {39};
+    int NumFramestoAggregate {38};
 
     // close point cloud viewer and workmode dialog (non-modal)
     void closeEvent(QCloseEvent* e);

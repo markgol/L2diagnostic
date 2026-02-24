@@ -206,7 +206,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>L2diagnostics V0.4.3</string>
+     <string>L2diagnostics V0.4.4</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>

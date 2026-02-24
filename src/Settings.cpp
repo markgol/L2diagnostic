@@ -300,7 +300,7 @@ void MainWindow::loadSettings(bool resetRequested)
         mIMUadjust = settings.value("IMUadjust", false).toBool();
         config.setIMUadjustEnabled(mIMUadjust);
 
-        NumFramestoAggregate = settings.value("NumFramestoAggregate", 39).toInt();
+        NumFramestoAggregate = settings.value("NumFramestoAggregate", 38).toInt();
         config.setAggFrames(NumFramestoAggregate);
 
     settings.endGroup();

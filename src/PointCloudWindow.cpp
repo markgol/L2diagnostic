@@ -648,11 +648,13 @@ void PointCloudWindow::appendFrame(const Frame& frame)
     converted.reserve(frame.size());
 
     for (const auto& p : frame) {
+        float roundedtime;
+        roundedtime = ((long double)p.time*1.0e-9);
         converted.push_back({
             QVector3D(p.x, p.y, p.z),
             p.intensity,
             p.range,
-            p.time
+            roundedtime
         });
     }
 

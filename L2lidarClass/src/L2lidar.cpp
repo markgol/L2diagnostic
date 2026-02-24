@@ -108,7 +108,12 @@
 //                      in a user app.  PCpoint.h has been changed to include this field.
 //  V1.0.0  2026-02-20  Separated L2lidar class from the L2diagnostic app and l2lidar_ros2 app
 //                      This is the initial release of the standalone L2lidar class
-//  V1.0.1  2026-02-21  Added [[maybe_unused]] to params for HandleRaw() packet decode
+//  V1.1.0  2026-02-22  Added [[maybe_unused]] to params for HandleRaw() packet decode
+//                      Corrected ConvertL2data2pointcloud() to generate more accurate timestamps.
+//                      Changed the timestamp units in the cloud point array returned by
+//                      ConvertL2data2pointcloud().
+//                      PCpoint structure member time change from float to long long
+//                      PCpoint structure member time units are now nanoseconds since Epoch
 //
 //--------------------------------------------------------
 
@@ -1802,7 +1807,10 @@ void L2lidar::UpdateEWMAStats(double alpha,
 //                  false Do not applies IMU pose correction
 //      return  true if successful
 //              false if point cloud packet does not exit
-//               false if IMUAdjust is true and not valid IMU data
+//              false if IMUAdjust is true and not valid IMU data
+//
+//  Change in the unitree_lidar_utilities.h to both PointUnitree and
+//  PointCloudUnitree related to timestamps.
 //--------------------------------------------------------------------
 bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust)
 {
@@ -1865,16 +1873,24 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
         }
     }
 
+    // note:  The changes to the unitree structures was to allow better
+    // time stamp precision.
+    // This necesitated a change to the
     frame.reserve(cloud.points.size());
-    float adjustedTime {0};
+    long long adjustedTime {0};  // adjusted time is in nanoseconds since epoch
 
     adjustedTime = cloud.stamp;
 
+    // p.time is a double containing relative time to the start of frame in seconds
+    // The time field in frame is long long and is nanoseconds since epoch
     for (auto& p : cloud.points)
     {
+        long long actualtime;
+
         if(adjustWithIMU) {
             rotateByQuaternion(Quat,p.x,p.y,p.z);
         }
+        actualtime = (long long) (p.time*1.0e9+0.5) + adjustedTime;
 
         frame.push_back({
             p.x,
@@ -1882,11 +1898,10 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
             p.z,
             p.intensity,
             p.range,
-            p.time+adjustedTime,
+            actualtime,
             p.ring
         });
     }
 
     return true;
 }
-

@@ -10,7 +10,7 @@ struct PCpoint
     float z;
     float intensity; //  0-255
     float range;    // meters
-    float time; // timestamp in seconds
+    long long time; // timestamp in nanoseconds
     uint32_t ring;
 };
 
