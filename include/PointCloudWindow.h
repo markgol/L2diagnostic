@@ -55,6 +55,9 @@
 //                      Changed file save/load to use standard
 //                          PCL PCD formatted file
 //  V0.4.3  2026-02-18  Added range to cloud point
+//  V0.4.4  2026-02-26  Changed GLpoint time from float to int64_t
+//                      Added pack GLpoint structure since it is
+//                      used to write/read binary PCD file
 //
 //--------------------------------------------------------
 
@@ -131,22 +134,24 @@
 #include "AxisGridRenderer.h"
 #include "PCpoint.h"
 
-// this identifies file format
-// x,y,z,i
-#define PCD1 0x50434431
-
-// this identifies file format
-// x,y,z,i,time
-#define PCD2 0x50434432
-
-// These fields be kept in consistent with PCpoint struct
+// These fields should reflect a PCpoint
+// This structure must be packed since it
+// is also used to save and read PCD files
+;  // this dummy statement is so that known
+   // bug in clangd doesn't issue warning
+   //   unterminated ‘#pragma pack (push, …)’ at end of file
+#pragma pack(push,1)
+// this structure is written to a file
+// It is 28 bytes in size.
 struct GLPoint
 {
     QVector3D pos;
     float intensity;
     float range;
-    float time;
+    int64_t time; // changed from float to int64
+                    // be accurately save time stamp
 };
+#pragma pack(pop)
 
 // struct for the point cloud viewer state
 typedef struct

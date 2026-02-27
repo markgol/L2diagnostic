@@ -54,6 +54,9 @@
 //                      Saving the point time got lost, added back in
 //  V0.4.1  2026-02-11  Remove Qdebug statements
 //  V0.4.3  2026-02-18  Added range to cloud point
+//  V0.4.4  2026-02-26  Changed LoadPCD() and SavePCD to use updated
+//                      time format change from float to int64_t
+//                      Changed time in GLpoint from float to int64_t
 //
 //--------------------------------------------------------
 
@@ -648,13 +651,11 @@ void PointCloudWindow::appendFrame(const Frame& frame)
     converted.reserve(frame.size());
 
     for (const auto& p : frame) {
-        float roundedtime;
-        roundedtime = ((long double)p.time*1.0e-9);
         converted.push_back({
             QVector3D(p.x, p.y, p.z),
             p.intensity,
             p.range,
-            roundedtime
+            p.time
         });
     }
 
@@ -966,8 +967,8 @@ bool PointCloudWindow::savePCD(const QString& fileName)
     out << "# .PCD v0.7 - Point Cloud Data file format\n";
     out << "VERSION 0.7\n";
     out << "FIELDS x y z intensity range time\n";
-    out << "SIZE 4 4 4 4 4 4\n";
-    out << "TYPE F F F F F F\n";
+    out << "SIZE 4 4 4 4 4 8\n";
+    out << "TYPE F F F F F I\n";
     out << "COUNT 1 1 1 1 1 1\n";
     out << "WIDTH " << count << "\n";
     out << "HEIGHT 1\n";
@@ -1149,7 +1150,9 @@ bool PointCloudWindow::loadPCD(const QString& fileName)
 
         const char* ptr = raw.constData();
 
-        float x=0,y=0,z=0,intensity=1.0f,range=0.0f, time=0.0f;
+        float x=0,y=0,z=0,intensity=1.0f,range=0.0f, ftime=0.0f;
+        double dtime {0.0};
+        int64_t itime64 {0};
 
         for (int f = 0; f < fieldCount; ++f) {
             const char* fieldPtr = ptr;
@@ -1160,15 +1163,44 @@ bool PointCloudWindow::loadPCD(const QString& fileName)
             if (f == idxZ) memcpy(&z, fieldPtr, sizeof(float));
             if (f == idxIntensity) memcpy(&intensity, fieldPtr, sizeof(float));
             if (f == idxRange) memcpy(&range, fieldPtr, sizeof(float));
-            if (f == idxTime) memcpy(&time, fieldPtr, sizeof(float));
-
+            // if there is a time field, it may be float, double, int64
+            // if it is float or double then it is in seconds
+            // if it is int64 then it is in nanoseconds
+            // the usage here is for nanoseconds
+            // so float and double must be converted to nanoseconds
+            if (f == idxTime) {
+                if(fieldSize==4) {
+                    if(types[f] == 'F') {
+                        // this is float
+                        memcpy(&ftime, fieldPtr, sizeof(float));
+                        itime64 = ftime * 1.0e9; // convert to nanoseconds
+                    } else {
+                        itime64 = 0;
+                    }
+                } else if(fieldSize==8) {
+                    if(types[f] == 'F') {
+                        // this is double
+                        memcpy(&dtime, fieldPtr, sizeof(double));
+                        itime64 = dtime * 1.0e9; // convert to nanoseconds
+                    } else if (types[f]== 'I' || types[f] == 'U') {
+                        // this is int64 but read U as signed
+                        memcpy(&itime64, fieldPtr, sizeof(int64_t));
+                        if(itime64 < 0) itime64 = 0; // just in case
+                    } else {
+                        // type/precision is not supported
+                        itime64 = 0;
+                    }
+                } else {
+                    itime64 = 0;
+                }
+            }
             ptr += fieldSize * counts[f];
         }
 
         cloud[i].pos = QVector3D(x,y,z);
         cloud[i].intensity = intensity;
         cloud[i].range = range;
-        cloud[i].time = time;
+        cloud[i].time = itime64;
     }
 
     // if window is up the send point cloud
