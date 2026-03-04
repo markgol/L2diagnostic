@@ -72,6 +72,8 @@ class IMUDock;
 }
 QT_END_NAMESPACE
 
+#include "StatsIMU.h"
+
 // needed device data structures
 // this is required, DO NOT REMOVE
 #pragma pack(push, 1)
@@ -107,6 +109,7 @@ public:
 
     // use these calls to update this dock window
     void updateIMU(const LidarImuData& Imu);
+    void updateIMU(const StatsIMU& ImuStats);
 
 private:
     Ui::IMUDock* ui;

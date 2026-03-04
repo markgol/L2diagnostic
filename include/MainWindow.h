@@ -65,6 +65,7 @@
 // V0.4.3   2026-02-20  Added 'n' frame aggregation for point cloud frame
 //                      0 is no aggregation, 38 matches one hemishpere scan
 //                      Moved L2lidar class into its own release
+//  V0.4.4  2026-02-22  Added stats to the IMU variables
 //
 //--------------------------------------------------------
 
@@ -272,7 +273,13 @@ private:
 
     int mmaxPoints{0}; // computed maximum number of points
 
+    // IMU operations
     bool mIMUadjust{false}; // correct for IMU
+    bool enableIMUstats {true}; // calculate stats on IMU data
+    StatsIMU ImuStats;
+    void onNewLidarIMU();   // this is only used when enableIMUstatus is true
+    void CalcIMUstats(LidarImuDataPacket Imu, StatsIMU& ImuStats);
+    void MeanDev(float Value, float* MeanValue, float* sigmaValue, float Alpha);
 
     // helper function for Config dialog when cancelling dialog
     void RestoreConfigSettings(); // reset the point cloud view back to defaults

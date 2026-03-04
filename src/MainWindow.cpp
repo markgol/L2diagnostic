@@ -118,6 +118,7 @@
 //                      These changes relate to the point timestamps
 //                      to prevent truncation error because of lack of
 //                      precision using doubles and float in time calculations
+//                      Added stats to the IMU variables
 //
 //--------------------------------------------------------
 
@@ -764,6 +765,12 @@ void MainWindow::ConnectDocksViewerActions()
             &MainWindow::GetL2workmode,
             Qt::QueuedConnection);
 
+    connect(&l2lidar,
+            &::L2lidar::imuReceived,
+            this,
+            &MainWindow::onNewLidarIMU,
+            Qt::QueuedConnection);
+
     //--------------------------------------------------------
     //  Workmode dialog
     //--------------------------------------------------------
@@ -983,9 +990,13 @@ void MainWindow::updateDiagnostics()
 //--------------------------------------------------------
 void MainWindow::updateIMU()
 {
-    LidarImuDataPacket Imu = l2lidar.imu();
-
-    m_IMUDock->updateIMU(Imu.data);
+    if(!enableIMUstats) {
+        LidarImuDataPacket Imu = l2lidar.imu();
+        m_IMUDock->updateIMU(Imu.data);
+    } else {
+        // stats generated in OnNewLidarIMU()
+        m_IMUDock->updateIMU(ImuStats);
+    }
 
     return;
 }
@@ -1139,6 +1150,95 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
             Qt::QueuedConnection
             );
     }
+}
+
+//--------------------------------------------------------
+//  onNewLidarFrame()
+//  signal recieved from l2lidar class that a new frame
+//  of point cloud data is availabe
+//  This removes the oldest frame from the fifo if the fifo
+//  is full and and adds the new frame to the fifo
+//  for display
+//
+//  This is updated at the packet receive rate
+//
+//  The Point cloud viewer architecture changed allows means
+//  it doesn't need to have any awareness of the frame or
+//  frame size.
+//
+//  The frame is converted to a point cloud format and then
+//  appended to the point cloud display.
+//
+//  This includes a demonstration of frame aggregation for 3D
+//  point cloud frames.
+//  Requirements:
+//      The l2lidar settings for
+//          enableSynHost = true,
+//          enableTScorrection = true
+//      NumFramesToSkip must be 0
+//      This only applies to 3D point cloud data
+//--------------------------------------------------------
+void MainWindow::onNewLidarIMU()
+{
+    if(enableIMUstats) {
+        LidarImuDataPacket Imu = l2lidar.imu();
+        CalcIMUstats(Imu,ImuStats);
+        return; // only calculate stats if enabled
+    }
+}
+
+//--------------------------------------------------------
+//
+//--------------------------------------------------------
+void MainWindow::CalcIMUstats(LidarImuDataPacket Imu, StatsIMU& ImuStats)
+{
+    float Alpha = 1.0/100.0; // Time contast for 1st order stats filter calculation
+    ImuStats.last0 = Imu.data.quaternion[0];
+    ImuStats.last1 = Imu.data.quaternion[1];
+    ImuStats.last2 = Imu.data.quaternion[2];
+    ImuStats.last3 = Imu.data.quaternion[3];
+
+    ImuStats.lastXA = Imu.data.linear_acceleration[0];
+    ImuStats.lastYA = Imu.data.linear_acceleration[1];
+    ImuStats.lastZA = Imu.data.linear_acceleration[2];
+
+    ImuStats.lastXG = Imu.data.angular_velocity[0];
+    ImuStats.lastYG = Imu.data.angular_velocity[1];
+    ImuStats.lastZG = Imu.data.angular_velocity[2];
+
+    MeanDev(ImuStats.last0, &ImuStats.Mean0, &ImuStats.Sigma0, Alpha);
+    MeanDev(ImuStats.last1, &ImuStats.Mean1, &ImuStats.Sigma1, Alpha);
+    MeanDev(ImuStats.last2, &ImuStats.Mean2, &ImuStats.Sigma2, Alpha);
+    MeanDev(ImuStats.last3, &ImuStats.Mean3, &ImuStats.Sigma3, Alpha);
+
+    MeanDev(ImuStats.lastXA, &ImuStats.XAmean, &ImuStats.XAsigma, Alpha);
+    MeanDev(ImuStats.lastYA, &ImuStats.YAmean, &ImuStats.YAsigma, Alpha);
+    MeanDev(ImuStats.lastZA, &ImuStats.ZAmean, &ImuStats.ZAsigma, Alpha);
+
+    MeanDev(ImuStats.lastXG, &ImuStats.XGmean, &ImuStats.XGsigma, Alpha);
+    MeanDev(ImuStats.lastYG, &ImuStats.YGmean, &ImuStats.YGsigma, Alpha);
+    MeanDev(ImuStats.lastZG, &ImuStats.ZGmean, &ImuStats.ZGsigma, Alpha);
+
+    return;
+}
+
+//--------------------------------------------------------
+//
+//--------------------------------------------------------
+void MainWindow::MeanDev(float Value, float* MeanValue, float* sigmaValue, float Alpha)
+{
+    {
+        float delta = Value - *MeanValue;
+
+        // Update mean (EWMA)
+        *MeanValue += Alpha * delta;
+
+        // Update variance (EWMA)
+        *sigmaValue = (1.0 - Alpha) * (*sigmaValue)
+                    + Alpha * delta * (Value - (*MeanValue));
+    }
+
+    return;
 }
 
 //--------------------------------------------------------

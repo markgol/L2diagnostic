@@ -1777,7 +1777,7 @@ void L2lidar::EnableLatencyMeasure(bool enable)
 //--------------------------------------------------------------------
 //  UpdateEWMAStats
 //  This is in updating the latency stats
-//  This is frist order exponetial filter
+//  This is first order exponetial filter
 //  that doesn't require saving 'n' samples
 //  It is only an estimator using Alpha as a 'time' constant
 //--------------------------------------------------------------------

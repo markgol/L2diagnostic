@@ -35,6 +35,7 @@
 //								added IMU dock
 //  V0.2.6  2026-01-12  Corrected IMU units
 //  V0.3.5  2026-01-24  Minor formatting fix to accelerometer data
+//  V0.4.4  2026-03-02  Added stats to the IMU variables
 //
 //--------------------------------------------------------
 
@@ -92,8 +93,9 @@ IMUDock::~IMUDock()
 //  updateIMU
 //  signal callback to update IMU window
 //--------------------------------------------------------
-void IMUDock::updateIMU(const LidarImuData& Imu )
+void IMUDock::updateIMU(const LidarImuData& Imu)
 {
+    // no stats on values
     // Calibration
     QString ResultString;
 
@@ -128,5 +130,118 @@ void IMUDock::updateIMU(const LidarImuData& Imu )
     ui->lblQuat3Value->setText(ResultString);
 
     ResultString = ResultString.asprintf("%d", Imu.info.seq);
+    ui->lblSeqIDvalue->setText(ResultString);
+}
+
+//--------------------------------------------------------
+//  updateIMU
+//  signal callback to update IMU window
+//--------------------------------------------------------
+void IMUDock::updateIMU(const StatsIMU& ImuStats)
+{
+    // no stats on values
+    // Calibration
+    QString ResultString;
+
+    // last reported value for all IMU data
+    ResultString = ResultString.asprintf("%8.2f",ImuStats.lastXA);
+    ui->lblAccelXValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.2f",ImuStats.lastYA);
+    ui->lblAccelYValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.2f",ImuStats.lastZA);
+    ui->lblAccelZValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f",ImuStats.lastXG);
+    ui->lblGyroXValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f",ImuStats.lastYG);
+    ui->lblGyroYValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f",ImuStats.lastZG);
+    ui->lblGyroZValue->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",ImuStats.last0);
+    ui->lblQuat0Value->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",ImuStats.last1);
+    ui->lblQuat1Value->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",ImuStats.last2);
+    ui->lblQuat2Value->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",ImuStats.last3);
+    ui->lblQuat3Value->setText(ResultString);
+
+    // report mean Quaternions values
+    ResultString = ResultString.asprintf("%9.6f",ImuStats.Mean0);
+    ui->lbl0mean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",ImuStats.Mean1);
+    ui->lbl1mean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",ImuStats.Mean2);
+    ui->lbl2mean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",ImuStats.Mean3);
+    ui->lbl3mean->setText(ResultString);
+
+    // report mean Acceleration values
+    ResultString = ResultString.asprintf("%8.2f",ImuStats.XAmean);
+    ui->lblXAmean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.2f",ImuStats.YAmean);
+    ui->lblYAmean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.2f",ImuStats.ZAmean);
+    ui->lblZAmean->setText(ResultString);
+
+    // report mean Gyro values
+    ResultString = ResultString.asprintf("%8.3f",ImuStats.XGmean);
+    ui->lblXGmean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f",ImuStats.YGmean);
+    ui->lblYGmean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f",ImuStats.ZGmean);
+    ui->lblZGmean->setText(ResultString);
+
+    // report stddev Quaternions values
+    ResultString = ResultString.asprintf("%9.6f",sqrt(ImuStats.Sigma0));
+    ui->lbl0dev->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",sqrt(ImuStats.Sigma1));
+    ui->lbl1dev->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",sqrt(ImuStats.Sigma2));
+    ui->lbl2dev->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%9.6f",sqrt(ImuStats.Sigma3));
+    ui->lbl3dev->setText(ResultString);
+
+    // report stddev Acceleration values
+    ResultString = ResultString.asprintf("%8.2f",sqrt(ImuStats.XAsigma));
+    ui->lblXAdev->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.2f",sqrt(ImuStats.YAsigma));
+    ui->lblYAdev->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.2f",sqrt(ImuStats.ZAsigma));
+    ui->lblZAdev->setText(ResultString);
+
+    // report stddev Gyro values
+    ResultString = ResultString.asprintf("%8.3f",sqrt(ImuStats.XGsigma));
+    ui->lblXGdev->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f",sqrt(ImuStats.YGsigma));
+    ui->lblYGdev->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f",sqrt(ImuStats.ZGsigma));
+    ui->lblZGdev->setText(ResultString);
+
+    //  -------------------------------------
+
+    ResultString = ResultString.asprintf("");
     ui->lblSeqIDvalue->setText(ResultString);
 }
