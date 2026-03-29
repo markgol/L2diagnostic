@@ -36,6 +36,7 @@
 //  V0.2.6  2026-01-12  Corrected IMU units
 //  V0.3.5  2026-01-24  Minor formatting fix to accelerometer data
 //  V0.4.4  2026-03-02  Added stats to the IMU variables
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

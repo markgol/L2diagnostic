@@ -58,6 +58,7 @@
 // V0.4.1   2026-02-12  Added MAC address
 // V0.4.3   2026-02-20  Changed default sync time to host to 30 msec
 //                      Added 'n' frame aggregation for point cloud frame
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

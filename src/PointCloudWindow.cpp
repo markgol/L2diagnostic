@@ -57,6 +57,7 @@
 //  V0.4.4  2026-02-26  Changed LoadPCD() and SavePCD to use updated
 //                      time format change from float to int64_t
 //                      Changed time in GLpoint from float to int64_t
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

@@ -1,4 +1,4 @@
-**Updated: 2026-02-21**
+**Updated: 2026-03-28**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -14,8 +14,8 @@ For license text see the docs folder associated with this project
 
 A standalone Windows app has been created.  It does not rely on the installation of Qt on the host
 system.  It consists of a Zip download file.  This should be extracted to the directory were you want 
-to save and run rthe app from.  It does not require an installer.  Just run it directly from its directory.
-All dependencies are included.  Always verify your download against the file hash.
+to save and run the app from.  It does not require an installer.  Just run it directly from its directory.
+All dependencies are included.  **Always verify your download against the file hash.**
 
 This is also on the github repo; https://github.com/markgol/L2diagnostic
 
@@ -23,17 +23,35 @@ This is also on the github repo; https://github.com/markgol/L2diagnostic
 
 **Goals**
 
-1.) Only use unitree_lidar_protocols.h and unitree_lidar_utlities.h files to in application
+1.) Only use unitree_lidar_protocols.h and unitree_lidar_utlities.h files from Unitree in an application.
 
 2.) Open source for the L2 along with open source L2lidar class instead of Unitree archive library. This class has a ROS2 compatible architecture.
 
 3.) A diagnostic app to tell if the L2 is operating properly
 
-    Display packet, info, calibration and other stats
+        Display packet, info, calibration and other stats
 
-    Point cloud data viewer
+        Point cloud data viewer
 
 4.) A L2lidar class open source implementation that can correct some of the issues observed with the L2 such as keeping the L2 time base constantly synced to the host.  This helps resolved the problem with the L2 timebase running 1/2 time (one second on L2 is 2 seconds in real world).
+
+
+
+**Hardware used in development**
+
+Unitree 4D LiDAR L2
+
+    Hardware version: 2.2.1.1
+
+    Firmware version: 2.8.11.1
+
+    Build/Complile date: 2025-07-15 
+
+Sager NP8876D (Clevo PD70SND) running Windows 11 with WSL2 Ubuntu 24.04
+
+Raspberry PI 5 8GB running Ubuntu 24.04
+
+1G Ethernet backbone
 
 
 
@@ -151,6 +169,20 @@ Separated the L2lidar class into it own folder structure to support separate rep
 
 
 
+**V1.0.0**
+
+Full Release.
+
+Added stats for the IMU
+
+Updated Config UI with minor changes to limit and defaults
+
+No further development is planned.  Updates will consist only of bug corrections.
+
+Changed time units from double to long long to avoid truncation of Epoch time in nanoseconds
+
+
+
 **Current Status**
 
 UDP only. (serial workmode planned for later release)
@@ -209,7 +241,7 @@ Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platfor
 
 No plan for support in RPI5 Debian since this is not Qt and ROS2 supported.
 
-ROS2 support completed through the l2lidar_ros2 app
+ROS2 support completed through separate l2lidar_node app
 
     see: https://github.com/markgol/l2lidar_ros2
 
@@ -253,21 +285,9 @@ if you close a window you may need to go into the Config dialog, uncheck the win
 
 
 
-**Still to do:**
-
-Complete standalone impementation for Ubuntu 24.04 x64 and Ubuntu 24.04 ARM64 (RPI5)
-
-Documentation for the PointCloudWindowClass
-
-Cleanup PointCloudWindow class (mostly just reorganizing)
-
-Add UART commmunications (delayed while researching UART packages)
-
-
-
 **Issues:**
 
-L2 UART baudrate is 4M.  The QSerialPort has issues operating at this baud rate an alternative UART library must be used.  This issue makes it challenging to find a platform independent UART solution.  Solutions can be found for specific platforms.
+This supports only UPD Ethernet interface. No plans going forward to support the UART interface.
 
 
 

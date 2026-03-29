@@ -51,6 +51,7 @@
 //  V0.4.0  2026-02-11  Added set L2 MAC address
 //  V0.4.3  2026-02-20  Added 'n' frame point cloud frame aggegration
 //                      0 is no aggregation, 38 matches one hemishpere scan
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

@@ -32,6 +32,7 @@
 //  of packets and optionally saves them to a CSV file.
 //
 //  V.02.5  2026-01-10  added Stats dockable window
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

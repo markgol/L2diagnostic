@@ -66,6 +66,7 @@
 //                      0 is no aggregation, 38 matches one hemishpere scan
 //                      Moved L2lidar class into its own release
 //  V0.4.4  2026-02-22  Added stats to the IMU variables
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

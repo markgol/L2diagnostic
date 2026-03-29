@@ -58,6 +58,7 @@
 //  V0.4.4  2026-02-26  Changed GLpoint time from float to int64_t
 //                      Added pack GLpoint structure since it is
 //                      used to write/read binary PCD file
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

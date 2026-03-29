@@ -33,6 +33,7 @@
 //
 //  V0.2.3  2026-01-09  Added Point Cloud Renderer
 //  V0.2.8  2026-01-17  Added reset() method
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 #pragma once

@@ -34,6 +34,7 @@
 //  V0.2.3  2026-01-09  Added Point Cloud Renderer
 //  V0.4.0  2026-02-06  Added support for both OpenGL Core 3.3
 //                      and OpenGLES 3.x
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 #include "AxisGridRenderer.h"

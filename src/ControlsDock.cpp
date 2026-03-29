@@ -41,6 +41,7 @@
 //  V0.3.10 2026-02-01  Added Get L2 Params button
 //                      Adjusted sizing of ControlsDock and ConfigDialog
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 #include "ControlsDock.h"

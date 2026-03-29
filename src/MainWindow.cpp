@@ -119,6 +119,7 @@
 //                      to prevent truncation error because of lack of
 //                      precision using doubles and float in time calculations
 //                      Added stats to the IMU variables
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

@@ -34,6 +34,7 @@
 //  V0.2.6  2026-01-13 Add WorkMode dialog
 //  V0.3.4  2026-01-22 Implement WorkMode dialog
 //  V0.3.10 2026-02-02  Added support for Get workmode
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

@@ -40,6 +40,7 @@
 //                      Adjusted sizing of ControlsDock and ConfigDialog
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
 //  V0.4.0  2026-02-11  Added set L2 MAC address
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

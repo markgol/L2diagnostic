@@ -32,6 +32,7 @@
 //  of packet.
 //
 //  V.02.5  2026-01-10  added ACK packet dockable window
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

@@ -40,6 +40,7 @@
 //                      if 2 or more command lne argumented then
 //                          do not display graphics
 //  V0.4.1  2026-02-11  Disabled QPA THEME GNOME
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 

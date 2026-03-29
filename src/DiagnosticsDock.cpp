@@ -34,6 +34,7 @@
 //  V.02.5  2026-01-10  added Calibration and internal State dialog
 //  V0.3.7  2026-01-29  added RTT latency measurement
 //                      added seq ID for point cloud and imu packets
+//  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
 
