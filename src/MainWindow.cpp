@@ -120,6 +120,7 @@
 //                      precision using doubles and float in time calculations
 //                      Added stats to the IMU variables
 //  V1.0.0  2026-03-28  Offical release
+//  V1.1.0  2026-04-20  Added override of range calibration params
 //
 //--------------------------------------------------------
 
@@ -203,10 +204,6 @@
 //--------------------------------------------------------
 //  MainWIndow class constructor
 //--------------------------------------------------------
-//--------------------------------------------------------
-// PointCloudWindow::PointCloudWindow(int maxPoints, bool OpenGLES, QWindow* parent)
-//     : QOpenGLWindow(NoPartialUpdate, parent), m_maxPoints(maxPoints), mOpenGLES(OpenGLES)
-
 MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow),
@@ -1068,7 +1065,8 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         // no aggregation, basic per frame update of point cloud
         Frame frame;
         // convert latestL2 point cloud packet to Frame of cloud points
-        if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust)) {
+        if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust,
+                                            mCalOveride, mCalScale, mCalBias)) {
             // if packet is missing or IMU pose correction failed
             // with mIMUadjust is true
             // do not add to point cloud
@@ -1103,7 +1101,8 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
 
     Frame frame;
     // convert latestL2 point cloud packet to Frame of cloud points
-    if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust)) {
+    if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust,
+                                        mCalOveride, mCalScale, mCalBias)) {
         // if packet is missing or IMU pose correction failed
         // with mIMUadjust is true
         // do not add to point cloud

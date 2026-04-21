@@ -269,6 +269,11 @@ private:
     uint32_t NumFramesToSkip {4};
     uint32_t CurrentSkipCount {0};
 
+    // calibration override
+    bool mCalOveride {false};
+    double mCalScale {0.000978};
+    double mCalBias {-365.625};
+
     // mutexf for point cloud frame updates
     QMutex m_cloudMutex;
 

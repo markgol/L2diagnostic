@@ -59,6 +59,7 @@
 // V0.4.3   2026-02-20  Changed default sync time to host to 30 msec
 //                      Added 'n' frame aggregation for point cloud frame
 //  V1.0.0  2026-03-28  Offical release
+//  V1.1.0  2026-04-20  Added override of range calibration params
 //
 //--------------------------------------------------------
 
@@ -152,11 +153,16 @@ void MainWindow::saveSettings(bool resetRequested)
 
     settings.setValue("workmode", mode);
 
-    // ??? maybe later if we read back UDP config
-    //settings.setValue("srcIP", config.getSRCip());
-    //settings.setValue("dstIP", config.getDSTip());
-    //settings.setValue("srcPort", config.getSRCport());
-    //settings.setValue("dstPort", config.getDSTport());
+    settings.endGroup();
+
+    // Calibration override
+    settings.beginGroup("Calibration");
+        settings.setValue("EnableCalOVR", config.isCalOVRenabled());
+        settings.setValue("CalScale", config.getCalScale());
+        settings.setValue("CalBias", config.getCalBias());
+        mCalOveride = config.isCalOVRenabled();
+        mCalScale = config.getCalScale();
+        mCalBias = config.getCalBias();
     settings.endGroup();
 
     // throttling
@@ -256,6 +262,15 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setPacketUpdateRate(settings.value("PacketUpdateRate", 100).toUInt()); // 10Hz
         config.setDiagUpdateRate(settings.value("DiagUpdateRate", 200).toUInt());   // 5Hz
         config.setRenderRate(settings.value("RendererUpdateRate", 33).toUInt());    // 30Hz
+    settings.endGroup();
+
+    settings.beginGroup("Calibration");
+        config.SetCalOVRenabled(settings.value("EnableCalOVR", false).toBool());
+        config.SetCalScale(settings.value("CalScale", 0.000978).toDouble());
+        config.setCalBias(settings.value("CalBias", -365.625).toDouble());
+        mCalOveride = config.isCalOVRenabled();
+        mCalScale = config.getCalScale();
+        mCalBias = config.getCalBias();
     settings.endGroup();
 
     // windows visibility

@@ -90,6 +90,8 @@ Key Features
   
   * Optional IMU-based quaternion spatial correction
   
+  * Override of internal Range calibration 
+  
   * Includes precomputed range (meters) for each point
 
 * **Time Synchronization**
@@ -140,5 +142,3 @@ Key Features
 
 See L2lidar class Vx.y.z.pdf for more details
 ---------------------
-
-

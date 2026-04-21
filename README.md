@@ -1,4 +1,4 @@
-**Updated: 2026-03-28**
+**Updated: 2026-04-20**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -183,6 +183,14 @@ Changed time units from double to long long to avoid truncation of Epoch time in
 
 
 
+**V1.1.0**
+
+Added override of built in calibration for range; Range Scale and Range Bias
+
+If you see your point cloud has barrel or pincushion distortion you adjust Range Bias.  The more positive the more barrel distortion.  The more negative the more pincushion distortion.  When set properly there will be minimum distortion.
+
+
+
 **Current Status**
 
 UDP only. (serial workmode planned for later release)
@@ -252,6 +260,10 @@ POINT CLOUD VIEWER WINDOW (can not be docked)
 The orientation of the display is assuming the the L2 base sitting parallel to the earth, like on a table.  So the x,y plane will be paraellel to the earth, z axis in distance vertical (perpendicular) to the earth.  If point cloud correction using IMU pose is enable then the display will show correct orientation to earth.
 
 This is only a diagnsotic app and does not have odometry input required for motion correction other than orientation (yaw, pitch,roll).
+
+Override of builtin calibration for Range Bias and Range Scale plus enable added
+
+
 
 **MOUSE CONTROLS FOR POINT CLOUD VIEWER**
 

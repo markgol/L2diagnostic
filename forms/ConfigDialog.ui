@@ -7,20 +7,23 @@
     <x>0</x>
     <y>0</y>
     <width>808</width>
-    <height>571</height>
+    <height>611</height>
    </rect>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
-     <x>590</x>
-     <y>480</y>
-     <width>161</width>
+     <x>250</x>
+     <y>560</y>
+     <width>281</width>
      <height>51</height>
     </rect>
    </property>
    <property name="standardButtons">
     <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
+   </property>
+   <property name="centerButtons">
+    <bool>true</bool>
    </property>
   </widget>
   <widget class="QGroupBox" name="gbUDPparams">
@@ -368,9 +371,9 @@
    <property name="geometry">
     <rect>
      <x>550</x>
-     <y>10</y>
+     <y>170</y>
      <width>241</width>
-     <height>261</height>
+     <height>231</height>
     </rect>
    </property>
    <property name="title">
@@ -380,7 +383,7 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>39</y>
+      <y>29</y>
       <width>71</width>
       <height>41</height>
      </rect>
@@ -396,7 +399,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>98</y>
+      <y>80</y>
       <width>41</width>
       <height>41</height>
      </rect>
@@ -412,7 +415,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>158</y>
+      <y>130</y>
       <width>51</width>
       <height>41</height>
      </rect>
@@ -428,7 +431,7 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>219</y>
+      <y>190</y>
       <width>71</width>
       <height>31</height>
      </rect>
@@ -441,7 +444,7 @@
     <property name="geometry">
      <rect>
       <x>180</x>
-      <y>40</y>
+      <y>30</y>
       <width>71</width>
       <height>41</height>
      </rect>
@@ -454,7 +457,7 @@
     <property name="geometry">
      <rect>
       <x>180</x>
-      <y>99</y>
+      <y>81</y>
       <width>71</width>
       <height>41</height>
      </rect>
@@ -467,7 +470,7 @@
     <property name="geometry">
      <rect>
       <x>180</x>
-      <y>159</y>
+      <y>131</y>
       <width>71</width>
       <height>41</height>
      </rect>
@@ -480,7 +483,7 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>39</y>
+      <y>29</y>
       <width>91</width>
       <height>41</height>
      </rect>
@@ -502,7 +505,7 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>98</y>
+      <y>80</y>
       <width>91</width>
       <height>41</height>
      </rect>
@@ -524,7 +527,7 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>158</y>
+      <y>130</y>
       <width>91</width>
       <height>41</height>
      </rect>
@@ -543,7 +546,7 @@
     </property>
    </widget>
   </widget>
-  <widget class="QGroupBox" name="groupBox">
+  <widget class="QGroupBox" name="gbPCctrl">
    <property name="geometry">
     <rect>
      <x>250</x>
@@ -714,7 +717,7 @@
    <property name="geometry">
     <rect>
      <x>550</x>
-     <y>280</y>
+     <y>410</y>
      <width>241</width>
      <height>191</height>
     </rect>
@@ -867,54 +870,6 @@
     </property>
    </widget>
   </widget>
-  <widget class="QGroupBox" name="gbSerial">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>310</y>
-     <width>211</width>
-     <height>61</height>
-    </rect>
-   </property>
-   <property name="title">
-    <string>Serial Port</string>
-   </property>
-   <widget class="QLabel" name="labelInPort_2">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>30</y>
-      <width>51</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>port</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="linePort">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>60</x>
-      <y>30</y>
-      <width>131</width>
-      <height>21</height>
-     </rect>
-    </property>
-   </widget>
-  </widget>
   <widget class="QGroupBox" name="gbVisible">
    <property name="geometry">
     <rect>
@@ -1013,7 +968,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>380</y>
+     <y>310</y>
      <width>211</width>
      <height>181</height>
     </rect>
@@ -1093,6 +1048,133 @@
     </property>
    </widget>
   </widget>
+  <widget class="QGroupBox" name="gbOVRcal">
+   <property name="geometry">
+    <rect>
+     <x>550</x>
+     <y>10</y>
+     <width>241</width>
+     <height>151</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Calibration Override</string>
+   </property>
+   <widget class="QCheckBox" name="cbCalOVR">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>201</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Override calibration</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelInPort_4">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>60</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Range Scale</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelInPort_5">
+    <property name="geometry">
+     <rect>
+      <x>-20</x>
+      <y>110</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Range Bias</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_27">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>110</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>mm</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="spinCalScale">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>60</y>
+      <width>121</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="decimals">
+     <number>6</number>
+    </property>
+    <property name="minimum">
+     <double>0.000250000000000</double>
+    </property>
+    <property name="maximum">
+     <double>0.002000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.000001000000000</double>
+    </property>
+    <property name="stepType">
+     <enum>QAbstractSpinBox::StepType::DefaultStepType</enum>
+    </property>
+    <property name="value">
+     <double>0.000978000000000</double>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="spinCalBias">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>110</y>
+      <width>131</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="decimals">
+     <number>3</number>
+    </property>
+    <property name="minimum">
+     <double>-1000.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>1000.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.001000000000000</double>
+    </property>
+    <property name="stepType">
+     <enum>QAbstractSpinBox::StepType::DefaultStepType</enum>
+    </property>
+    <property name="value">
+     <double>-365.625000000000000</double>
+    </property>
+   </widget>
+  </widget>
  </widget>
  <tabstops>
   <tabstop>spinNframe</tabstop>
@@ -1119,7 +1201,6 @@
   <tabstop>srcIPedit</tabstop>
   <tabstop>srcPortSpin</tabstop>
   <tabstop>btnConfigureUDP</tabstop>
-  <tabstop>linePort</tabstop>
   <tabstop>cbL2TSCorrect</tabstop>
   <tabstop>cbL2syncHost</tabstop>
   <tabstop>spinL2syncRate</tabstop>

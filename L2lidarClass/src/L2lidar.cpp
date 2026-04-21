@@ -1798,7 +1798,8 @@ void L2lidar::UpdateEWMAStats(double alpha,
 }
 
 //--------------------------------------------------------------------
-//  ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust)
+//  ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust,
+//                          bool CalOverride, double CalScale, double CalBias)
 //  This returns the latest point cloud Frame
 //      frame is (QVector<PCpoint>)
 //      Frame3D true process latest 3D packet
@@ -1812,7 +1813,8 @@ void L2lidar::UpdateEWMAStats(double alpha,
 //  Change in the unitree_lidar_utilities.h to both PointUnitree and
 //  PointCloudUnitree related to timestamps.
 //--------------------------------------------------------------------
-bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust)
+bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust,
+                                    bool CalOverride, double CalScale, double CalBias)
 {
     LidarImuDataPacket Imu;
     double time;
@@ -1833,7 +1835,7 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
         }
 
         unilidar_sdk2::parseFromPacketToPointCloud(
-            cloud, packet, UseSystemTime, 0, 100);
+            cloud, packet, UseSystemTime, 0, 100, CalOverride, CalScale, CalBias);
         time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
     } else {
         // get latest 2D packet
@@ -1844,7 +1846,7 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
         }
         // if !mL2EnableSyncHost then use system time (now)
         unilidar_sdk2::parseFromPacketPointCloud2D(
-            cloud, packet, UseSystemTime, 0, 100);
+            cloud, packet, UseSystemTime, 0, 100, CalOverride, CalScale, CalBias);
         time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
     }
 

@@ -91,6 +91,11 @@
 //                      PCpoint structure member time change from float to long long
 //                      PCpoint structure member time units are now nanoseconds since Epoch
 //
+//  V1.2.0  2026-04-19  Added range calibration overrides to:
+//                          parseFromPacketToPointCloud()
+//                          parseFromPacketPointCloud2D()
+//
+//
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -274,6 +279,33 @@ public:
     void EnableL2TSsync(bool enable);
     void SetL2TSsyncRate(uint32_t Rate);
 
+    // L2 calibration override
+    void EnableCalibrationOVR(bool Override) {  // true: use override calibration
+        OverideCalibration = Override;          // false: use internal calibration
+    }
+
+    void SetCalibrationOVR(double Scale, double Offset) {
+        RangeScaleOVR = Scale;
+        RangeBiasOVR = Offset;
+    }
+
+    bool GetCalibration(double& Scale, double& Offset){
+        // This returns true if calibration override is in effect
+        //      Scale = override calibration for Scale
+        //      Offset =  override calibration for Offset
+        // This returns false if calibration used is the internal calibration
+        //      Scale = not valid
+        //      Offset = not valid
+        if(OverideCalibration) {
+            Scale = RangeScaleOVR;
+            Offset = RangeBiasOVR;
+        } else {
+            Scale = 0.000978;
+            Offset = -365.625;
+        }
+        return OverideCalibration;
+    }
+
     // latency measurement
     void EnableLatencyMeasure(bool enable);
 
@@ -291,7 +323,8 @@ public:
     void DisconnectL2();   // close socket
 
     // convert point frame data from L2 to point cloud
-    bool ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust);
+    bool ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust,
+                                bool CalOVR, double CalScale, double CalBias);
 
 signals:
     void ackReceived();
@@ -443,4 +476,8 @@ private: // variables
     QString stringErrorCOMM {};
     bool mConnected {false}; // set true when connected to L2
 
+    // L2 calibration
+    double RangeScaleOVR {.000978};
+    double RangeBiasOVR {-365.625};
+    bool OverideCalibration {false};
 };

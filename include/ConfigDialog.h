@@ -52,6 +52,7 @@
 //  V0.4.3  2026-02-20  Added 'n' frame point cloud frame aggegration
 //                      0 is no aggregation, 38 matches one hemishpere scan
 //  V1.0.0  2026-03-28  Offical release
+//  V1.1.0  2026-04-20  Added override of range calibration params
 //
 //--------------------------------------------------------
 
@@ -284,6 +285,24 @@ public:
         return static_cast<bool>(ui.cbLatency->isChecked());
     }
 
+    //--------------------------------------------------------
+    // Calibration override
+    //--------------------------------------------------------
+    bool isCalOVRenabled()
+    {
+        return static_cast<bool>(ui.cbCalOVR->isChecked());
+    }
+
+    double getCalScale() const
+    {
+        return static_cast<double>(ui.spinCalScale->value());
+    }
+
+    double getCalBias() const
+    {
+        return static_cast<double>(ui.spinCalBias->value());
+    }
+
     // =============================
     // Setters (for LoadSettings)
     // =============================
@@ -449,6 +468,24 @@ public:
     void setEnableLatency(bool p) const
     {
         ui.cbLatency->setChecked(p);
+    }
+
+    //--------------------------------------------------------
+    // Calibration override
+    //--------------------------------------------------------
+    void SetCalOVRenabled(bool p)
+    {
+        ui.cbCalOVR->setChecked(p);
+    }
+
+    void SetCalScale(double p) const
+    {
+        ui.spinCalScale->setValue(p);
+    }
+
+    void setCalBias(double p) const
+    {
+        ui.spinCalBias->setValue(p);
     }
 
 signals:
