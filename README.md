@@ -1,4 +1,4 @@
-**Updated: 2026-04-20**
+**Updated: 2026-05-21**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -188,6 +188,11 @@ Changed time units from double to long long to avoid truncation of Epoch time in
 Added override of built in calibration for range; Range Scale and Range Bias
 
 If you see your point cloud has barrel or pincushion distortion you adjust Range Bias.  The more positive the more barrel distortion.  The more negative the more pincushion distortion.  When set properly there will be minimum distortion.
+
+**V1.2.0**
+
+Updated to L2lidarClass V1.3.0
+Added point cloud save to have to file format options; save with timestamp and save without timestamp.  This was done to be more compatible with CloudCompare.
 
 
 
