@@ -41,6 +41,10 @@
 //                          do not display graphics
 //  V0.4.1  2026-02-11  Disabled QPA THEME GNOME
 //  V1.0.0  2026-03-28  Offical release
+//  V1.1.0  2026-04-20  Added override of range calibration params
+//  V1.1.1  2026-04-29  Added CloudCompare PCD compatible output file
+//                      with just x,y,z,intensity,range
+//  V1.2.0  2026-05-12  Updated L2lidarClass for more precise timestamp calculations
 //
 //--------------------------------------------------------
 

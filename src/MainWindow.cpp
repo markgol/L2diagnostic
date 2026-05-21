@@ -121,6 +121,9 @@
 //                      Added stats to the IMU variables
 //  V1.0.0  2026-03-28  Offical release
 //  V1.1.0  2026-04-20  Added override of range calibration params
+//  V1.1.1  2026-04-29  Added CloudCompare PCD compatible output file
+//                      with just x,y,z,intensity,range
+//  V1.2.0  2026-05-12  Updated L2lidarClass for more precise timestamp calculations
 //
 //--------------------------------------------------------
 
@@ -1617,20 +1620,49 @@ void MainWindow::GetL2workmode()
 //--------------------------------------------------------
 void MainWindow::SavePC()
 {
-    if(m_pointCloudWindow!=nullptr){
-        QString file = QFileDialog::getSaveFileName(this,
-                        "Save Point Cloud", "", "PointCloud (*.pcd)");
-        if(file=="") return;
-        m_pointCloudWindow->savePCD(file);
-    } else {
+    if (m_pointCloudWindow == nullptr) {
         QMessageBox msgBox;
         msgBox.setText("Can not save point cloud");
-        msgBox.setInformativeText("point cloud window must be enable first");
+        msgBox.setInformativeText("point cloud window must be enabled first");
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.exec();
+        return;
+    }
+
+    // 1. Ask user which format to save
+    QMessageBox formatBox;
+    formatBox.setWindowTitle("Select Point Cloud Format");
+    formatBox.setText("Choose output format:");
+
+    QPushButton *fullBtn = formatBox.addButton("Full Point Cloud (x,y,z,i,r,t)", QMessageBox::AcceptRole);
+    QPushButton *ccBtn   = formatBox.addButton("Point Cloud (x,z,y,i,r)", QMessageBox::AcceptRole);
+    QPushButton *cancel  = formatBox.addButton(QMessageBox::Cancel);
+
+    formatBox.exec();
+
+    if (formatBox.clickedButton() == cancel)
+        return;
+
+    bool useCC = (formatBox.clickedButton() == ccBtn);
+
+    // 2. Choose file
+    QString file = QFileDialog::getSaveFileName(
+        this,
+        "Save Point Cloud",
+        "",
+        "PointCloud (*.pcd)"
+        );
+
+    if (file.isEmpty())
+        return;
+
+    // 3. Dispatch to correct save function
+    if (useCC) {
+        m_pointCloudWindow->savePCDCC(file);
+    } else {
+        m_pointCloudWindow->savePCD(file);
     }
 }
-
 //--------------------------------------------------------
 //  LoadPC
 //  button press

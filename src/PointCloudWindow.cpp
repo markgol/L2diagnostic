@@ -57,7 +57,8 @@
 //  V0.4.4  2026-02-26  Changed LoadPCD() and SavePCD to use updated
 //                      time format change from float to int64_t
 //                      Changed time in GLpoint from float to int64_t
-//  V1.0.0  2026-03-28  Offical release
+//  V1.1.1  2026-04-29  Added CloudCompare PCD compatible output file
+//                      with just x,y,z,intensity,range
 //
 //--------------------------------------------------------
 
@@ -1048,6 +1049,150 @@ bool PointCloudWindow::savePCD(const QString& fileName)
     return true;
 }
 
+//--------------------------------------------------------
+//  savePCDCC
+//--------------------------------------------------------
+bool PointCloudWindow::savePCDCC(const QString& fileName)
+{
+    if (m_pointCount == 0)
+        return false;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly))
+        return false;
+
+    QTextStream out(&file);
+    out.setRealNumberPrecision(8);
+
+    const int count = m_pointCount;
+
+    CCPoint SinglePoint;
+
+    // ---- Header ----
+    out << "# .PCD v0.7 - Point Cloud Data file format\n";
+    out << "VERSION 0.7\n";
+    out << "FIELDS x y z intensity range\n";
+    out << "SIZE 4 4 4 4 4\n";
+    out << "TYPE F F F F F\n";
+    out << "COUNT 1 1 1 1 1\n";
+    out << "WIDTH " << count << "\n";
+    out << "HEIGHT 1\n";
+    out << "VIEWPOINT 0 0 0 1 0 0 0\n";
+    out << "POINTS " << count << "\n";
+    out << "DATA binary\n";
+    out.flush();
+
+    // ---- Write binary data ----
+    makeCurrent();
+    m_vbo.bind();
+
+    const GLPoint* src = static_cast<const GLPoint*>(
+        m_vbo.map(QOpenGLBuffer::ReadOnly)
+        );
+
+    if (!src) {
+        m_vbo.unmap();
+        m_vbo.release();
+        doneCurrent();
+        file.close();
+        return false;
+    }
+
+    // Handle ring buffer wrap
+    const int tailCount = m_maxPoints - m_writeOffset;
+    int writesize;
+    int written;
+
+    writesize = sizeof(CCPoint);
+
+    if (!m_wrapped || tailCount==m_maxPoints) { // ring buffer not wrapped
+        // contiguous block [0 .. m_pointCount)
+        for(int i=0; i<m_pointCount; i++) {
+            SinglePoint.x = src[i].pos.x();
+            SinglePoint.y = src[i].pos.y();
+            SinglePoint.z = src[i].pos.z();
+            SinglePoint.intensity = src[i].intensity;
+            SinglePoint.range = src[i].range;
+            written = file.write(reinterpret_cast<const char*>(&SinglePoint),
+                                 writesize);
+            if(written!=writesize) {
+                m_vbo.unmap();
+                m_vbo.release();
+                doneCurrent();
+                file.close();
+                return false;
+            }
+        }
+    }
+    else {
+        // tail: [writeOffset .. maxPoints)
+        // writesize = tailCount * sizeof(GLPoint);
+        // if(writesize!=0) {
+        //     written = file.write(reinterpret_cast<const char*>(src + m_writeOffset),
+        //                          writesize);
+        //     if(written!=writesize) {
+        //         m_vbo.unmap();
+        //         m_vbo.release();
+        //         doneCurrent();
+        //         file.close();
+        //         return false;
+        //     }
+        // }
+        for(int i=m_writeOffset; i<m_maxPoints; i++) {
+            SinglePoint.x = src[i].pos.x();
+            SinglePoint.y = src[i].pos.y();
+            SinglePoint.z = src[i].pos.z();
+            SinglePoint.intensity = src[i].intensity;
+            SinglePoint.range = src[i].range;
+            written = file.write(reinterpret_cast<const char*>(&SinglePoint),
+                                 writesize);
+            if(written!=writesize) {
+                m_vbo.unmap();
+                m_vbo.release();
+                doneCurrent();
+                file.close();
+                return false;
+            }
+        }
+
+        // head: [0 .. writeOffset)
+        // writesize = m_writeOffset * sizeof(GLPoint);
+        // if(writesize!=0) {
+        //     written = file.write(reinterpret_cast<const char*>(src),
+        //                          writesize);
+        //     if(written!=writesize) {
+        //         m_vbo.unmap();
+        //         m_vbo.release();
+        //         doneCurrent();
+        //         file.close();
+        //         return false;
+        //     }
+        // }
+        for(int i=0; i<m_writeOffset; i++) {
+            SinglePoint.x = src[i].pos.x();
+            SinglePoint.y = src[i].pos.y();
+            SinglePoint.z = src[i].pos.z();
+            SinglePoint.intensity = src[i].intensity;
+            SinglePoint.range = src[i].range;
+            written = file.write(reinterpret_cast<const char*>(&SinglePoint),
+                                 writesize);
+            if(written!=writesize) {
+                m_vbo.unmap();
+                m_vbo.release();
+                doneCurrent();
+                file.close();
+                return false;
+            }
+        }
+    }
+
+    m_vbo.unmap();
+    m_vbo.release();
+    doneCurrent();
+    file.close();
+
+    return true;
+}
 
 //--------------------------------------------------------
 //  loadPCD
@@ -1201,7 +1346,13 @@ bool PointCloudWindow::loadPCD(const QString& fileName)
         cloud[i].pos = QVector3D(x,y,z);
         cloud[i].intensity = intensity;
         cloud[i].range = range;
-        cloud[i].time = itime64;
+        if(idxTime>0) {
+            // time data is in point cloud file
+            cloud[i].time = itime64;
+        } else {
+            // no time data in the point cloud file
+            cloud[i].time = 0;
+        }
     }
 
     // if window is up the send point cloud

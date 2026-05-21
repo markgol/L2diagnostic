@@ -59,6 +59,8 @@
 //                      Added pack GLpoint structure since it is
 //                      used to write/read binary PCD file
 //  V1.0.0  2026-03-28  Offical release
+//  V1.1.1  2026-04-29  Added CloudCompare PCD compatible output file
+//                      with just x,y,z,intensity,range
 //
 //--------------------------------------------------------
 
@@ -152,6 +154,13 @@ struct GLPoint
     int64_t time; // changed from float to int64
                     // be accurately save time stamp
 };
+
+struct CCPoint
+{
+    float x,y,z;
+    float intensity;
+    float range;
+};
 #pragma pack(pop)
 
 // struct for the point cloud viewer state
@@ -216,6 +225,7 @@ public:
     // File I/O
     bool savePCD(const QString& fileName);
     bool loadPCD(const QString& fileName);
+    bool savePCDCC(const QString& fileName);
 
     void setPointCloud(const QVector<GLPoint>& cloud);
 
