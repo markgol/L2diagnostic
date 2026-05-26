@@ -121,7 +121,9 @@
 //                      long long denominator for time scaling instead of a double.
 //                      Changed time corrections to use only long long arithmetic instead of
 //                      double.  This preserves precision of the timestamps with
-//                      minimal numerical loss
+//                      minimal numerical loss.
+//  V1.3.2  2026-05-24  Corrected fixed IMU to point cloud packet timing constraint.
+//                      This is now a settable time constraint.
 //
 //--------------------------------------------------------
 
@@ -1811,7 +1813,7 @@ void L2lidar::UpdateEWMAStats(double alpha,
 
 //--------------------------------------------------------------------
 //  ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust,
-//                          bool CalOverride, double CalScale, double CalBias)
+//                          bool CalOverride, double CalScale, double timeConstraintIMU_PC = 0.07)
 //  This returns the latest point cloud Frame
 //      frame is (QVector<PCpoint>)
 //      Frame3D true process latest 3D packet
@@ -1821,12 +1823,14 @@ void L2lidar::UpdateEWMAStats(double alpha,
 //      return  true if successful
 //              false if point cloud packet does not exit
 //              false if IMUAdjust is true and not valid IMU data
+//                    or if IMU to PC packet times are not within time constraint
 //
 //  Change in the unitree_lidar_utilities.h to both PointUnitree and
 //  PointCloudUnitree related to timestamps.
 //--------------------------------------------------------------------
 bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust,
-                                    bool CalOverride, double CalScale, double CalBias)
+                                       bool CalOverride, double CalScale, double CalBias,
+                                       double timeConstraintIMU_PC)
 {
     LidarImuDataPacket Imu;
     double time;
@@ -1876,7 +1880,7 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
         }
 
         IMUtime = (double)Imu.data.info.stamp.sec +(double)Imu.data.info.stamp.nsec * 1e-9;
-        if(abs(time-IMUtime) < 0.08) {
+        if(abs(time-IMUtime) < timeConstraintIMU_PC) {
             adjustWithIMU = true;
             Quat.w = Imu.data.quaternion[0];
             Quat.x = Imu.data.quaternion[1];
@@ -1885,6 +1889,12 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjus
         } else {
             // if IMU adjustment requested and time differnce to high
             // then drop packet
+            lostPackets_++;
+            if(Frame3D) {
+                total3Dpackets_--;
+            } else {
+                total2Dpackets_--;
+            }
             return false;
         }
     }

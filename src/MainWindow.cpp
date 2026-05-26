@@ -1069,7 +1069,8 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         Frame frame;
         // convert latestL2 point cloud packet to Frame of cloud points
         if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust,
-                                            mCalOveride, mCalScale, mCalBias)) {
+                                            mCalOveride, mCalScale, mCalBias,
+                                            mIMUPCtimeConstraint)) {
             // if packet is missing or IMU pose correction failed
             // with mIMUadjust is true
             // do not add to point cloud
@@ -1105,7 +1106,8 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
     Frame frame;
     // convert latestL2 point cloud packet to Frame of cloud points
     if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust,
-                                        mCalOveride, mCalScale, mCalBias)) {
+                                        mCalOveride, mCalScale, mCalBias,
+                                        mIMUPCtimeConstraint)) {
         // if packet is missing or IMU pose correction failed
         // with mIMUadjust is true
         // do not add to point cloud

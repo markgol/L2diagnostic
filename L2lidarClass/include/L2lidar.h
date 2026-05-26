@@ -99,6 +99,8 @@
 //                      Changed time corrections to use only long long arithmetic instead of
 //                      double.  This preserves precision of the timestamps with
 //                      minimal numerical loss
+//  V1.3.2  2026-05-24  Corrected fixed IMU to point cloud packet timing constraint.
+//                      This is now a settable parameter.
 //
 //--------------------------------------------------------
 
@@ -330,7 +332,8 @@ public:
 
     // convert point frame data from L2 to point cloud
     bool ConvertL2data2pointcloud(Frame& frame, bool Frame3D, bool IMUadjust,
-                                bool CalOVR, double CalScale, double CalBias);
+                                bool CalOVR, double CalScale, double CalBias,
+                                double timeConstraintIMU_PC = 0.07);
 
 signals:
     void ackReceived();

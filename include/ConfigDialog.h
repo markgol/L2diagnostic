@@ -53,6 +53,7 @@
 //                      0 is no aggregation, 38 matches one hemishpere scan
 //  V1.0.0  2026-03-28  Offical release
 //  V1.1.0  2026-04-20  Added override of range calibration params
+//  V1.2.1  2026-05-24  Added parameter for time constraint for IMU to PC match
 //
 //--------------------------------------------------------
 
@@ -228,6 +229,11 @@ public:
         return static_cast<bool>(ui.cbIMUadjust->isChecked());
     }
 
+    float getIMUPCtimeConstraint() const
+    {
+        return static_cast<float>(ui.spinTM2PC->value());
+    }
+
     //--------------------------------------------------------
     // point cloud viewer settings
     //--------------------------------------------------------
@@ -397,6 +403,11 @@ public:
     void setIMUadjustEnabled(bool p)
     {
         ui.cbIMUadjust->setChecked(p);
+    }
+
+    void setIMUPCtimeConstraint(float TimeConstraint)
+    {
+        ui.spinTM2PC->setValue(TimeConstraint);
     }
 
     void setPointSize(float PointSize)

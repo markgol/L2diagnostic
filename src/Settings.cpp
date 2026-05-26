@@ -203,6 +203,10 @@ void MainWindow::saveSettings(bool resetRequested)
         settings.setValue("IMUadjust",IMUadjust);
         mIMUadjust = IMUadjust;
 
+        float IMUPCtimeConstraint = config.getIMUPCtimeConstraint();
+        settings.setValue("IMUPCtimeConstraint", IMUPCtimeConstraint);
+        mIMUPCtimeConstraint = IMUPCtimeConstraint;
+
         NumFramestoAggregate = config.getAggFrames();
         settings.setValue("NumFramestoAggregate",NumFramestoAggregate);
 
@@ -315,6 +319,9 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setMaxPoints(mmaxPoints);
         mIMUadjust = settings.value("IMUadjust", false).toBool();
         config.setIMUadjustEnabled(mIMUadjust);
+
+        mIMUPCtimeConstraint = settings.value("IMUPCtimeConstraint", 0.07).toDouble();
+        config.setIMUPCtimeConstraint(mIMUPCtimeConstraint);
 
         NumFramestoAggregate = settings.value("NumFramestoAggregate", 38).toInt();
         config.setAggFrames(NumFramestoAggregate);

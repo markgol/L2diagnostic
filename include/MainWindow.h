@@ -281,6 +281,7 @@ private:
 
     // IMU operations
     bool mIMUadjust{false}; // correct for IMU
+    double mIMUPCtimeConstraint {0.07}; // time constraint for matching IMU to Point Cloud
     bool enableIMUstats {true}; // calculate stats on IMU data
     StatsIMU ImuStats;
     void onNewLidarIMU();   // this is only used when enableIMUstatus is true
