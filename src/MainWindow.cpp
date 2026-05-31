@@ -98,7 +98,7 @@
 // V0.4.3   2026-02-19  Added point cloud frame aggregation
 //                          This only only applies to 3D point cloud data
 //                          Aggregates up to 'n' frames
-//                          Aggregation requires enableL2TimeStampFix and
+//                          Aggregation requires mEnableL2TimeStampFix and
 //                              mL2EnableSyncHost to be true
 //                          Aggregation uses first scan time as base time
 //                              and all cloud points relative to that time.
@@ -124,6 +124,9 @@
 //  V1.1.1  2026-04-29  Added CloudCompare PCD compatible output file
 //                      with just x,y,z,intensity,range
 //  V1.2.0  2026-05-12  Updated L2lidarClass for more precise timestamp calculations
+//  V1.2.1  2026-05-24
+//  V1.2.2  2026-05-30  Corrected timebase correction bug introduced
+//                      in the L2lidarClass V1.3.0
 //
 //--------------------------------------------------------
 

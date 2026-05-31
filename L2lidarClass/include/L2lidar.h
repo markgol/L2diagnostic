@@ -70,7 +70,7 @@
 //  V0.4.2  2026-02-13  Added error string for communication connect failure
 //                      or send error
 //  V0.4.3  2026-02-16  Added more logic to the timestamping of the point cloud data
-//                          mL2EnableSyncHost && enableL2TimeStampFix
+//                          mL2EnableSyncHost && mEnableL2TimeStampFix
 //                              true  use L2 timestamping for each cloud point
 //                              false use system time for each cloud point
 //                      Dump first 100 frames of IMU and point cloud after connect
@@ -101,6 +101,9 @@
 //                      minimal numerical loss
 //  V1.3.2  2026-05-24  Corrected fixed IMU to point cloud packet timing constraint.
 //                      This is now a settable parameter.
+//  V1.3.3  20260-05-30 Corrected bug in timestamp correction introduced in V1.3.0
+//                      The IMU timestamp was incorrectly being calculated when
+//                      the fix time stamp was enabled.
 //
 //--------------------------------------------------------
 
@@ -277,7 +280,7 @@ public:
     bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
 
     // L2 Timstamp correction and controls
-    void EnableL2TimeCorrection(bool enableflag) {enableL2TimeStampFix = enableflag; }
+    void EnableL2TimeCorrection(bool enableflag) {mEnableL2TimeStampFix = enableflag; }
     void GetL2TimeScale(long long& ScaleNumerator, long long& ScaleDenominator)
             {ScaleNumerator = mL2ScaleTimeNum; ScaleDenominator = ScaleDenominator;}
     void SetL2TimeScale(long long ScaleNumerator, long long ScaleDenominator)
@@ -394,6 +397,9 @@ private: // functions
                      double& Xvariance
                      );
 
+    void FixTimeStamp(TimeStamp& stamp);
+
+
 private: // variables
     // mutex for critical packet access while copying packet
     mutable QMutex  PacketMutex;
@@ -463,7 +469,7 @@ private: // variables
     // This only enables correction algorithm
     // It does not enable timer based updates to
     // syncing of the L2 timestamp
-    bool enableL2TimeStampFix {false};
+    bool mEnableL2TimeStampFix {false};
     // last known timestamp sync
     // This is used as offset along with scale to correct
     // the L2 timestamp

@@ -243,6 +243,6 @@ void IMUDock::updateIMU(const StatsIMU& ImuStats)
 
     //  -------------------------------------
 
-    ResultString = ResultString.asprintf("");
+    ResultString = ResultString.asprintf(" ");
     ui->lblSeqIDvalue->setText(ResultString);
 }

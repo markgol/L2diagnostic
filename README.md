@@ -1,4 +1,4 @@
-**Updated: 2026-05-24**
+**Updated: 2026-05-30**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -198,7 +198,12 @@ Added point cloud save to have to file format options; save with timestamp and s
 
 Added settable time matching constraint when performing IMU pose (no translation) adjustment to point cloud data.  This is located in the config dialog
 
-Updated to L2lidarClass V1.3.1
+Updated to L2lidarClass V1.3.2
+
+**V1.2.2**
+
+Updated to L2lidarClass V1.3.3
+Corrected bug in L2lidarClass that was incorrectly calculating timestamp correction when the enable timestamp correction was enabled
 
 
 
