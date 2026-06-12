@@ -106,13 +106,13 @@ time delay (second) = 0.001880
 An IMU msg is parsed!
     system stamp = 1730191291.3044135571
     seq = 87, stamp = 1730191291.304411172
-    quaternion (x, y, z, w) = [-0.3645, 0.0077, 0.0099, 0.9293]
+    quaternion (w, x, y, z) = [-0.3645, 0.0077, 0.0099, 0.9293]
     angular_velocity (x, y, z) = [0.0209, -0.0644, 0.0146]
     linear_acceleration (x, y, z) = [0.2215, 0.3537, 9.5822]
 An IMU msg is parsed!
     system stamp = 1730191291.3070139885
     seq = 88, stamp = 1730191291.307010650
-    quaternion (x, y, z, w) = [-0.3646, 0.0077, 0.0099, 0.9293]
+    quaternion (w, x, y, z) = [-0.3646, 0.0077, 0.0099, 0.9293]
     angular_velocity (x, y, z) = [0.0086, -0.0039, 0.0122]
     linear_acceleration (x, y, z) = [0.1608, 0.3222, 9.7098]
 A Cloud msg is parsed! 
@@ -165,13 +165,13 @@ time delay (second) = 0.002044
 An IMU msg is parsed!
     system stamp = 1730191291.3044135571
     seq = 87, stamp = 1730191291.304411172
-    quaternion (x, y, z, w) = [-0.3645, 0.0077, 0.0099, 0.9293]
+    quaternion (w, x, y, z) = [-0.3645, 0.0077, 0.0099, 0.9293]
     angular_velocity (x, y, z) = [0.0209, -0.0644, 0.0146]
     linear_acceleration (x, y, z) = [0.2215, 0.3537, 9.5822]
 An IMU msg is parsed!
     system stamp = 1730191291.3070139885
     seq = 88, stamp = 1730191291.307010650
-    quaternion (x, y, z, w) = [-0.3646, 0.0077, 0.0099, 0.9293]
+    quaternion (w, x, y, z) = [-0.3646, 0.0077, 0.0099, 0.9293]
     angular_velocity (x, y, z) = [0.0086, -0.0039, 0.0122]
     linear_acceleration (x, y, z) = [0.1608, 0.3222, 9.7098]
 A Cloud msg is parsed! 

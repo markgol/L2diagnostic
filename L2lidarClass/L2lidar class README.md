@@ -102,6 +102,12 @@ Key Features
   
   * Host-driven periodic resynchronization
 
+* **Field notes (fw 2.8.11.1, measured)**
+  
+  * The slow-clock factor is not exactly 2: one unit measured ~1.988 at cold start, drifting to ~1.991 over a 20 minute warm-up (issue #3)
+  
+  * `dirty_index` reads exactly 100.0 during motor spin-up (15 to 30 s, before valid points exist); settled clean-unit values are roughly 0.7 to 1.6 %
+
 * **Latency Measurement**
   
   * RTT latency using sequence IDs
