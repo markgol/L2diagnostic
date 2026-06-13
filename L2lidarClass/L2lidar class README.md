@@ -106,7 +106,7 @@ Key Features
   
   * The slow-clock factor is not exactly 2: one unit measured ~1.988 at cold start, drifting to ~1.991 over a 20 minute warm-up (issue #3)
   
-  * `dirty_index` reads exactly 100.0 during motor spin-up (15 to 30 s, before valid points exist); settled clean-unit values are roughly 0.7 to 1.6 %
+  * The first cloud packet(s) after stream start carry `dirty_index` = 100.0 (initialization value; nothing is emitted during the 15 to 30 s motor spin-up); settled clean-unit values are roughly 0.7 median with spikes to about 8
 
 * **Latency Measurement**
   
