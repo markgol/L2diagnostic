@@ -60,6 +60,7 @@
 //                      Added 'n' frame aggregation for point cloud frame
 //  V1.0.0  2026-03-28  Offical release
 //  V1.1.0  2026-04-20  Added override of range calibration params
+//  V1.3.0  2026-06-15  Added flag for IMU adjust just to roll, pitch vs roll, pitch, yaw
 //
 //--------------------------------------------------------
 
@@ -147,9 +148,12 @@ void MainWindow::saveSettings(bool resetRequested)
     uint mode =WorkMode.GetWorkmode();
 
     settings.setValue("TimeCorrection", config.isL2TimeCorrectionEnabled());
+    settings.setValue("TSscaleNum", config.getL2TscaleNum());
+    settings.setValue("TSscaleDen", config.getL2TscaleDen());
     settings.setValue("SyncHost", config.isL2TsyncHostEnabled());
     settings.setValue("SyncHostRate", config.getL2syncRate());
     settings.setValue("EnableLatency", config.isLatencyEnabled());
+    settings.setValue("UseSystemTimestamp",config.isUseSystemNowEnabled());
 
     settings.setValue("workmode", mode);
 
@@ -203,6 +207,10 @@ void MainWindow::saveSettings(bool resetRequested)
         settings.setValue("IMUadjust",IMUadjust);
         mIMUadjust = IMUadjust;
 
+        bool IMUadjustRollPitch = config.isIMUadjustRollPitch();
+        settings.setValue("IMUadjustRollPitch",IMUadjustRollPitch);
+        mIMUadjustRollPitch = IMUadjustRollPitch;
+
         float IMUPCtimeConstraint = config.getIMUPCtimeConstraint();
         settings.setValue("IMUPCtimeConstraint", IMUPCtimeConstraint);
         mIMUPCtimeConstraint = IMUPCtimeConstraint;
@@ -253,11 +261,15 @@ void MainWindow::loadSettings(bool resetRequested)
     settings.beginGroup("L2");
         WorkMode.SetWorkmode(settings.value("workmode",0).toUInt());
         config.SetL2TimeCorrectionEnabled(settings.value("TimeCorrection", true).toBool());
+        config.setL2TscaleNum(settings.value("TSscaleNum", 2).toUInt());
+        config.setL2TscaleDen(settings.value("TSscaleDen", 1).toUInt());
+
         config.SetL2TsyncHostEnabled(settings.value("SyncHost", true).toBool());
         // default sync to host 6 times per one horizontal revoultion
         // 30 msec <= 5.55Hz * 6
         config.setL2syncRate(settings.value("SyncHostRate", 30).toUInt());
         config.setEnableLatency(settings.value("EnableLatency", true).toBool());
+        config.setUseSystemNow(settings.value("UseSystemTimestamp", false).toBool());
     settings.endGroup();
 
     // throttling
@@ -319,6 +331,8 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setMaxPoints(mmaxPoints);
         mIMUadjust = settings.value("IMUadjust", false).toBool();
         config.setIMUadjustEnabled(mIMUadjust);
+        mIMUadjustRollPitch = settings.value("IMUadjustRollPitch", false).toBool();
+        config.setIMUadjustRollPitch(mIMUadjustRollPitch);
 
         mIMUPCtimeConstraint = settings.value("IMUPCtimeConstraint", 0.07).toDouble();
         config.setIMUPCtimeConstraint(mIMUPCtimeConstraint);

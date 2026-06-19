@@ -1,4 +1,4 @@
-**Updated: 2026-05-30**
+**Updated: 2026-06-18**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -19,7 +19,9 @@ All dependencies are included.  **Always verify your download against the file h
 
 This is also on the github repo; https://github.com/markgol/L2diagnostic
 
+A standalone app has been generated for Windows x86_64.
 
+Standalone (without Qt installed) apps for use on Ubuntu for NVidia Jetson Orin Jetpack 7.2 and Ubuntu 24.04 of RPIs, Windows WSL2 are being developed but are not ready for release.
 
 **Goals**
 
@@ -33,7 +35,7 @@ This is also on the github repo; https://github.com/markgol/L2diagnostic
 
         Point cloud data viewer
 
-4.) A L2lidar class open source implementation that can correct some of the issues observed with the L2 such as keeping the L2 time base constantly synced to the host.  This helps resolved the problem with the L2 timebase running 1/2 time (one second on L2 is 2 seconds in real world).
+4.) A L2lidar class open source implementation that can correct some of the issues observed with the L2 such as keeping the L2 time base constantly synced to the host.  This helps resolved the problem with the L2 timebase running ~1/2 time (one second on L2 is ~2 seconds in real world).
 
 
 
@@ -50,6 +52,8 @@ Unitree 4D LiDAR L2
 Sager NP8876D (Clevo PD70SND) running Windows 11 with WSL2 Ubuntu 24.04
 
 Raspberry PI 5 8GB running Ubuntu 24.04
+
+Jetson Orin Super Nano running Jetpack 7.2 (Ubuntu 24.04)
 
 1G Ethernet backbone
 
@@ -205,11 +209,25 @@ Updated to L2lidarClass V1.3.2
 Updated to L2lidarClass V1.3.3
 Corrected bug in L2lidarClass that was incorrectly calculating timestamp correction when the enable timestamp correction was enabled
 
+**V1.3.0**
+
+Updated to L2lidarClass V1.3.4
+The L2lidarClass changes address various timestamp correction configurations and initialization scenarios.  It also adds a Use system Now time for packet timestamps to allow emulation of what the L2 archive library does.  Checks for valid scalar to use in timestamp correction. Added more quaternion and euler methods to assist in various conversions.
+
+Additional stats pane added to the IMU panel.  These shows stats for derived roll, pitch and yaw from the IMU quaternion and roll, pitch from the IMU accelleration data.
+
+Added addiotnal controls in the config dialog to allow setting the timestamp scalar using a numerator and denominator.  These should be 6 significant digits like 200000 for numerator, 100000 for denominator.  This allows the user to more precisely adjust the L2 timebase correction.  A flag for Use system now time for packet timestamps was also added.
+
+Removed the timestamp correction conditional restrainst for aggregation.  Aggregration can now be used regardless of the timestamp correction setting.
+
+Removed the appimage section of the CMakeLists.txt file.  This used the linuxdeploy app.  The linuxdeplot and linuxdeployqt apps are not maintained and actually compatible with QT 6.10 or later Qt versions.  This only applied to Linux build with appimage build selected.
+Added RPATH settings in CMakeLists.txt so that the ./lib folder is searched before system folders.
+
 
 
 **Current Status**
 
-UDP only. (serial workmode planned for later release)
+UDP only. (serial workmode currently planned)
 
 Display a packet rate and packet rate chart history
 
@@ -247,29 +265,29 @@ Measurement of RTT latency (instanteous, average, minimum, maximu, variance)
 
 Correction of L2 timestamp to account for incorrect time clock on the L2
 
-    (L2 time clock reports 1 second for every 2 real world seconds)
+    (L2 time clock reports 1 second for every ~2 real world seconds)
 
-Sync the L2 to the host time at a user settable rate (default 30 msec)
+Sync the L2 to the host time at a user settable rate
 
 Get and set L2 workmode
 
 Get L2 parameters
 
-Allow use on system without GPU support (disables the grpahics windows)
+Allow use on system without GPU support (disables the graphics windows)
 
-Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform
+Checked build and run status in Ubuntu 24.04 LTS on Windows 11 on x64 platform
 
-Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform
+Checked build and run status in Ubuntu 24.04 LTS on RPI platform
 
-Checked build and run status in Ubuntu 24.04.3 LTS and Windows 11 on x64 platform
+Checked build and run status in Ubuntu 24.04 LTS and Windows 11 on x64 platform
 
-No plan for support in RPI5 Debian since this is not Qt and ROS2 supported.
+No plan for support in RPI with Raspberian.
 
 ROS2 support completed through separate l2lidar_node app
 
-    see: https://github.com/markgol/l2lidar_ros2
+see:[GitHub - markgol/l2lidar_node: ROS2 publisher node for the Unitree L2 lidar point cloud and IMU data · GitHub](https://github.com/markgol/l2lidar_node)
 
-Portable source class definition "L2lidar" using only unitree_lidar_protocols.h and unitree_lidar_utilites.h to perform required function needs for using the L2  in the UDP mode without the use of the unitree archive library.
+Portable source class definition "L2lidar" using only modified unitree_lidar_protocols.h and unitree_lidar_utilites.h to perform required function needs for using the L2  in the UDP mode without the use of the unitree archive library.
 
 POINT CLOUD VIEWER WINDOW (can not be docked)
 
@@ -278,6 +296,12 @@ The orientation of the display is assuming the the L2 base sitting parallel to t
 This is only a diagnsotic app and does not have odometry input required for motion correction other than orientation (yaw, pitch,roll).
 
 Override of builtin calibration for Range Bias and Range Scale plus enable added
+
+Allows for various timestamp correction configurations including substituting system timestamp for packet timestamps
+
+Added derived statistics for Roll, Pitch and Yaw using quaternion IMU data.
+
+Added derived statisitcs for Roll and Pitch using gravity aligned acceleration IMU data.
 
 
 
@@ -316,6 +340,7 @@ if you close a window you may need to go into the Config dialog, uncheck the win
 **Issues:**
 
 This supports only UPD Ethernet interface. No plans going forward to support the UART interface.
+On some system with lettering in the dialog boxes can be obscured because of the resolution settings for the display.
 
 
 
@@ -345,7 +370,7 @@ Qt will ask you to select a configuration.
 
             Select Desktop Qt6.10.x GCC for Ubuntu ARM64 on RPI5
 
-When operating on RPI5 with Ubuntu, Clangd may not be able to be used because of memory limitations on that specific RPI5.
+When operating on RPI5 with Ubuntu, Clangd may not be able to be used because of memory limitations on certain RPIs.
 
 ctrl+b will build the project, f5 will run it.
 

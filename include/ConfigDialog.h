@@ -54,6 +54,9 @@
 //  V1.0.0  2026-03-28  Offical release
 //  V1.1.0  2026-04-20  Added override of range calibration params
 //  V1.2.1  2026-05-24  Added parameter for time constraint for IMU to PC match
+//  V1.3.0  2026-06-18  Added flag for IMU adjust just to roll, pitch vs roll, pitch, yaw
+//                      Added Numerator/Denominator scaling for time correction
+//                      Added Use system time for packet timestamps checkbox
 //
 //--------------------------------------------------------
 
@@ -211,6 +214,7 @@ public:
     {
         return static_cast<bool>(ui.cbIMU->isChecked());
     }
+
     //--------------------------------------------------------
     // point cloud viewer buffering
     //--------------------------------------------------------
@@ -227,6 +231,11 @@ public:
     bool isIMUadjustEnabled()
     {
         return static_cast<bool>(ui.cbIMUadjust->isChecked());
+    }
+
+    bool isIMUadjustRollPitch()
+    {
+        return static_cast<bool>(ui.cbIMUadjustRP->isChecked());
     }
 
     float getIMUPCtimeConstraint() const
@@ -276,6 +285,16 @@ public:
         return static_cast<bool>(ui.cbL2TSCorrect->isChecked());
     }
 
+    uint32_t getL2TscaleNum() const
+    {
+        return static_cast<uint32_t>(ui.spinTSscaleNum->value());
+    }
+
+    uint32_t getL2TscaleDen() const
+    {
+        return static_cast<uint32_t>(ui.spinTSscaleDen->value());
+    }
+
     bool isL2TsyncHostEnabled()
     {
         return static_cast<bool>(ui.cbL2syncHost->isChecked());
@@ -289,6 +308,11 @@ public:
     bool isLatencyEnabled() const
     {
         return static_cast<bool>(ui.cbLatency->isChecked());
+    }
+
+    bool isUseSystemNowEnabled() const
+    {
+        return static_cast<bool>(ui.cbUseSytemNow->isChecked());
     }
 
     //--------------------------------------------------------
@@ -405,9 +429,19 @@ public:
         ui.cbIMUadjust->setChecked(p);
     }
 
+    void setIMUadjustRollPitch(bool p)
+    {
+        ui.cbIMUadjustRP->setChecked(p);
+    }
+
     void setIMUPCtimeConstraint(float TimeConstraint)
     {
         ui.spinTM2PC->setValue(TimeConstraint);
+    }
+
+    void setUseSystemNow(bool p)
+    {
+        ui.cbUseSytemNow->setChecked(p);
     }
 
     void setPointSize(float PointSize)
@@ -464,6 +498,16 @@ public:
     void SetL2TimeCorrectionEnabled(bool p)
     {
         ui.cbL2TSCorrect->setChecked(p);
+    }
+
+    void setL2TscaleNum(uint32_t p)
+    {
+        ui.spinTSscaleNum->setValue(p);
+    }
+
+    void setL2TscaleDen(uint32_t p)
+    {
+        ui.spinTSscaleDen->setValue(p);
     }
 
     void SetL2TsyncHostEnabled(bool p)

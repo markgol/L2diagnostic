@@ -127,6 +127,13 @@
 //  V1.2.1  2026-05-24
 //  V1.2.2  2026-05-30  Corrected timebase correction bug introduced
 //                      in the L2lidarClass V1.3.0
+//  V1.3.0  2026-06-18  Updated to L2lidarCLass V1.3.4
+//                      Added derived stats for roll, pitch and yaw
+//                      Added use system time for packets option
+//                      Added checks on timestamp correction parameters
+//                      Moved quaterion and euler methods to quaternion.h
+//                      Removed conditional use of timestamp correction
+//                          for aggregation.
 //
 //--------------------------------------------------------
 
@@ -788,7 +795,7 @@ void MainWindow::ConnectDocksViewerActions()
 void MainWindow::applyDocksVisibilityConstraint()
 {
     // set absolute geometry and state
-    resizeDocks({ m_IMUDock },{ 220 },Qt::Horizontal);
+    resizeDocks({ m_IMUDock },{ 440 },Qt::Horizontal);
     resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
     resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 
@@ -994,12 +1001,12 @@ void MainWindow::updateDiagnostics()
 //--------------------------------------------------------
 void MainWindow::updateIMU()
 {
-    if(!enableIMUstats) {
+    if(!menableIMUstats) {
         LidarImuDataPacket Imu = l2lidar.imu();
         m_IMUDock->updateIMU(Imu.data);
     } else {
         // stats generated in OnNewLidarIMU()
-        m_IMUDock->updateIMU(ImuStats);
+        m_IMUDock->updateIMU(mImuStats);
     }
 
     return;
@@ -1027,7 +1034,7 @@ void MainWindow::updateACK()
 //--------------------------------------------------------
 //  onNewLidarFrame()
 //  signal recieved from l2lidar class that a new frame
-//  of point cloud data is availabe
+//  of point cloud data is available
 //  This removes the oldest frame from the fifo if the fifo
 //  is full and and adds the new frame to the fifo
 //  for display
@@ -1066,16 +1073,16 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         return;
     }
 
-
     if(NumFramesToSkip>0 || NumFramestoAggregate==0 || !Frame3D) {
         // no aggregation, basic per frame update of point cloud
         Frame frame;
         // convert latestL2 point cloud packet to Frame of cloud points
-        if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust,
+        if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D,
+                                            mIMUadjust, mIMUadjustRollPitch,
                                             mCalOveride, mCalScale, mCalBias,
                                             mIMUPCtimeConstraint)) {
-            // if packet is missing or IMU pose correction failed
-            // with mIMUadjust is true
+            // if PC or IMU packet is missing or IMU pose correction failed
+            // or timestamp match between PC and IMU failed with IMUadjust true
             // do not add to point cloud
             return;
         }
@@ -1108,7 +1115,8 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
 
     Frame frame;
     // convert latestL2 point cloud packet to Frame of cloud points
-    if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D, mIMUadjust,
+    if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D,
+                                        mIMUadjust, mIMUadjustRollPitch,
                                         mCalOveride, mCalScale, mCalBias,
                                         mIMUPCtimeConstraint)) {
         // if packet is missing or IMU pose correction failed
@@ -1161,36 +1169,16 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
 }
 
 //--------------------------------------------------------
-//  onNewLidarFrame()
+//  onNewLidarIMU()
 //  signal recieved from l2lidar class that a new frame
-//  of point cloud data is availabe
-//  This removes the oldest frame from the fifo if the fifo
-//  is full and and adds the new frame to the fifo
-//  for display
-//
-//  This is updated at the packet receive rate
-//
-//  The Point cloud viewer architecture changed allows means
-//  it doesn't need to have any awareness of the frame or
-//  frame size.
-//
-//  The frame is converted to a point cloud format and then
-//  appended to the point cloud display.
-//
-//  This includes a demonstration of frame aggregation for 3D
-//  point cloud frames.
-//  Requirements:
-//      The l2lidar settings for
-//          enableSynHost = true,
-//          enableTScorrection = true
-//      NumFramesToSkip must be 0
-//      This only applies to 3D point cloud data
+//  of IMU data is available.
+//  Calculate latest stats for IMU data
 //--------------------------------------------------------
 void MainWindow::onNewLidarIMU()
 {
-    if(enableIMUstats) {
+    if(menableIMUstats) {
         LidarImuDataPacket Imu = l2lidar.imu();
-        CalcIMUstats(Imu,ImuStats);
+        CalcIMUstats(Imu,mImuStats);
         return; // only calculate stats if enabled
     }
 }
@@ -1200,7 +1188,8 @@ void MainWindow::onNewLidarIMU()
 //--------------------------------------------------------
 void MainWindow::CalcIMUstats(LidarImuDataPacket Imu, StatsIMU& ImuStats)
 {
-    float Alpha = 1.0/100.0; // Time contast for 1st order stats filter calculation
+    float Alpha = 1.0/200.0; // Time contast for 1st order stats filter calculation
+
     ImuStats.last0 = Imu.data.quaternion[0];
     ImuStats.last1 = Imu.data.quaternion[1];
     ImuStats.last2 = Imu.data.quaternion[2];
@@ -1226,6 +1215,42 @@ void MainWindow::CalcIMUstats(LidarImuDataPacket Imu, StatsIMU& ImuStats)
     MeanDev(ImuStats.lastXG, &ImuStats.XGmean, &ImuStats.XGsigma, Alpha);
     MeanDev(ImuStats.lastYG, &ImuStats.YGmean, &ImuStats.YGsigma, Alpha);
     MeanDev(ImuStats.lastZG, &ImuStats.ZGmean, &ImuStats.ZGsigma, Alpha);
+
+    //--------------------------------------
+    // derived stats from quaternion for yaw, pitch and roll
+    Quaternion q;
+    EulerAngles e;
+    q.w = ImuStats.last0; // last0-3 are the current quaternion
+    q.x = ImuStats.last1;
+    q.y = ImuStats.last2;
+    q.z = ImuStats.last3;
+    // convert to yaw, pitch and roll in degrees
+    e = QuaternionToEuler(q,true);
+    ImuStats.lastYaw = e.yaw;
+    ImuStats.lastPitch = e.pitch;
+    ImuStats.lastRoll = e.roll;
+
+    MeanDev(ImuStats.lastYaw, &ImuStats.YawMean, &ImuStats.YawSigma, Alpha);
+    MeanDev(ImuStats.lastPitch, &ImuStats.PitchMean, &ImuStats.PitchSigma, Alpha);
+    MeanDev(ImuStats.lastRoll, &ImuStats.RollMean, &ImuStats.RollSigma, Alpha);
+    //--------------------------------------
+
+    //--------------------------------------
+    // derived stats acceleromter garvity aligned roll and pitch
+    //
+    double Ax = Imu.data.linear_acceleration[0];
+    double Ay = Imu.data.linear_acceleration[1];
+    double Az = Imu.data.linear_acceleration[2];
+
+    double roll = atan2(Ay, Az);
+    double pitch = atan2(-Ax, sqrt(Ay*Ay + Az*Az));
+
+    ImuStats.lastRollGr = roll * RAD_TO_DEG;
+    ImuStats.lastPitchGr = pitch * RAD_TO_DEG;
+
+    MeanDev(ImuStats.lastRollGr, &ImuStats.RollMeanGr, &ImuStats.RollSigmaGr, Alpha);
+    MeanDev(ImuStats.lastPitchGr, &ImuStats.PitchMeanGr, &ImuStats.PitchSigmaGr, Alpha);
+    //--------------------------------------
 
     return;
 }
@@ -1318,11 +1343,25 @@ void MainWindow::openConfig()
 
         // L2 corrections
         l2lidar.EnableL2TimeCorrection(config.isL2TimeCorrectionEnabled());
+        if(!l2lidar.SetL2TimeScale(config.getL2TscaleNum(),config.getL2TscaleDen())){
+            // throw dialog about invalid parameters
+            QMessageBox msgBox;
+            msgBox.setText("Bad paramters for time stamp correction");
+            msgBox.setInformativeText("Error: num!=den, num>0, den>0\n no correction will be performed");
+            msgBox.setStandardButtons(QMessageBox::Ok);
+            msgBox.exec();
+        }
         l2lidar.EnableL2TSsync(config.isL2TsyncHostEnabled());
+
+        // use system time for packet timestamps if enabled
         l2lidar.SetL2TSsyncRate(config.getL2syncRate());
+
+        // use system time for packet timestamps if enabled
+        l2lidar.SetUseSystemNowTimestamps(config.isUseSystemNowEnabled());
 
         // latency measurements
         l2lidar.EnableLatencyMeasure(config.isLatencyEnabled());
+        l2lidar.SetUseSystemNowTimestamps(config.isUseSystemNowEnabled());
 
         // check if buffering has changed
         if(mmaxPoints!=config.getMaxPoints()) {
@@ -1424,10 +1463,21 @@ void MainWindow::L2connect()
 {
     // L2 time base correction settings
     l2lidar.EnableL2TimeCorrection(config.isL2TimeCorrectionEnabled());
+    if(!l2lidar.SetL2TimeScale(config.getL2TscaleNum(),config.getL2TscaleDen())) {
+        QMessageBox msgBox;
+        msgBox.setText("Bad paramters for time stamp correction");
+        msgBox.setInformativeText("Error: num!=den, num>0, den>0\n no correction will be performed");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
+
     l2lidar.EnableL2TSsync(config.isL2TsyncHostEnabled());
     l2lidar.SetL2TSsyncRate(config.getL2syncRate());
     // latency measurements
     l2lidar.EnableLatencyMeasure(config.isLatencyEnabled());
+    // use system time for packet timestamps if enabled
+    l2lidar.SetUseSystemNowTimestamps(config.isUseSystemNowEnabled());
+
 
     if(!l2lidar.ConnectL2()) {
         QString errorstr = l2lidar.GetLastUDPError();

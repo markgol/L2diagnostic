@@ -66,7 +66,14 @@
 //                      0 is no aggregation, 38 matches one hemishpere scan
 //                      Moved L2lidar class into its own release
 //  V0.4.4  2026-02-22  Added stats to the IMU variables
-//  V1.0.0  2026-03-28  Offical release
+//  V1.0.0  2026-03-28  Official release
+//  V1.3.0  2026-06-18  Updated to L2lidarCLass V1.3.4
+//                      Added derived stats for roll, pitch and yaw
+//                      Added use system time for packets option
+//                      Added checks on timestamp correction parameters
+//                      Moved quaterion and euler methods to quaternion.h
+//                      Removed conditional use of timestamp correction
+//                          for aggregation.
 //
 //--------------------------------------------------------
 
@@ -281,9 +288,10 @@ private:
 
     // IMU operations
     bool mIMUadjust{false}; // correct for IMU
+    bool mIMUadjustRollPitch {true}; // correct only for roll, pitch
     double mIMUPCtimeConstraint {0.07}; // time constraint for matching IMU to Point Cloud
-    bool enableIMUstats {true}; // calculate stats on IMU data
-    StatsIMU ImuStats;
+    bool menableIMUstats {true}; // calculate stats on IMU data
+    StatsIMU mImuStats;
     void onNewLidarIMU();   // this is only used when enableIMUstatus is true
     void CalcIMUstats(LidarImuDataPacket Imu, StatsIMU& ImuStats);
     void MeanDev(float Value, float* MeanValue, float* sigmaValue, float Alpha);

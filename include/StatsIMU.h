@@ -33,6 +33,7 @@
 //
 //  V0.4.4  2026-03-02  Added stats to the IMU variables
 //  V1.0.0  2026-03-28  Offical release
+//  V1.3.0  2026-06-15  Added derived stats for roll, pitch and yaw
 //
 //--------------------------------------------------------
 
@@ -76,6 +77,11 @@ struct StatsIMU
     float last1;
     float last2;
     float last3;
+    float lastRoll {0.0};
+    float lastPitch{0.0};
+    float lastYaw {0.0};
+    float lastRollGr {0.0};
+    float lastPitchGr {0.0};
     float XAmean {0.0};
     float YAmean {0.0};
     float ZAmean {0.0};
@@ -96,4 +102,15 @@ struct StatsIMU
     float Sigma1 {0.0};
     float Sigma2 {0.0};
     float Sigma3 {0.0};
+    float RollMean {0.0};
+    float RollSigma {0.0};
+    float PitchMean {0.0};
+    float PitchSigma {0.0};
+    float YawMean {0.0};
+    float YawSigma {0.0};
+    float RollMeanGr {0.0};
+    float RollSigmaGr {0.0};
+    float PitchMeanGr {0.0};
+    float PitchSigmaGr {0.0};
+
 };

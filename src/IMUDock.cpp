@@ -37,6 +37,7 @@
 //  V0.3.5  2026-01-24  Minor formatting fix to accelerometer data
 //  V0.4.4  2026-03-02  Added stats to the IMU variables
 //  V1.0.0  2026-03-28  Offical release
+//  V1.3.0  2026-06-10  Added derived Yaw, Pitch, and Roll to IMU stats
 //
 //--------------------------------------------------------
 
@@ -208,6 +209,23 @@ void IMUDock::updateIMU(const StatsIMU& ImuStats)
     ResultString = ResultString.asprintf("%8.3f",ImuStats.ZGmean);
     ui->lblZGmean->setText(ResultString);
 
+    // report derived mean Roll,Pitch,Yaw from Quaternion
+    ResultString = ResultString.asprintf("%8.3f deg",ImuStats.RollMean);
+    ui->lblRollmean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f deg",ImuStats.PitchMean);
+    ui->lblPitchmean->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f deg",ImuStats.YawMean);
+    ui->lblYawmean->setText(ResultString);
+
+    // report derived mean Roll,Pitch,Yaw  from Accelerometer (gravity aligned)
+    ResultString = ResultString.asprintf("%8.3f deg",ImuStats.RollMeanGr);
+    ui->lblRollmeanGr->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f deg",ImuStats.PitchMeanGr);
+    ui->lblPitchmeanGr->setText(ResultString);
+
     // report stddev Quaternions values
     ResultString = ResultString.asprintf("%9.6f",sqrt(ImuStats.Sigma0));
     ui->lbl0dev->setText(ResultString);
@@ -240,6 +258,23 @@ void IMUDock::updateIMU(const StatsIMU& ImuStats)
 
     ResultString = ResultString.asprintf("%8.3f",sqrt(ImuStats.ZGsigma));
     ui->lblZGdev->setText(ResultString);
+
+    // report derived syddev Roll,Pitch,Yaw from Quaternion
+    ResultString = ResultString.asprintf("%8.3f deg",sqrt(ImuStats.RollSigma));
+    ui->lblRollstd->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f deg",sqrt(ImuStats.PitchSigma));
+    ui->lblPitchstd->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f deg",sqrt(ImuStats.YawSigma));
+    ui->lblYawstd->setText(ResultString);
+
+    // report derived syddev Roll,Pitch,Yaw from Accelerometer (gravity aligned)
+    ResultString = ResultString.asprintf("%8.3f deg",sqrt(ImuStats.RollSigmaGr));
+    ui->lblRollstdGr->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%8.3f deg",sqrt(ImuStats.PitchSigmaGr));
+    ui->lblPitchstdGr->setText(ResultString);
 
     //  -------------------------------------
 
