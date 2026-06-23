@@ -96,6 +96,15 @@ void ConfigDialog::ResetPCview()
 }
 
 //--------------------------------------------------------
+//  private slot
+//  CurrentPCview
+//--------------------------------------------------------
+void ConfigDialog::CurrentPCview()
+{
+    emit requestCurrentPCview();
+}
+
+//--------------------------------------------------------
 //  signal
 //  setPointSizeRange
 //--------------------------------------------------------

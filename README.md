@@ -1,4 +1,4 @@
-**Updated: 2026-06-18**
+**Updated: 2026-06-21**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -223,7 +223,9 @@ Removed the timestamp correction conditional restrainst for aggregation.  Aggreg
 Removed the appimage section of the CMakeLists.txt file.  This used the linuxdeploy app.  The linuxdeplot and linuxdeployqt apps are not maintained and actually compatible with QT 6.10 or later Qt versions.  This only applied to Linux build with appimage build selected.
 Added RPATH settings in CMakeLists.txt so that the ./lib folder is searched before system folders.
 
+**V1.3.1**
 
+This is a small update.  It initializes the IMU dock window to a correct minimum size.  It copies the current view settings to the default view settings in the config dialog.  Also in the config dialog the L2 UDP subnet mask and gateway can be changed from the default.  A standalone windows executable has been created and does not require Qt to be installed.  The aarch64 executable (RPI5 and Jetson Orin) has been created but does require Qt to be installed.
 
 **Current Status**
 

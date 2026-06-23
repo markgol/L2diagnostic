@@ -134,6 +134,9 @@
 //                      Moved quaterion and euler methods to quaternion.h
 //                      Removed conditional use of timestamp correction
 //                          for aggregation.
+//  V1.3.1  2026-06-21  Added config params for settings gatewey IP address and subnet mask
+//                      Corrected initial size of IMUstats window
+//                      Added save current view to default view
 //
 //--------------------------------------------------------
 
@@ -274,6 +277,10 @@ MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
 
     // initial state of buttons and uis is L2 disconnected
     L2DisconnectedButtonsUIs(); // set buttons and UIs states when L2 disconnected
+
+    // connect config request from set current view button
+    connect(&config, &ConfigDialog::requestCurrentPCview,
+            this, &MainWindow::handleCurrentPCView);
 
     // connect config request from set view button
     connect(&config, &ConfigDialog::requestViewReset,
@@ -454,58 +461,60 @@ void MainWindow::handleResetView()
 }
 
 //--------------------------------------------------------
+//  handleResetView from config dialog set view button
+//  changes aren't permanent till okay button is pressed
+//--------------------------------------------------------
+void MainWindow::handleCurrentPCView()
+{
+    PCsettings CurrentPC;
+    if(m_pointCloudWindow!=nullptr) {
+        m_pointCloudWindow->getPCsettings(CurrentPC);
+
+        float Yaw = CurrentPC.Yaw ;
+        float Pitch = CurrentPC.Pitch;
+
+       // make sure yaw, pitch values do not exceed
+        while(Yaw>=360.0) {
+            Yaw = Yaw-360.0;
+        }
+
+        while(Yaw<=-360.0) {
+            Yaw = Yaw+360.0;
+        }
+
+        while(Pitch>=360.0) {
+            Pitch = Pitch-360.0;
+        }
+
+        while(Pitch<=-360.0) {
+            Pitch = Pitch+360.0;
+        }
+
+        config.setPCWdistance(CurrentPC.Distance);
+        config.setPCWyaw(Yaw);
+        config.setPCWpitch(Pitch);
+        config.setPointSize(CurrentPC.PointSize);
+        config.setMinDistance(CurrentPC.MinDistance);
+        config.setMaxDistance(CurrentPC.MaxDistance);
+    }
+
+    // m_pointCloudWindow->setPCsettings(defaultPCsettings);
+}
+
+//--------------------------------------------------------
 //  handleConfigureUDP from config dialog Configure UDP button
 //  This requires a power cycle of the L2
 //--------------------------------------------------------
 void MainWindow::handleConfigureUDP()
 {
-    QString hostIP = config.getSRCip();
+    QString hostIP = config.getSRCip(); // this is the L2 lidar
     uint32_t hostPort = config.getSRCport();
-    QString LidarIP = config.getDSTip();
+    QString LidarIP = config.getDSTip(); // this where the message is sent
     uint32_t LidarPort = config.getDSTport();
+    QString GatewayIP = config.getGatewayip();
+    QString SubnetMask = config.getSubnetMask();
 
-    // convert IP string to numbers
-    int L2ip[4] {0,0,0,0};
-    int Hip[4] {0,0,0,0};
-
-    // make sure valid ip
-    QStringList parts = hostIP.split('.');
-    bool result;
-
-    L2ip[0] = parts[0].toUInt(&result);
-    if(!result) return;
-    if(L2ip[0]<0 || L2ip[0]>255) return;
-
-    L2ip[1] = parts[1].toUInt(&result);
-    if(!result) return;
-    if(L2ip[1]<0 || L2ip[1]>255) return;
-
-    L2ip[2] = parts[2].toUInt(&result);
-    if(!result) return;
-    if(L2ip[2]<0 || L2ip[2]>255) return;
-
-    L2ip[3] = parts[3].toUInt(&result);
-    if(!result) return;
-    if(L2ip[3]<0 || L2ip[3]>255) return;
-
-    parts = LidarIP.split('.');
-    Hip[0] = parts[0].toUInt(&result);
-    if(!result) return;
-    if(Hip[0]<0 || Hip[0]>255) return;
-
-    Hip[1] = parts[1].toUInt(&result);
-    if(!result) return;
-    if(Hip[1]<0 || Hip[1]>255) return;
-
-    Hip[2] = parts[2].toUInt(&result);
-    if(!result) return;
-    if(Hip[2]<0 || Hip[2]>255) return;
-
-    Hip[3] = parts[3].toUInt(&result);
-    if(!result) return;
-    if(Hip[3]<0 || Hip[3]>255) return;
-
-    if(l2lidar.setL2UDPconfig(hostIP, hostPort, LidarIP, LidarPort)) {
+    if(l2lidar.setL2UDPconfig(hostIP, hostPort, LidarIP, LidarPort, GatewayIP, SubnetMask)) {
         QMessageBox msgBox;
         msgBox.setText("Restart application");
         msgBox.setInformativeText("L2 must be powered cycle and app restarted");
@@ -514,7 +523,7 @@ void MainWindow::handleConfigureUDP()
     } else {
         QMessageBox msgBox;
         msgBox.setText("command failed");
-        msgBox.setInformativeText("L2 is not turned on or not connected");
+        msgBox.setInformativeText("L2 invalid parameters or\nThe L2 is not turned on or\nThe L2 is not connected");
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.exec();
     }
@@ -795,7 +804,8 @@ void MainWindow::ConnectDocksViewerActions()
 void MainWindow::applyDocksVisibilityConstraint()
 {
     // set absolute geometry and state
-    resizeDocks({ m_IMUDock },{ 440 },Qt::Horizontal);
+    // resizeDocks({ m_IMUDock },{ 220 },Qt::Horizontal);
+    m_IMUDock->setMinimumWidth(640);
     resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
     resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 

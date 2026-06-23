@@ -57,6 +57,8 @@
 //  V1.3.0  2026-06-18  Added flag for IMU adjust just to roll, pitch vs roll, pitch, yaw
 //                      Added Numerator/Denominator scaling for time correction
 //                      Added Use system time for packet timestamps checkbox
+//  V1.3.1  2026-06-21  Added config params for settings gatewey IP address and subnet mask
+//                      Added save current view to default view
 //
 //--------------------------------------------------------
 
@@ -102,9 +104,13 @@ public:
         connect(ui.buttonBox, &QDialogButtonBox::rejected,
                 this, &QDialog::reject);
 
-        // Reset View button
+        // Set View button
         connect(ui.btnSetView, &QPushButton::clicked,
                 this, &ConfigDialog::ResetPCview);
+
+        // Set to current View button
+        connect(ui.btnUseCurrentView, &QPushButton::clicked,
+                this, &ConfigDialog::CurrentPCview);
 
         // Configure L2 UDP
         connect(ui.btnConfigureUDP, &QPushButton::clicked,
@@ -143,6 +149,15 @@ public:
         return ui.dstIPedit->text().trimmed();
     }
 
+    QString getGatewayip() const
+    {
+        return ui.gatewayIPedit->text().trimmed();
+    }
+
+    QString getSubnetMask() const
+    {
+        return ui.subnetMaskedit->text().trimmed();
+    }
 
     uint16_t getSRCport() const
     {
@@ -353,6 +368,16 @@ public:
         ui.dstIPedit->setText(ip);
     }
 
+    void setGatewayip(const QString& ip)
+    {
+        ui.gatewayIPedit->setText(ip);
+    }
+
+    void setSubnetMask(const QString& mask)
+    {
+        ui.subnetMaskedit->setText(mask);
+    }
+
     void setSRCport(uint16_t p)
     {
         ui.srcPortSpin->setValue(p);
@@ -545,12 +570,14 @@ public:
 
 signals:
     void requestViewReset();
+    void requestCurrentPCview();
     void requestConfigureUDP();
     void requestSetL2MAC();
 
 
 private slots:
     void ResetPCview();
+    void CurrentPCview();
     void ConfigureUDP();
     void SetL2MAC();
 

@@ -149,6 +149,8 @@
 //                      Corrected FixTimestamp to handle various startup conditions correctly
 //                          particularly after L2disconnect and L2connect when sync to host setting
 //                          have changed.
+//  V1.3.5  2026-06-21  Added parameter for gateway IP address and subnet mask in setL2UDPconfig()
+//
 //--------------------------------------------------------
 
 //--------------------------------------------------------
@@ -1197,11 +1199,14 @@ bool L2lidar::SetL2MAC(LidarMacAddressConfig MACsettings)
 //
 //--------------------------------------------------------------------
 bool L2lidar::setL2UDPconfig(QString hostIP, uint32_t hostPort,
-                             QString LidarIP, uint32_t LidarPort)
+                             QString LidarIP, uint32_t LidarPort,
+                             QString gateway, QString subnet)
 {
     // convert IP string to numbers
     int L2ip[4] {0,0,0,0};
     int Hip[4] {0,0,0,0};
+    int Gip[4] {0,0,0,0};
+    int sn[4] {255,255,255,0};
 
     // make sure valid ip
     // extract Lidar ip
@@ -1224,7 +1229,7 @@ bool L2lidar::setL2UDPconfig(QString hostIP, uint32_t hostPort,
     if(!result) return false;
     if(L2ip[3]<0 || L2ip[3]>255) return false;
 
-    // extract hist ip
+    // extract host ip
     parts = hostIP.split('.');
     Hip[0] = parts[0].toUInt(&result);
     if(!result) return false;
@@ -1242,6 +1247,42 @@ bool L2lidar::setL2UDPconfig(QString hostIP, uint32_t hostPort,
     if(!result) return false;
     if(Hip[3]<0 || Hip[3]>255) return false;
 
+    // extract gateway ip
+    parts = gateway.split('.');
+    Gip[0] = parts[0].toUInt(&result);
+    if(!result) return false;
+    if(Gip[0]<0 || Gip[0]>255) return false;
+
+    Gip[1] = parts[1].toUInt(&result);
+    if(!result) return false;
+    if(Gip[1]<0 || Gip[1]>255) return false;
+
+    Gip[2] = parts[2].toUInt(&result);
+    if(!result) return false;
+    if(Gip[2]<0 || Gip[2]>255) return false;
+
+    Gip[3] = parts[3].toUInt(&result);
+    if(!result) return false;
+    if(Gip[3]<0 || Gip[3]>255) return false;
+
+    // extract subnet mask
+    parts = subnet.split('.');
+    sn[0] = parts[0].toUInt(&result);
+    if(!result) return false;
+    if(sn[0]<0 || sn[0]>255) return false;
+
+    sn[1] = parts[1].toUInt(&result);
+    if(!result) return false;
+    if(sn[1]<0 || sn[1]>255) return false;
+
+    sn[2] = parts[2].toUInt(&result);
+    if(!result) return false;
+    if(sn[2]<0 || sn[2]>255) return false;
+
+    sn[3] = parts[3].toUInt(&result);
+    if(!result) return false;
+    if(sn[3]<0 || sn[3]>255) return false;
+
     // Set lidar ip address
     LidarIpAddressConfigPacket config;
 
@@ -1258,15 +1299,15 @@ bool L2lidar::setL2UDPconfig(QString hostIP, uint32_t hostPort,
     config.data.lidar_port = LidarPort;
     config.data.user_port = hostPort;
 
-    config.data.gateway[0] = 0;
-    config.data.gateway[1] = 0;
-    config.data.gateway[2] = 0;
-    config.data.gateway[3] = 0;
+    config.data.gateway[0] = Gip[0];
+    config.data.gateway[1] = Gip[1];
+    config.data.gateway[2] = Gip[2];
+    config.data.gateway[3] = Gip[3];
 
-    config.data.subnet_mask[0] = 255;
-    config.data.subnet_mask[1] = 255;
-    config.data.subnet_mask[2] = 255;
-    config.data.subnet_mask[3] = 0;
+    config.data.subnet_mask[0] = sn[0];
+    config.data.subnet_mask[1] = sn[1];
+    config.data.subnet_mask[2] = sn[2];
+    config.data.subnet_mask[3] = sn[3];
 
     setPacketHeader(&config.header, LIDAR_IP_ADDRESS_CONFIG_PACKET_TYPE, sizeof(LidarIpAddressConfigPacket));
 

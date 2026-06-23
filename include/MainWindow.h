@@ -74,6 +74,9 @@
 //                      Moved quaterion and euler methods to quaternion.h
 //                      Removed conditional use of timestamp correction
 //                          for aggregation.
+//  V1.3.1  2026-06-21  Added config params for settings gatewey IP address
+//                      Corrected initial size of IMUstats window
+//                      Added save current view as default view
 //
 //--------------------------------------------------------
 
@@ -172,6 +175,7 @@ public:
 public slots:
     // this is in response to set view button in the config dialog
     void handleResetView();
+    void handleCurrentPCView();
     void handleConfigureUDP();
     void handleSetL2MAC();
     void sendSetWorkmode();

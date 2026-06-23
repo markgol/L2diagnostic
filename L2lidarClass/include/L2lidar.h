@@ -126,6 +126,7 @@
 //                      Corrected FixTimestamp to handle various startup conditions correctly
 //                          particularly after L2disconnect and L2connect when sync to host setting
 //                          have changed.
+//  V1.3.5  2026-06-21  Added optional parameter for gateway IP address and subnet mask in setL2UDPconfig()
 //
 //--------------------------------------------------------
 
@@ -298,7 +299,9 @@ public:
     // This set the stored UDP configuration on the L2
     // a power cycle is required after this for it to take effect
     bool setL2UDPconfig(QString hostIP, uint32_t hostPort,
-                        QString LidarIP, uint32_t LidarPort);
+                        QString LidarIP, uint32_t LidarPort,
+                        QString gateway = "0.0.0.0",
+                        QString subnet = "255.255.255.0");
     bool SetWorkMode(uint32_t mode);  // requires reset or power cycle after setting
 
     // L2 Timstamp correction and controls

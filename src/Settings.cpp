@@ -61,6 +61,7 @@
 //  V1.0.0  2026-03-28  Offical release
 //  V1.1.0  2026-04-20  Added override of range calibration params
 //  V1.3.0  2026-06-15  Added flag for IMU adjust just to roll, pitch vs roll, pitch, yaw
+//  V1.3.1  2026-06-21  Added config params for settings gatewey IP address and subnet mask
 //
 //--------------------------------------------------------
 
@@ -136,11 +137,13 @@ void MainWindow::saveSettings(bool resetRequested)
 
     // Network
     settings.beginGroup("net");
-    settings.setValue("srcIP", config.getSRCip());
-    settings.setValue("dstIP", config.getDSTip());
-    settings.setValue("srcPort", config.getSRCport());
-    settings.setValue("dstPort", config.getDSTport());
+    settings.setValue("srcIP", config.getSRCip()); // L2
+    settings.setValue("dstIP", config.getDSTip()); // host
+    settings.setValue("srcPort", config.getSRCport()); // l2
+    settings.setValue("dstPort", config.getDSTport()); //host
     settings.setValue("MACaddress",config.GetMAC());
+    settings.setValue("GatewayIP", config.getGatewayip());
+    settings.setValue("SubnetMask",config.getSubnetMask());
     settings.endGroup();
 
     // L2 setup
@@ -254,6 +257,8 @@ void MainWindow::loadSettings(bool resetRequested)
         config.setDSTip(settings.value("dstIP", "192.168.1.62").toString()); // factory default
         config.setSRCport(settings.value("srcPort", 6201).toUInt()); // factory default
         config.setDSTport(settings.value("dstPort", 6101).toUInt()); // factory default
+        config.setGatewayip(settings.value("GatewayIP", "0.0.0.0").toString()); // factory default
+        config.setSubnetMask(settings.value("SubnetMask", "255.255.255.0").toString()); // factory default
         config.SetMAC(settings.value("MACaddress", "0c:29:ab:7c:00:01").toString());
     settings.endGroup();
 
