@@ -59,6 +59,9 @@
 //                      Added Use system time for packet timestamps checkbox
 //  V1.3.1  2026-06-21  Added config params for settings gatewey IP address and subnet mask
 //                      Added save current view to default view
+//  V1.3.2  2026-07-07  Updated to V1.3.6 of L2LidarClass
+//                      Added point cloud flattened scan capability
+//                      Added starting angle, angle width for point cloud capture
 //
 //--------------------------------------------------------
 
@@ -253,6 +256,11 @@ public:
         return static_cast<bool>(ui.cbIMUadjustRP->isChecked());
     }
 
+    bool isFlattenScanEnabled()
+    {
+        return static_cast<bool>(ui.cbPCflatten->isChecked());
+    }
+
     float getIMUPCtimeConstraint() const
     {
         return static_cast<float>(ui.spinTM2PC->value());
@@ -290,6 +298,16 @@ public:
     float getMaxDistance() const
     {
         return static_cast<float>(ui.spinColorMax->value());
+    }
+
+    double getStartScanAngle() const
+    {
+        return static_cast<double>(ui.spinStartScanAngle->value());
+    }
+
+    double getScanAngleWidth() const
+    {
+        return static_cast<double>(ui.spinScanAngleWidth->value());
     }
 
     //--------------------------------------------------------
@@ -452,6 +470,21 @@ public:
     void setIMUadjustEnabled(bool p)
     {
         ui.cbIMUadjust->setChecked(p);
+    }
+
+    void setFlattenScanEnabled(bool p)
+    {
+        ui.cbPCflatten->setChecked(p);
+    }
+
+    void setStartScanAngle(float angle)
+    {
+        ui.spinStartScanAngle->setValue(angle);
+    }
+
+    void setScanAngleWidth(float angle)
+    {
+        ui.spinScanAngleWidth->setValue(angle);
     }
 
     void setIMUadjustRollPitch(bool p)

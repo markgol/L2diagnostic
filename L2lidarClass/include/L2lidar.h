@@ -127,6 +127,14 @@
 //                          particularly after L2disconnect and L2connect when sync to host setting
 //                          have changed.
 //  V1.3.5  2026-06-21  Added optional parameter for gateway IP address and subnet mask in setL2UDPconfig()
+//  V1.3.6  2026-07-11  Changed PCpoint to include both calibrated range and raw range value.
+//                      Changed return of range value from parseFromPacketToPointCloud()
+//                          and parseFromPacketPointCloud2D() to be actual range from L2.
+//                          The raw range value from the L2 is returned in a PCpoint field called raw_range.
+//                      Complimentary changes also made in the unitree_lidar_utilitiesL2.h file
+//                      Added SelectiveParseFromPacketToPointCloud() for 3d scans
+//                          along with 2 helper functions; inAngularWindow(), degreesToRadians()
+//                          These are not part of the original unitree_lidar_utilities.h SDK
 //
 //--------------------------------------------------------
 
@@ -382,6 +390,7 @@ public:
     // convert point frame data from L2 to point cloud
     bool ConvertL2data2pointcloud(Frame& frame, bool Frame3D,
                                   bool IMUadjust,bool AdjustRollPitchOnly,
+                                  double StartScanAngle, double ScanAngleWidth, bool flatten,
                                   bool CalOVR, double CalScale, double CalBias,
                                   double timeConstraintIMU_PC = 0.07);
 

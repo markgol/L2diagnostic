@@ -272,7 +272,7 @@
    <property name="geometry">
     <rect>
      <x>250</x>
-     <y>290</y>
+     <y>320</y>
      <width>281</width>
      <height>211</height>
     </rect>
@@ -623,7 +623,7 @@
      <x>250</x>
      <y>10</y>
      <width>281</width>
-     <height>271</height>
+     <height>301</height>
     </rect>
    </property>
    <property name="title">
@@ -633,7 +633,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>30</y>
+      <y>10</y>
       <width>41</width>
       <height>31</height>
      </rect>
@@ -645,9 +645,9 @@
    <widget class="QSpinBox" name="spinNframe">
     <property name="geometry">
      <rect>
-      <x>170</x>
-      <y>28</y>
-      <width>51</width>
+      <x>160</x>
+      <y>8</y>
+      <width>61</width>
       <height>31</height>
      </rect>
     </property>
@@ -655,10 +655,10 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>30</y>
+      <x>0</x>
+      <y>10</y>
       <width>151</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -675,7 +675,7 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>80</y>
+      <y>50</y>
       <width>91</width>
       <height>31</height>
      </rect>
@@ -694,7 +694,7 @@
     <property name="geometry">
      <rect>
       <x>110</x>
-      <y>80</y>
+      <y>50</y>
       <width>111</width>
       <height>31</height>
      </rect>
@@ -715,8 +715,8 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>170</y>
+      <x>30</x>
+      <y>220</y>
       <width>231</width>
       <height>21</height>
      </rect>
@@ -729,7 +729,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>80</y>
+      <y>50</y>
       <width>41</width>
       <height>31</height>
      </rect>
@@ -742,7 +742,7 @@
     <property name="geometry">
      <rect>
       <x>110</x>
-      <y>130</y>
+      <y>90</y>
       <width>91</width>
       <height>31</height>
      </rect>
@@ -755,7 +755,7 @@
     <property name="geometry">
      <rect>
       <x>210</x>
-      <y>130</y>
+      <y>90</y>
       <width>61</width>
       <height>31</height>
      </rect>
@@ -768,7 +768,7 @@
     <property name="geometry">
      <rect>
       <x>-10</x>
-      <y>130</y>
+      <y>90</y>
       <width>111</width>
       <height>31</height>
      </rect>
@@ -787,7 +787,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>230</y>
+      <y>260</y>
       <width>41</width>
       <height>31</height>
      </rect>
@@ -800,7 +800,7 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>230</y>
+      <y>260</y>
       <width>121</width>
       <height>31</height>
      </rect>
@@ -819,7 +819,7 @@
     <property name="geometry">
      <rect>
       <x>130</x>
-      <y>230</y>
+      <y>260</y>
       <width>91</width>
       <height>31</height>
      </rect>
@@ -841,13 +841,131 @@
     <property name="geometry">
      <rect>
       <x>70</x>
-      <y>190</y>
+      <y>240</y>
       <width>201</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
      <string>Adjust only for roll, pitch</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="cbPCflatten">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>190</y>
+      <width>231</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>flatten scan to 2D</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_31">
+    <property name="geometry">
+     <rect>
+      <x>-10</x>
+      <y>130</y>
+      <width>121</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>start scan angle</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_32">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>130</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string> deg CCW</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="spinStartScanAngle">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>130</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <double>0.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>360.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.100000000000000</double>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_33">
+    <property name="geometry">
+     <rect>
+      <x>-10</x>
+      <y>160</y>
+      <width>121</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>scan angle width</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_34">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>160</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>deg</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="spinScanAngleWidth">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>160</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <double>0.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>360.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.100000000000000</double>
     </property>
    </widget>
   </widget>

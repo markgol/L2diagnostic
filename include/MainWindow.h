@@ -77,6 +77,9 @@
 //  V1.3.1  2026-06-21  Added config params for settings gatewey IP address
 //                      Corrected initial size of IMUstats window
 //                      Added save current view as default view
+//  V1.3.2  2026-07-07  Updated to V1.3.6 of L2LidarClass
+//                      Added point cloud flattened scan capability
+//                      Added starting angle, angle width for point cloud capture
 //
 //--------------------------------------------------------
 
@@ -115,18 +118,19 @@
 #pragma once
 
 // Qt includes
-#include <QMainWindow>
-#include <QTimer>
+#include <QElapsedTimer>
 #include <QFile>
+#include <QFileDialog>
+#include <QMainWindow>
+#include <QQueue>
 #include <QTextStream>
+#include <QTimer>
 #include <QUdpSocket>
+#include <QVector>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
-#include <QVector>
-#include <QQueue>
-#include <QElapsedTimer>
-#include <QFileDialog>
+#include <cstdio>
 
 // project specific includes
 #include "ConfigDialog.h"
@@ -263,7 +267,11 @@ private:
     PCsettings defaultPCsettings {10.0,145.0,20.0,1.0,0.0,40.0};
     void SetDefaultView();
 
-    int NumFramestoAggregate {38};
+    int mNumFramestoAggregate {38};
+
+    bool mFlattenScanEnabled {false}; // only allow capture of point clouds close to xz plane
+    double mStartScanAngle {0.0};
+    double mScanAngleWidth {360};
 
     // close point cloud viewer and workmode dialog (non-modal)
     void closeEvent(QCloseEvent* e);
@@ -277,8 +285,7 @@ private:
                                             // true - 3D packet recieved
 
     // throttle for point cloud viewer
-    uint32_t NumFramesToSkip {4};
-    uint32_t CurrentSkipCount {0};
+    uint32_t mNumFramesToSkip {4};
 
     // calibration override
     bool mCalOveride {false};
@@ -347,5 +354,15 @@ private:
     bool GetSettingsReset();
     void SetSettingsReset(bool Reset);
 
-
+    //-----------------------------------------------------
+    // logging functions
+    //-----------------------------------------------------
+    bool mLogging {false};
+    QString mLogFilename {"L2diagnostic.log"};
+    FILE *mLogFile {NULL};
+    void logParameter(const char *Name, double value);
+    void logParameter(const char *Name, bool value);
+    void logParameter(const char *Name, float value);
+    void logParameter(const char *Name, int value);
+    void logParameter(const char *Name, QString text);
 };

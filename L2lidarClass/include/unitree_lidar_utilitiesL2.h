@@ -52,6 +52,13 @@
 //                  parseFromPacketToPointCloud()
 //                  parseFromPacketPointCloud2D()
 //  2026-06-18  Comment updates only, removal of unused includes
+//  2026-07-05  Changed PointUnitree to include both calibrated range and raw range value.
+//              Changed return of range value from parseFromPacketToPointCloud()
+//                  and parseFromPacketPointCloud2D() to be calibrated range of a point.
+//                  The raw range value from the L2 is returned in a PointUnitree field called raw_range.
+//  2026-07-11  Added SelectiveParseFromPacketToPointCloud() for 3d scans
+//                   along with 2 helper functions; inAngularWindow(), degreesToRadians()
+//                   These are not part of the original Unitree utilities.h SDK
 //
 //-----------------------------------------------------------------------
 
@@ -92,6 +99,7 @@ typedef struct
     float z;
     float intensity;
     float range;
+    float raw_range;
     double time; // changed to double to maintain precicion
     uint32_t ring; // ring is always 1
 } PointUnitree;
@@ -182,13 +190,6 @@ inline uint32_t crc32(const uint8_t *buf, uint32_t len)
 //  to maintain time precision downstream
 //  Changed the math from float to double for improved precision
 //-----------------------------------------------------------------------
-//
-// @brief Parse from a point packet to a 3D point cloud
-// @param[out] cloud
-// @param[in] packet lidar point data packet
-// @param[in] use_system_timestamp use system timestamp, otherwise use packet timestamp
-// @param[in] range_min allowed minimum point range in meters
-// @param[in] range_max allowed maximum point range in meters
 //
 inline void parseFromPacketToPointCloud(
     PointCloudUnitree &cloud,
@@ -296,7 +297,8 @@ inline void parseFromPacketToPointCloud(
         // push back this point to cloud
         point3d.intensity = intensities[j];
         point3d.time = time_relative;  // this was changed to double
-        point3d.range = (float)ranges[j]/(float)1000.0; // convert  mm to meters
+        point3d.raw_range = (float)ranges[j]/(float)1000.0; // convert  mm to meters
+        point3d.range = range_float; // calibrated range value
         cloud.points.push_back(point3d);
     }
 }
@@ -398,10 +400,205 @@ inline void parseFromPacketPointCloud2D(
 
         // push back this point to cloud
         point3d.intensity = intensities[j];
-        point3d.range = (float)ranges[j]/(float)1000.0; // convert mm to meters
+        point3d.raw_range = (float)ranges[j]/(float)1000.0; // convert mm to meters
+        point3d.range = range_float; // calibrated range value
         point3d.time = time_relative;
         cloud.points.push_back(point3d);
     }
+}
+
+//-----------------------------------------------------------------------
+//***********************************************************************
+//
+//  SelectiveParseFromPacketToPointCloud()
+//
+//  This is derived from but not part of Unitree's SDK
+//  This has been added to aid in the collection a scan line calibration slices
+//  for 3d scans and to select a angular set of scans.
+//
+//  This can also be used to limit the accepted scan angle (set flatten to false)
+//  Example:  -45 degrees to 45 degrees would only keep data in a 90 angle
+//  in front of the L2
+//
+//  This collects points that are within a specified slow scan angle
+//  and flattens the scan to just x,z.  This generates a line spread function
+//  that shows the transfer function of range.
+//
+//  Requirements:
+//  Extend flat surface.  It can only provide the transfer function for the
+//  extent of the flat surface.  Angle extent should limit to the angluar
+//  extent of the flat surface.
+//  Data collection may take awhile since there are only ~18 scans per revolution
+//  A minimum of 86 seconds for a dense non repeating slow scan angle
+//  Longer if additional noise data is requried.
+//
+// minAngle is in degrees for the xz plane
+// maxAngel is in degress for the xz plane
+//
+//  The returned point cloud is acutally just 2d
+//
+//  The Unitree L2 has a strange range for theta angle:
+//      2.07697224617 to 8.42355474160
+//
+//
+//-----------------------------------------------------------------------
+#define PI 3.14159265358979323846
+#define TWO_PI (2.0 * PI)
+
+// helper function for SelectiveParseFromPacketToPointCloud()
+inline double degreesToRadians(double degrees)
+{
+    return degrees * PI / 180.0;
+}
+
+// helper functions for SelectiveParseFromPacketToPointCloud()
+inline bool inAngularWindow(double theta, const double StartAngle, const double AngleWidth)
+{
+    // if width is 360 degrees or greater then everything is in range
+    if(AngleWidth >= TWO_PI) return true;
+
+    double d = theta - StartAngle;
+
+    d = std::fmod(d, TWO_PI);
+    if (d < 0.0)
+        d += TWO_PI;
+
+    return d <= AngleWidth;
+}
+
+//-----------------------------------------------------
+//  SelectiveParseFromPacketToPointCloud()
+//-----------------------------------------------------
+inline void SelectiveParseFromPacketToPointCloud(
+    PointCloudUnitree &cloud,
+    const LidarPointDataPacket &packet,
+    bool use_system_timestamp = false,
+    float range_min = 0,
+    float range_max = 100,
+    float StartAngle = 0.0,
+    float AngleWidth = 360.0,
+    bool flatten = false,
+    bool OverideCalibration = false,
+    double RangeScaleOVR = 0.000978,
+    double RangeBiasOVR = -365.625
+    )
+{
+    // convert minAngle,maxAngle to radians
+
+    double StartD = std::fmod(StartAngle,360.0); // keep start in range 0-2*PI
+    double StartAngleRad = degreesToRadians(StartD);
+    double AngleWidthRad = degreesToRadians(AngleWidth);
+
+    // scan info
+    const int num_of_points = packet.data.point_num;
+    const double time_step = (double) packet.data.time_increment;
+    const float scan_period = packet.data.scan_period;
+
+    // intermediate variables
+    const double sin_beta = sin((double)packet.data.param.beta_angle);
+    const double cos_beta = cos((double)packet.data.param.beta_angle);
+    const double sin_xi = sin((double)packet.data.param.xi_angle);
+    const double cos_xi = cos((double)packet.data.param.xi_angle);
+    const double cos_beta_sin_xi = cos_beta * sin_xi;
+    const double sin_beta_cos_xi = sin_beta * cos_xi;
+    const double sin_beta_sin_xi = sin_beta * sin_xi;
+    const double cos_beta_cos_xi = cos_beta * cos_xi;
+
+    // cloud init, time stamp,  this has been changed to nanoseconds since epoch
+    if (use_system_timestamp) {
+        cloud.stamp = getSystemTimeStampnsec() - (long long)((double)scan_period*1.0e9+0.5);
+    }else{
+        // this was changed from double to long long to maintain time precision
+        cloud.stamp = ((long long)packet.data.info.stamp.sec * 1000000000) +
+                      (long long)packet.data.info.stamp.nsec;
+    }
+    // rest of cloud init
+    cloud.id = 1;
+    cloud.ringNum = 1;
+    cloud.points.clear();
+    cloud.points.reserve(MAX_3DPOINTS_PER_FRAME);
+
+    // transform raw data to a pointcloud
+    auto &ranges = packet.data.ranges;
+    auto &intensities = packet.data.intensities;
+
+    // Unitree provides the cal data as float
+    // but use double for calculations
+    double time_relative = 0.0;
+    double alpha_cur = packet.data.angle_min + packet.data.param.alpha_angle_bias;
+    double alpha_step = packet.data.angle_increment;
+    double theta_cur = packet.data.com_horizontal_angle_start + packet.data.param.theta_angle_bias;
+    double theta_step = packet.data.com_horizontal_angle_step;
+
+    float range_float;
+
+    double sin_alpha, cos_alpha, sin_theta, cos_theta;
+    double A, B, C;
+
+    PointUnitree point3d;
+    point3d.ring = 1;
+    // std::cout << "packet.data.param.range_scale = " << packet.data.param.range_scale << std::endl;
+
+    for (int j = 0; j < num_of_points; j += 1, alpha_cur += alpha_step,
+                                       theta_cur += theta_step, time_relative += time_step)
+    {
+        // jump invalid points
+        if (ranges[j] <= 1)
+        {
+            continue;
+        }
+
+        // if not within the specifed angle range ignore point
+        if(!inAngularWindow(theta_cur, StartAngleRad, AngleWidthRad)) {
+            continue;
+        }
+
+        // calculate point range in float type
+        if(OverideCalibration) {
+            range_float = RangeScaleOVR * ((float)ranges[j] + RangeBiasOVR);
+        } else {
+            range_float = packet.data.param.range_scale * ((float)ranges[j] + packet.data.param.range_bias);
+        }
+
+        // jump points beyond range limit
+        if ( range_float < packet.data.range_min || range_float > packet.data.range_max)
+        {
+            continue;
+        }
+
+        // jump points beyond range limit
+        if (range_float < range_min || range_float > range_max)
+        {
+            continue;
+        }
+
+        // transform to XYZ coordinate
+        sin_alpha = sin((double)alpha_cur);
+        cos_alpha = cos((double)alpha_cur);
+        if(!flatten) {
+            sin_theta = sin((double)theta_cur);
+            cos_theta = cos((double)theta_cur);
+        } else {
+            sin_theta = sin((double)StartAngleRad+AngleWidthRad/2.0);  // collapse the scan to center of scan width
+            cos_theta = cos((double)StartAngleRad+AngleWidthRad/2.0);  // collapse the scan to center of scan width
+        }
+
+        A = (-cos_beta_sin_xi + sin_beta_cos_xi * sin_alpha) * range_float + packet.data.param.b_axis_dist;
+        B = cos_alpha * cos_xi * range_float;
+        C = (sin_beta_sin_xi + cos_beta_cos_xi * sin_alpha) * range_float;
+
+        point3d.x = cos_theta * A - sin_theta * B;
+        point3d.y = sin_theta * A + cos_theta * B;
+        point3d.z = C + packet.data.param.a_axis_dist;
+
+        // push back this point to cloud
+        point3d.intensity = intensities[j];
+        point3d.time = time_relative;  // this was changed to double
+        point3d.raw_range = (float)ranges[j]/(float)1000.0; // convert  mm to meters
+        point3d.range = range_float; // calibrated range value
+        cloud.points.push_back(point3d);
+    }
+    return;
 }
 
 }

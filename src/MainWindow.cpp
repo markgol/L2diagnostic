@@ -137,6 +137,9 @@
 //  V1.3.1  2026-06-21  Added config params for settings gatewey IP address and subnet mask
 //                      Corrected initial size of IMUstats window
 //                      Added save current view to default view
+//  V1.3.2  2026-07-07  Updated to V1.3.6 of L2LidarClass
+//                      Added point cloud flattened scan capability
+//                      Added starting angle, angle width for point cloud capture
 //
 //--------------------------------------------------------
 
@@ -269,7 +272,7 @@ MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
     // these are only done after loadsettings()
     applyDocksVisibilityConstraint();
 
-    NumFramesToSkip = config.getSkipFrame();
+    mNumFramesToSkip = config.getSkipFrame();
 
     // load the com parameters in the l2lidar class
     l2lidar.LidarSetCmdConfig(config.getSRCip(),config.getSRCport(),
@@ -1077,18 +1080,31 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
     // ...
     static uint32_t frameCounter {0};
 
-    if (NumFramesToSkip > 0 &&
-        (++frameCounter % (NumFramesToSkip + 1)) != 0)
+    if (mNumFramesToSkip > 0 &&
+        (++frameCounter % (mNumFramesToSkip + 1)) != 0)
     {
         return;
     }
 
-    if(NumFramesToSkip>0 || NumFramestoAggregate==0 || !Frame3D) {
+    //  logging parameters
+    if(mLogging) {
+        LidarPointDataPacket packet =  l2lidar.Pcl3Dpacket();
+        if(packet.header.header[0] != (uint8_t)0){
+            // logging calibration and correction parameters
+            //
+            logParameter("scan_period",packet.data.scan_period);
+            logParameter("time_increment",packet.data.time_increment);
+            logParameter("angle_increment",packet.data.angle_increment);
+        }
+    }
+
+    if(mNumFramesToSkip>0 || mNumFramestoAggregate==0 || !Frame3D) {
         // no aggregation, basic per frame update of point cloud
         Frame frame;
         // convert latestL2 point cloud packet to Frame of cloud points
         if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D,
                                             mIMUadjust, mIMUadjustRollPitch,
+                                            mStartScanAngle, mScanAngleWidth, mFlattenScanEnabled,
                                             mCalOveride, mCalScale, mCalBias,
                                             mIMUPCtimeConstraint)) {
             // if PC or IMU packet is missing or IMU pose correction failed
@@ -1096,6 +1112,7 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
             // do not add to point cloud
             return;
         }
+
         if (m_pointCloudWindow) {
             QMetaObject::invokeMethod(
                 m_pointCloudWindow,
@@ -1118,7 +1135,7 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
     // before clearing aggframe.
     // This allows one frame time to occur which should be
     // enough time
-    if(CurrentAggFrame >= NumFramestoAggregate) {
+    if(CurrentAggFrame >= mNumFramestoAggregate) {
         CurrentAggFrame=0;
         aggframe.clear();
     }
@@ -1127,6 +1144,7 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
     // convert latestL2 point cloud packet to Frame of cloud points
     if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D,
                                         mIMUadjust, mIMUadjustRollPitch,
+                                          mStartScanAngle, mScanAngleWidth, mFlattenScanEnabled,
                                         mCalOveride, mCalScale, mCalBias,
                                         mIMUPCtimeConstraint)) {
         // if packet is missing or IMU pose correction failed
@@ -1161,7 +1179,7 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
     }
 
     CurrentAggFrame++;
-    if(CurrentAggFrame < NumFramestoAggregate) {
+    if(CurrentAggFrame < mNumFramestoAggregate) {
         // keep building up aggregated frame
         return;
     }
@@ -1349,7 +1367,7 @@ void MainWindow::openConfig()
                                   config.getDSTip(),config.getDSTport());
 
         // update frames to skip
-        NumFramesToSkip = config.getSkipFrame();
+        mNumFramesToSkip = config.getSkipFrame();
 
         // L2 corrections
         l2lidar.EnableL2TimeCorrection(config.isL2TimeCorrectionEnabled());

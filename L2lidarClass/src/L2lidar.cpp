@@ -150,6 +150,12 @@
 //                          particularly after L2disconnect and L2connect when sync to host setting
 //                          have changed.
 //  V1.3.5  2026-06-21  Added parameter for gateway IP address and subnet mask in setL2UDPconfig()
+//  V1.3.6  2026-07-05  Changed return of range value from parseFromPacketToPointCloud()
+//                          and parseFromPacketPointCloud2D() to be actual range from L2
+//                          not the raw range value returned from L2 before calibration is applied.
+//                      Added SelectiveParseFromPacketToPointCloud() for 3d scans
+//                          along with 2 helper functions; inAngularWindow(), degreesToRadians()
+//                          These are not part of the original unitree_lidar_utilities.h SDK
 //
 //--------------------------------------------------------
 
@@ -1828,6 +1834,7 @@ void L2lidar::UpdateEWMAStats(double alpha,
 //--------------------------------------------------------------------
 bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D,
                                        bool IMUadjust, bool AdjustRollPitchOnly,
+                                       double StartScanAngle, double ScanAngleWidth, bool flatten,
                                        bool CalOverride, double CalScale, double CalBias,
                                        double timeConstraintIMU_PC)
 {
@@ -1848,8 +1855,17 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D,
             return false;
         }
 
-        unilidar_sdk2::parseFromPacketToPointCloud(
-            cloud, packet, false, 0, 100, CalOverride, CalScale, CalBias);
+        unilidar_sdk2::SelectiveParseFromPacketToPointCloud(
+            cloud, packet, false, 0, 100,
+            StartScanAngle, ScanAngleWidth, flatten,
+            CalOverride, CalScale, CalBias);
+
+        // unilidar_sdk2::parseFromPacketToPointCloud(
+        //     cloud, packet, false, 0, 100, CalOverride, CalScale, CalBias);
+
+        if(cloud.points.empty())
+            return false;
+
         time = (double)packet.data.info.stamp.sec + (double)packet.data.info.stamp.nsec * 1.0e-9;
     } else {
         // get latest 2D packet
@@ -1931,6 +1947,7 @@ bool L2lidar::ConvertL2data2pointcloud(Frame& frame, bool Frame3D,
             p.z,
             p.intensity,
             p.range,
+            p.raw_range,
             actualtime,
             p.ring
         });

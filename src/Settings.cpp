@@ -62,6 +62,7 @@
 //  V1.1.0  2026-04-20  Added override of range calibration params
 //  V1.3.0  2026-06-15  Added flag for IMU adjust just to roll, pitch vs roll, pitch, yaw
 //  V1.3.1  2026-06-21  Added config params for settings gatewey IP address and subnet mask
+//  V1.3.2  2026-07-08  Added FlattenedScanEnabled, MinScnaAngle, MaxScanAngle
 //
 //--------------------------------------------------------
 
@@ -105,9 +106,8 @@
 #include <QDateTime>
 #include <QSettings>
 #include <QStandardPaths>
-//#include <QDebug>
 
-//#include "unitree_lidar_protocol.h"
+#include <cstdio>
 
 //--------------------------------------------------------
 //  saveSettings()
@@ -205,21 +205,28 @@ void MainWindow::saveSettings(bool resetRequested)
         settings.setValue("MaxDistance",defaultPCsettings.MaxDistance);
 
         // point cloud buffering settings
+
         settings.setValue("MaxPoints",mmaxPoints);
-        bool IMUadjust = config.isIMUadjustEnabled();
-        settings.setValue("IMUadjust",IMUadjust);
-        mIMUadjust = IMUadjust;
+        mIMUadjust = config.isIMUadjustEnabled();
+        settings.setValue("IMUadjust",mIMUadjust);
 
-        bool IMUadjustRollPitch = config.isIMUadjustRollPitch();
-        settings.setValue("IMUadjustRollPitch",IMUadjustRollPitch);
-        mIMUadjustRollPitch = IMUadjustRollPitch;
+        mFlattenScanEnabled = config.isFlattenScanEnabled();
+        settings.setValue("FlattenScanEnabled",mFlattenScanEnabled);
 
-        float IMUPCtimeConstraint = config.getIMUPCtimeConstraint();
-        settings.setValue("IMUPCtimeConstraint", IMUPCtimeConstraint);
-        mIMUPCtimeConstraint = IMUPCtimeConstraint;
+        mFlattenScanEnabled = config.isFlattenScanEnabled();
+        settings.setValue("FlattenScanEnabled",mFlattenScanEnabled);
 
-        NumFramestoAggregate = config.getAggFrames();
-        settings.setValue("NumFramestoAggregate",NumFramestoAggregate);
+        mStartScanAngle = config.getStartScanAngle();
+        settings.setValue("StartScanAngle",mStartScanAngle);
+
+        mScanAngleWidth = config.getScanAngleWidth();
+        settings.setValue("ScanAngleWidth",mScanAngleWidth);
+
+        mIMUPCtimeConstraint = config.getIMUPCtimeConstraint();
+        settings.setValue("IMUPCtimeConstraint", mIMUPCtimeConstraint);
+
+        mNumFramestoAggregate = config.getAggFrames();
+        settings.setValue("NumFramestoAggregate",mNumFramestoAggregate);
 
     settings.endGroup();
 }
@@ -334,16 +341,27 @@ void MainWindow::loadSettings(bool resetRequested)
         // point cloud buffering settings
         mmaxPoints=settings.value("MaxPoints", 450000).toUInt(); // 3D PC frame is 300 points
         config.setMaxPoints(mmaxPoints);
+
         mIMUadjust = settings.value("IMUadjust", false).toBool();
         config.setIMUadjustEnabled(mIMUadjust);
+
         mIMUadjustRollPitch = settings.value("IMUadjustRollPitch", false).toBool();
         config.setIMUadjustRollPitch(mIMUadjustRollPitch);
+
+        mFlattenScanEnabled = settings.value("FlattenScanEnabled", false).toBool();
+        config.setFlattenScanEnabled(mFlattenScanEnabled);
+
+        mStartScanAngle = settings.value("StartScanAngle", 0.0).toDouble();
+        config.setStartScanAngle(mStartScanAngle);
+
+        mScanAngleWidth = settings.value("ScanAngleWidth", 360.0).toDouble();
+        config.setScanAngleWidth(mScanAngleWidth);
 
         mIMUPCtimeConstraint = settings.value("IMUPCtimeConstraint", 0.07).toDouble();
         config.setIMUPCtimeConstraint(mIMUPCtimeConstraint);
 
-        NumFramestoAggregate = settings.value("NumFramestoAggregate", 38).toInt();
-        config.setAggFrames(NumFramestoAggregate);
+        mNumFramestoAggregate = settings.value("NumFramestoAggregate", 38).toInt();
+        config.setAggFrames(mNumFramestoAggregate);
 
     settings.endGroup();
 }
@@ -382,4 +400,74 @@ void MainWindow::SetSettingsReset(bool Reset)
     settings.endGroup();
 
     return;
+}
+
+//-----------------------------------------------------
+// logging functions
+// These are for diagnostic logging into a log file
+//-----------------------------------------------------
+void MainWindow::logParameter(const char *Name, double value)
+{
+    if(!mLogging) return;
+    if(mLogFile ==NULL) {
+        QByteArray filename = mLogFilename.toLocal8Bit();
+        const char *cfilename = filename.data();
+        if(fopen_s(&mLogFile,cfilename,"w"))
+            return;
+    }
+    fprintf(mLogFile,"%s: %.8g\n", Name, value);
+}
+
+void MainWindow::logParameter(const char *Name, bool value)
+{
+    if(!mLogging) return;
+    if(mLogFile ==NULL) {
+        QByteArray filename = mLogFilename.toLocal8Bit();
+        const char *cfilename = filename.data();
+        if(fopen_s(&mLogFile,cfilename,"w"))
+            return;
+    }
+    if(value) {
+        fprintf(mLogFile,"%s: true\n", Name);
+    } else {
+        fprintf(mLogFile,"%s: false\n", Name);
+    }
+}
+
+void MainWindow::logParameter(const char *Name, float value)
+{
+    if(!mLogging) return;
+    if(mLogFile ==NULL) {
+        QByteArray filename = mLogFilename.toLocal8Bit();
+        const char *cfilename = filename.data();
+        if(fopen_s(&mLogFile,cfilename,"w"))
+            return;
+    }
+    fprintf(mLogFile,"%s: %.8g\n", Name, value);
+}
+
+void MainWindow::logParameter(const char *Name, int value)
+{
+    if(!mLogging) return;
+    if(mLogFile ==NULL) {
+        QByteArray filename = mLogFilename.toLocal8Bit();
+        const char *cfilename = filename.data();
+        if(fopen_s(&mLogFile,cfilename,"w"))
+            return;
+    }
+    fprintf(mLogFile,"%s: %d\n", Name, value);
+}
+
+void MainWindow::logParameter(const char *Name, QString text)
+{
+    if(!mLogging) return;
+    if(mLogFile ==NULL) {
+        QByteArray filename = mLogFilename.toLocal8Bit();
+        const char *cfilename = filename.data();
+        if(fopen_s(&mLogFile,cfilename,"w"))
+            return;
+    }
+    QByteArray qvalue = text.toLocal8Bit();
+    const char *value = qvalue.data();
+    fprintf(mLogFile,"%s: %s\n", Name, value);
 }
