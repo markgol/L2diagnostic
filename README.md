@@ -1,4 +1,4 @@
-**Updated: 2026-07-11**
+**Updated: 2026-08-24**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -71,6 +71,10 @@ The primary purpose was to split operation into 2 modes; diagnostics and calibra
 The calibration mode allows the user to adjust override calibration parameters while observing realtime point clouds.
 
 It also allows the collection of data needed to create a nonlinear range correction using a piecewise cubic spline.  It generates a calibration file that is compatible for use with the L2lidar class so that it can be used on ROS2 and other applications.  A separate writeup is being generated with the calibration process.
+
+For source build.  This release use Eigen V3.4.1 Template source library.  This library is not compatible with github.  It can be found at: https://libeigen.gitlab.io/
+
+It must be extracted to the include/third_party folder as a subfolder named Eigen.
 
 #### **RELEASE HISTORY**
 
