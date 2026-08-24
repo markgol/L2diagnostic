@@ -62,6 +62,9 @@
 //  V1.3.2  2026-07-07  Updated to V1.3.6 of L2LidarClass
 //                      Added point cloud flattened scan capability
 //                      Added starting angle, angle width for point cloud capture
+//  V2.0.0 RC1 2026-08-18
+//                      Updated enable range correction
+//                      Added alpha angle bias override
 //
 //--------------------------------------------------------
 
@@ -348,24 +351,6 @@ public:
         return static_cast<bool>(ui.cbUseSytemNow->isChecked());
     }
 
-    //--------------------------------------------------------
-    // Calibration override
-    //--------------------------------------------------------
-    bool isCalOVRenabled()
-    {
-        return static_cast<bool>(ui.cbCalOVR->isChecked());
-    }
-
-    double getCalScale() const
-    {
-        return static_cast<double>(ui.spinCalScale->value());
-    }
-
-    double getCalBias() const
-    {
-        return static_cast<double>(ui.spinCalBias->value());
-    }
-
     // =============================
     // Setters (for LoadSettings)
     // =============================
@@ -583,30 +568,11 @@ public:
         ui.cbLatency->setChecked(p);
     }
 
-    //--------------------------------------------------------
-    // Calibration override
-    //--------------------------------------------------------
-    void SetCalOVRenabled(bool p)
-    {
-        ui.cbCalOVR->setChecked(p);
-    }
-
-    void SetCalScale(double p) const
-    {
-        ui.spinCalScale->setValue(p);
-    }
-
-    void setCalBias(double p) const
-    {
-        ui.spinCalBias->setValue(p);
-    }
-
 signals:
     void requestViewReset();
     void requestCurrentPCview();
     void requestConfigureUDP();
     void requestSetL2MAC();
-
 
 private slots:
     void ResetPCview();

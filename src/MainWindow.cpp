@@ -140,6 +140,8 @@
 //  V1.3.2  2026-07-07  Updated to V1.3.6 of L2LidarClass
 //                      Added point cloud flattened scan capability
 //                      Added starting angle, angle width for point cloud capture
+//  V2.0.0  2026-07-24  Adding calibration mode and diagnostic mode to the app.
+//                      Startup mode is always diagnostic.
 //
 //--------------------------------------------------------
 
@@ -205,6 +207,7 @@
 //      set(CMAKE_AUTOUIC ON)
 //      set(CMAKE_AUTORCC ON)
 //--------------------------------------------------------
+#include "settingINI.h"
 #include "ui_MainWindow.h"
 
 //--------------------------------------------------------
@@ -232,6 +235,8 @@ MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
 
 {
     ui->setupUi(this);
+
+    mCalibrationMode = false;
 
     createDocksViewer();
     AssignDocksObjectNames();
@@ -297,7 +302,20 @@ MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
     connect(&config, &ConfigDialog::requestSetL2MAC,
             this, &MainWindow::handleSetL2MAC);
 
-    ShowWindows(); // show windows effects all windows including point cloud window
+    // connect config request Get L2 UDP config button
+    connect(m_calibrationDock, &CalibrationDock::EnableRangeCorrectionChanged,
+            this, &MainWindow::CalDockRangeCorrectionChanged);
+
+    // connect Stage3B request for Range Calibration GUI
+    connect(m_calibrationDock, &CalibrationDock::CalGUIrequest,
+            this, &MainWindow::RangeCalGUI);
+
+    // connect request to reset the scan configuration
+    connect(m_calibrationDock, &CalibrationDock::ResetConfigScanSettings,
+            this, &MainWindow::ResetConfigScanSettings);
+
+    SetDiagnosticMode();
+    //ShowWindows(); // show windows effects all windows including point cloud window
 }
 
 //--------------------------------------------------------
@@ -310,7 +328,6 @@ MainWindow::~MainWindow()
     // Save current user settings
     // make sure requested reset is not cleared
     saveSettings(GetSettingsReset());
-
     delete ui;
 }
 
@@ -400,6 +417,19 @@ void MainWindow::SetupGUIrefreshTimers()
 //--------------------------------------------------------
 void MainWindow::createDocksViewer()
 {
+    //********************************************************
+    //  setup dockable Controls gui
+    //  This is the button control dock
+    //  The button assignments are dependent on the
+    //  operating mode (diagnostic or calibration)
+    //********************************************************
+    m_controlsDock = new ControlsDock(this);
+    m_calibrationDock = new CalibrationDock(l2lidar, this);
+
+    //********************************************************
+    // setup the diagnsotics mode docks
+    //********************************************************
+
     //--------------------------------------------------------
     //  setup the dockable diagnsotics gui
     //--------------------------------------------------------
@@ -408,10 +438,6 @@ void MainWindow::createDocksViewer()
     //  setup dockable IMU gui
     //--------------------------------------------------------
     m_IMUDock = new IMUDock(this);
-    //--------------------------------------------------------
-    //  setup dockable Controls gui
-    //--------------------------------------------------------
-    m_controlsDock = new ControlsDock(this);
     //--------------------------------------------------------
     //  setup dockable packet Stats gui
     //--------------------------------------------------------
@@ -422,10 +448,20 @@ void MainWindow::createDocksViewer()
     m_ACKDock = new ACKDock(this);
     //--------------------------------------------------------
     //  packetRateDock setup
-    //--------------------------------------------------------
+    //--------------------------------------------------------   
     if(!mNoGraphics) {
         m_packetRateDock = new PacketRateDock(this);
     }
+
+    //--------------------------------------------------------
+    // setup the dockable calibration mode docks
+    //--------------------------------------------------------
+    m_RangeCalinfoDock =  new RangeCalinfoDock(this);
+
+    //--------------------------------------------------------
+    // setup the dockable calibration mode docks
+    //--------------------------------------------------------
+    m_CalGraphDock =  new CalGraphDock(this);
 }
 
 //--------------------------------------------------------
@@ -443,6 +479,10 @@ void MainWindow::closeEvent(QCloseEvent* e)
     }
 
     WorkMode.close();
+    m_calibrationDock->close();
+    delete m_calibrationDock;
+    m_controlsDock->close();
+    delete m_controlsDock;
 
     QMainWindow::closeEvent(e);
 }
@@ -622,6 +662,12 @@ QByteArray MainWindow::convertMacStringToByteArray(const QString &macString) {
 void MainWindow::AssignDocksObjectNames()
 {
     //--------------------------------------------------------
+    //  setup dockable Controls and claibration gui
+    //--------------------------------------------------------
+    m_controlsDock->setObjectName("ControlsDock");
+    m_calibrationDock->setObjectName("CalibrationDock");
+
+    //--------------------------------------------------------
     //  setup the dockable diagnsotics gui
     //--------------------------------------------------------
     m_diagnosticsDock->setObjectName("DiagnosticsDock");
@@ -629,10 +675,7 @@ void MainWindow::AssignDocksObjectNames()
     //  setup dockable IMU gui
     //--------------------------------------------------------
     m_IMUDock->setObjectName("IMUDock");
-    //--------------------------------------------------------
-    //  setup dockable Controls gui
-    //--------------------------------------------------------
-    m_controlsDock->setObjectName("ControlsDock");
+
     //--------------------------------------------------------
     //  setup dockable packet Stats gui
     //--------------------------------------------------------
@@ -647,7 +690,21 @@ void MainWindow::AssignDocksObjectNames()
     if(m_packetRateDock!=nullptr) {
         m_packetRateDock->setObjectName("PacketRateDock");
     }
+
     //--------------------------------------------------------
+    // setup the dockable calibration mode docks
+    //--------------------------------------------------------
+    if(m_RangeCalinfoDock!=nullptr) {
+        m_RangeCalinfoDock->setObjectName("RangeCalibrationInfoDock");
+    }
+
+    //--------------------------------------------------------
+    // setup the dockable calibration mode docks
+    //--------------------------------------------------------
+    if(m_CalGraphDock!=nullptr) {
+        m_CalGraphDock->setObjectName("CalGraphDock");
+    }
+
 }
 
 //--------------------------------------------------------
@@ -665,10 +722,12 @@ void MainWindow::AddDocksViewer()
     addDockWidget(Qt::RightDockWidgetArea, m_IMUDock);
 
     //--------------------------------------------------------
-    //  setup dockable Controls gui
+    //  setup dockable Controls and Calibration guis
     //--------------------------------------------------------
-    m_controlsDock->setAllowedAreas(Qt::LeftDockWidgetArea);
+    m_controlsDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::TopDockWidgetArea);
     addDockWidget(Qt::LeftDockWidgetArea, m_controlsDock);
+    m_calibrationDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::TopDockWidgetArea);
+    addDockWidget(Qt::LeftDockWidgetArea, m_calibrationDock);
 
     //--------------------------------------------------------
     //  setup dockable packet Stats gui
@@ -687,6 +746,19 @@ void MainWindow::AddDocksViewer()
         m_packetRateDock->setAllowedAreas(Qt::BottomDockWidgetArea);
         addDockWidget(Qt::BottomDockWidgetArea, m_packetRateDock);
    }
+
+    //--------------------------------------------------------
+    //  RangeCalinfoDock setup
+    //--------------------------------------------------------
+    m_RangeCalinfoDock->setAllowedAreas(Qt::RightDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, m_RangeCalinfoDock);
+
+    //--------------------------------------------------------
+    //  CalGraphDock setup
+    //--------------------------------------------------------
+    m_CalGraphDock->setAllowedAreas(Qt::RightDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, m_CalGraphDock);
+    m_CalGraphDock->setFloating(true);
 }
 
 //--------------------------------------------------------
@@ -757,6 +829,42 @@ void MainWindow::ConnectDocksViewerActions()
     connect(&WorkMode, &WorkmodeDialog::RequestGetL2Workmode,
             this, &MainWindow::sendGetL2Workmode);
 
+    connect(m_controlsDock, &ControlsDock::CalibrationMode,
+            this, &MainWindow::SetCalibrationMode);
+
+    //--------------------------------------------------------
+    //  Calibration gui
+    //  This is the buttons dialog.
+    //--------------------------------------------------------
+    connect(m_calibrationDock, &CalibrationDock::DiagnosticMode,
+            this, &MainWindow::SetDiagnosticMode);
+
+    connect(m_calibrationDock, &CalibrationDock::L2connectRequested,
+            this, &MainWindow::L2connect);
+
+    connect(m_calibrationDock, &CalibrationDock::L2disconnectRequested,
+            this, &MainWindow::L2disconnect);
+
+    // Save PC button in ControlsDock window
+    connect(m_calibrationDock, &CalibrationDock::SavePC,
+            this, &MainWindow::SavePC);
+
+    // Load PC button in ControlsDock window
+    connect(m_calibrationDock, &CalibrationDock::LoadPC,
+            this, &MainWindow::LoadPC);
+
+    connect(m_calibrationDock, &CalibrationDock::ClearPCwindowRequested,
+            this, &MainWindow::ClearPCwindow);
+
+    connect(m_calibrationDock, &CalibrationDock::UpdateRangeCalInfo,
+            this, &MainWindow::UpdateRangeCalInfo);
+
+    connect(m_CalGraphDock, &CalGraphDock::Accepted,
+            this, &MainWindow::Stage3accepted);
+
+    connect(m_CalGraphDock, &CalGraphDock::Rejected,
+                this, &MainWindow::Stage3rejected);
+
     //--------------------------------------------------------
     //  setup dockable ACK gui (this is not timer driven)
     //  It is event driven.  ACKs are extermely low rate events
@@ -799,27 +907,44 @@ void MainWindow::ConnectDocksViewerActions()
     //--------------------------------------------------------
     connect(&WorkMode, &QDialog::finished, this,
             &MainWindow::ClosedWorkmodeDialog);
-   }
+}
 
 //--------------------------------------------------------
 // applyDocksVisibilityConstraint
+// This is called once in the MainWindow constructor
 //--------------------------------------------------------
 void MainWindow::applyDocksVisibilityConstraint()
 {
     // set absolute geometry and state
-    // resizeDocks({ m_IMUDock },{ 220 },Qt::Horizontal);
     m_IMUDock->setMinimumWidth(640);
     resizeDocks({ m_diagnosticsDock },{ 220 },Qt::Horizontal);
     resizeDocks({ m_StatsDock },{ 220 },Qt::Horizontal);
 
-    m_controlsDock->setMinimumWidth(500);
-    m_controlsDock->setMinimumHeight(220);
+    m_controlsDock->setMinimumWidth(680);
+    m_controlsDock->setMinimumHeight(260);
     m_controlsDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // can not float or move
     // This would let it float or move but X will not close it
     // m_controlsDock->setFeatures(QDockWidget::DockWidgetMovable |
     //                             QDockWidget::DockWidgetFloatable);
     m_controlsDock->setContextMenuPolicy(Qt::PreventContextMenu); // do not allow context menu close
+
+    // When the app starts it is always in dianostic mode (showing the Controls Dock
+    // The calibration dock is initially not visible
+    m_calibrationDock->setVisible(false);
+    m_calibrationDock->setMinimumWidth(500);
+    m_calibrationDock->setMinimumHeight(260);
+    m_calibrationDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // can not float or move
+    m_calibrationDock->setContextMenuPolicy(Qt::PreventContextMenu); // do not allow context menu close
+
+    m_RangeCalinfoDock->setVisible(false);
+
+    m_CalGraphDock->setMinimumWidth(400);
+    m_CalGraphDock->setMinimumHeight(350);
+    m_CalGraphDock->setVisible(false);
+
     ShowWindows();
+
+
 }
 
 //--------------------------------------------------------
@@ -844,6 +969,7 @@ void MainWindow::ShowWindows()
         m_pointCloudWindow->hide();
     }
 
+    m_controlsDock->setVisible(true);
     m_controlsDock->show(); // always show controls
     m_controlsDock->raise();
 }
@@ -855,6 +981,7 @@ void MainWindow::L2ConnectedButtonsUIs()
 { // set buttons and UIs states when L2 connected
     // disable start, enable stop
     m_controlsDock->setConnectState(true);
+    m_calibrationDock->setConnectState(true);
 
     mHeartBeat->start(); // for the stats windows
 
@@ -868,6 +995,7 @@ void MainWindow::L2ConnectedButtonsUIs()
 void MainWindow::L2DisconnectedButtonsUIs()
 { // set buttons and UIs states when L2 disconnected
     m_controlsDock->setConnectState(false);
+    m_calibrationDock->setConnectState(false);
 
     StopPointCloudViewer();
     StopPacketChart();
@@ -1102,11 +1230,7 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
         // no aggregation, basic per frame update of point cloud
         Frame frame;
         // convert latestL2 point cloud packet to Frame of cloud points
-        if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D,
-                                            mIMUadjust, mIMUadjustRollPitch,
-                                            mStartScanAngle, mScanAngleWidth, mFlattenScanEnabled,
-                                            mCalOveride, mCalScale, mCalBias,
-                                            mIMUPCtimeConstraint)) {
+        if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D)) {
             // if PC or IMU packet is missing or IMU pose correction failed
             // or timestamp match between PC and IMU failed with IMUadjust true
             // do not add to point cloud
@@ -1142,11 +1266,7 @@ void MainWindow::onNewLidarFrame(bool Frame3D)
 
     Frame frame;
     // convert latestL2 point cloud packet to Frame of cloud points
-    if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D,
-                                        mIMUadjust, mIMUadjustRollPitch,
-                                          mStartScanAngle, mScanAngleWidth, mFlattenScanEnabled,
-                                        mCalOveride, mCalScale, mCalBias,
-                                        mIMUPCtimeConstraint)) {
+    if(!l2lidar.ConvertL2data2pointcloud(frame, Frame3D)) {
         // if packet is missing or IMU pose correction failed
         // with mIMUadjust is true
         // do not add to point cloud
@@ -1540,6 +1660,66 @@ void MainWindow::L2disconnect()
 }
 
 //--------------------------------------------------------
+//  SetCalibrationMode()
+//  button press
+//--------------------------------------------------------
+void MainWindow::SetCalibrationMode()
+{
+    mCalibrationMode = true;
+
+    // hide most of the diagnsotic windows
+    m_diagnosticsDock->setVisible(false);
+    m_IMUDock->setVisible(false);
+    m_ACKDock->setVisible(false);
+    if(m_packetRateDock!=nullptr) {
+        m_packetRateDock->setVisible(false);
+    }
+    m_StatsDock->setVisible(false);
+    m_controlsDock->setVisible(false);
+
+    // show the calibration dock
+    m_calibrationDock->setVisible(true);
+    m_RangeCalinfoDock->setVisible(true);
+
+    // save these setting so they be restored
+    // when switching to diagnostics mode
+    m_calibrationDock->SaveStartAngle(l2lidar.GetStartScanAngle());
+    m_calibrationDock->SaveAngleWitdh(l2lidar.GetScanAngleWidth());
+    m_calibrationDock->SaveFlattened(l2lidar.IsFlattenScanEnabled());
+}
+
+//--------------------------------------------------------
+//  SetCalibrationMode()
+//  button press
+//--------------------------------------------------------
+void MainWindow::SetDiagnosticMode()
+{
+    if(!mCalibrationMode)
+        return;
+
+    if(m_calibrationDock->IsACQrunning()) {
+        QMessageBox msgBox;
+        msgBox.setText("Error");
+        msgBox.setInformativeText("Can not switch to diagnsotic mode\nwhile stage2 acqusition is running");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+        return;
+    }
+
+    saveSettings(false); // do not reset
+
+    mCalibrationMode = false;
+
+    // make the Calibration dock window invisible
+    m_calibrationDock->setVisible(false);
+    m_CalGraphDock->setVisible(false);
+    m_RangeCalinfoDock->setVisible(false);
+    m_controlsDock->setVisible(true);
+    // show the control dock
+    ShowWindows();
+}
+
+//--------------------------------------------------------
 //  startRotation
 //  button press
 //--------------------------------------------------------
@@ -1641,6 +1821,20 @@ void MainWindow::ClearPCwindow()
 }
 
 //--------------------------------------------------------
+//  UpdateRangeCalInfo
+//  A calibraiton file was loaded
+//--------------------------------------------------------
+void MainWindow::UpdateRangeCalInfo()
+{
+    if(m_RangeCalinfoDock!=nullptr){
+        m_RangeCalinfoDock->updateInfo(l2lidar.GetRangeCalibrationInfo(),
+                                       l2lidar.IsRangeCorrectionLoaded());
+        auto message = m_calibrationDock->GetLastMessage();
+        m_RangeCalinfoDock->SetMessage(message);
+    }
+}
+
+//--------------------------------------------------------
 //  SyncL2CLock
 //  button press
 //--------------------------------------------------------
@@ -1729,10 +1923,11 @@ void MainWindow::SavePC()
     bool useCC = (formatBox.clickedButton() == ccBtn);
 
     // 2. Choose file
-    QString file = QFileDialog::getSaveFileName(
+    QString file = loadINI("Save","PCDfilename",(QString)"");
+    file = QFileDialog::getSaveFileName(
         this,
         "Save Point Cloud",
-        "",
+        file,
         "PointCloud (*.pcd)"
         );
 
@@ -1741,9 +1936,13 @@ void MainWindow::SavePC()
 
     // 3. Dispatch to correct save function
     if (useCC) {
-        m_pointCloudWindow->savePCDCC(file);
+        if(m_pointCloudWindow->savePCDCC(file)) {
+            saveINI("Save", "PCDfilename",file);
+        }
     } else {
-        m_pointCloudWindow->savePCD(file);
+        if(m_pointCloudWindow->savePCD(file)) {
+            saveINI("Save", "PCDfilename",file);
+        }
     }
 }
 //--------------------------------------------------------
@@ -1753,9 +1952,10 @@ void MainWindow::SavePC()
 void MainWindow::LoadPC()
 {
     if(m_pointCloudWindow!=nullptr){
-        QString file = QFileDialog::getOpenFileName(this,
-                                                "Load Point Cloud", "", "PointCloud (*.pcd)");
-        if(file=="") return;
+        QString file = loadINI("Load","PCDfilename",(QString)"");
+        file = QFileDialog::getOpenFileName(this,
+                                                "Load Point Cloud", file, "PointCloud (*.pcd)");
+        if(file.trimmed()=="") return;
         if(!m_pointCloudWindow->loadPCD(file)){
             QMessageBox msgBox;
             msgBox.setText("Can not load point cloud");
@@ -1763,6 +1963,7 @@ void MainWindow::LoadPC()
             msgBox.setStandardButtons(QMessageBox::Ok);
             msgBox.exec();
         }
+        saveINI("Load", "PCDfilename",file);
 
     } else {
         QMessageBox msgBox;
@@ -1781,3 +1982,81 @@ void MainWindow::resetWindowLayout()
 {
     SetSettingsReset(true);
 }
+
+//--------------------------------------------------------
+//  EnableRangeCorrectionChanged
+//  update RangeCorrectionEnable setting
+//--------------------------------------------------------
+void MainWindow::CalDockRangeCorrectionChanged()
+{
+    // update config checkbox
+    bool enable = m_calibrationDock->isRangeCorrectionEnabled();
+
+    // update lidar settings
+    l2lidar.EnableRangeCorrection(enable);
+}
+
+//--------------------------------------------------------
+//  load data and display Range Calibration GUI
+//--------------------------------------------------------
+void MainWindow::RangeCalGUI(bool clear, bool visible)
+{
+    auto const points = m_calibrationDock->GetStage3BPoints();
+
+    if(clear) {
+        m_CalGraphDock->ClearGUI_SetPoints(points);
+    } else {
+        m_CalGraphDock->SetPoints(points);
+    }
+    if(visible) {
+        m_CalGraphDock->raise(); // bring forward
+    }
+    m_CalGraphDock->setVisible(visible);
+
+}
+
+//--------------------------------------------------------
+//  Stage3accepted
+//--------------------------------------------------------
+void MainWindow::Stage3accepted()
+{
+    // save the segments and exclusion regions from GUI
+    m_calibrationDock->SetStage3CalSegments(m_CalGraphDock->GetCalibrationSegments());
+    m_calibrationDock->SetStage3ExclusionRegions(m_CalGraphDock->GetExclusionRegions());;
+
+    // GUI is now hidden
+    m_CalGraphDock->setVisible(false);
+    // notify calibration dock Stage3 accepted
+    m_calibrationDock->Stage3accepted();
+
+    return;
+}
+
+//--------------------------------------------------------
+//  Stage3rejected
+//--------------------------------------------------------
+void MainWindow::Stage3rejected()
+{
+    m_calibrationDock->Stage3rejected();
+    return;
+}
+
+
+//--------------------------------------------------------
+//  ResetConfigScanSettings
+//--------------------------------------------------------
+void MainWindow::ResetConfigScanSettings()
+{
+    //Restore the StartScanAngle,
+    //ScanAngleWidth, Flatten flag,
+    //IMUadjust flag, IMUrollPith only flag
+    l2lidar.SetStartScanAngle(config.getScanAngleWidth());
+    l2lidar.SetScanAngleWidth(config.getScanAngleWidth());
+    l2lidar.EnableFlattenScan(config.isFlattenScanEnabled());
+    l2lidar.EnableIMUadjust(config.isIMUadjustEnabled());
+    l2lidar.EnableAdjustRollPitchOnly(config.isIMUadjustRollPitch());
+}
+
+// restore the StartScanAngle,
+//ScanAngleWidth, Flatten flag,
+//IMUadjust flag, IMUrollPith only flag

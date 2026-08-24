@@ -1,3 +1,16 @@
+//--------------------------------------------------------
+//
+//  L2Diagnostic
+//  Author: Mark Stegall
+//  Module: quaternion.h
+//
+//  Purpose:
+//  Define the point cloud structure for a point
+//
+//  V0.3.6  2026-01-24  Added IMU orientation to point cloud
+//  V1.3.4  2026-06-15  Moved structure defintions to here
+//
+//--------------------------------------------------------
 #pragma once
 
 // ---- Lidar point ----

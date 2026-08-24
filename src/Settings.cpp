@@ -63,6 +63,9 @@
 //  V1.3.0  2026-06-15  Added flag for IMU adjust just to roll, pitch vs roll, pitch, yaw
 //  V1.3.1  2026-06-21  Added config params for settings gatewey IP address and subnet mask
 //  V1.3.2  2026-07-08  Added FlattenedScanEnabled, MinScnaAngle, MaxScanAngle
+//  V2.0.0 RC1 2026-08-01
+//                      Updated save and load settings for range correction calibration
+//                      Additional calibration override (6 total)
 //
 //--------------------------------------------------------
 
@@ -162,14 +165,35 @@ void MainWindow::saveSettings(bool resetRequested)
 
     settings.endGroup();
 
-    // Calibration override
+    // Calibration settings
     settings.beginGroup("Calibration");
-        settings.setValue("EnableCalOVR", config.isCalOVRenabled());
-        settings.setValue("CalScale", config.getCalScale());
-        settings.setValue("CalBias", config.getCalBias());
-        mCalOveride = config.isCalOVRenabled();
-        mCalScale = config.getCalScale();
-        mCalBias = config.getCalBias();
+
+        // settings for the override of calibration overrides
+        settings.setValue("EnableCalOVR", m_calibrationDock->isCalOVRenabled());
+        settings.setValue("RangeScale", m_calibrationDock->getRangeScale());
+        settings.setValue("RangeBias", m_calibrationDock->getRangeBias());
+        settings.setValue("AlphaBias", m_calibrationDock->getAlphaBias());
+        settings.setValue("ThetaBias", m_calibrationDock->getThetaBias());
+        settings.setValue("BetaAngle", m_calibrationDock->getBetaAngle());
+        settings.setValue("XiAngle", m_calibrationDock->getXiAngle());
+        settings.setValue("MinRange", m_calibrationDock->getMinRange_mm());
+        settings.setValue("Maxrange", m_calibrationDock->getMaxRange_mm());
+
+        // make sure l2lidar class is updated with current settings
+        l2lidar.EnableCalibrationOVR(m_calibrationDock->isCalOVRenabled());
+        l2lidar.SetRangeBiasOVR(m_calibrationDock->getRangeBias());
+        l2lidar.SetRangeScaleOVR(m_calibrationDock->getRangeScale());
+        l2lidar.SetAlphaAngleBiasOVR(m_calibrationDock->getAlphaBias());
+        l2lidar.SetThetaAngleBiasOVR(m_calibrationDock->getThetaBias());
+        l2lidar.SetBetaAngleOVR(m_calibrationDock->getBetaAngle());
+        l2lidar.SetXiAngleOVR(m_calibrationDock->getXiAngle());
+        l2lidar.SetMinRange_mm(m_calibrationDock->getMinRange_mm());
+        l2lidar.SetMaxRange_mm(m_calibrationDock->getMaxRange_mm());
+
+        settings.setValue("EnableRangeCorrection",m_calibrationDock->isRangeCorrectionEnabled());
+        settings.setValue("RangeCalibrationFilename",m_calibrationDock->GetRangeCalFile());
+        l2lidar.EnableRangeCorrection(m_calibrationDock->isRangeCorrectionEnabled());
+
     settings.endGroup();
 
     // throttling
@@ -207,23 +231,25 @@ void MainWindow::saveSettings(bool resetRequested)
         // point cloud buffering settings
 
         settings.setValue("MaxPoints",mmaxPoints);
-        mIMUadjust = config.isIMUadjustEnabled();
-        settings.setValue("IMUadjust",mIMUadjust);
+        bool IMUadjust = config.isIMUadjustEnabled();
+        settings.setValue("IMUadjust",IMUadjust);
+        l2lidar.EnableIMUadjust(IMUadjust);
 
-        mFlattenScanEnabled = config.isFlattenScanEnabled();
-        settings.setValue("FlattenScanEnabled",mFlattenScanEnabled);
+        bool FlattenScanEnabled = config.isFlattenScanEnabled();
+        settings.setValue("FlattenScanEnabled",FlattenScanEnabled);
+        l2lidar.EnableFlattenScan(FlattenScanEnabled);
 
-        mFlattenScanEnabled = config.isFlattenScanEnabled();
-        settings.setValue("FlattenScanEnabled",mFlattenScanEnabled);
+        double StartScanAngle = config.getStartScanAngle();
+        settings.setValue("StartScanAngle",StartScanAngle);
+        l2lidar.SetStartScanAngle(StartScanAngle);
 
-        mStartScanAngle = config.getStartScanAngle();
-        settings.setValue("StartScanAngle",mStartScanAngle);
+        double ScanAngleWidth = config.getScanAngleWidth();
+        settings.setValue("ScanAngleWidth",ScanAngleWidth);
+        l2lidar.SetScanAngleWidth(ScanAngleWidth);
 
-        mScanAngleWidth = config.getScanAngleWidth();
-        settings.setValue("ScanAngleWidth",mScanAngleWidth);
-
-        mIMUPCtimeConstraint = config.getIMUPCtimeConstraint();
-        settings.setValue("IMUPCtimeConstraint", mIMUPCtimeConstraint);
+        double IMUPCtimeConstraint = config.getIMUPCtimeConstraint();
+        settings.setValue("IMUPCtimeConstraint", IMUPCtimeConstraint);
+        l2lidar.SetIMUPCtimeConstraint(IMUPCtimeConstraint);
 
         mNumFramestoAggregate = config.getAggFrames();
         settings.setValue("NumFramestoAggregate",mNumFramestoAggregate);
@@ -293,12 +319,33 @@ void MainWindow::loadSettings(bool resetRequested)
     settings.endGroup();
 
     settings.beginGroup("Calibration");
-        config.SetCalOVRenabled(settings.value("EnableCalOVR", false).toBool());
-        config.SetCalScale(settings.value("CalScale", 0.000978).toDouble());
-        config.setCalBias(settings.value("CalBias", -365.625).toDouble());
-        mCalOveride = config.isCalOVRenabled();
-        mCalScale = config.getCalScale();
-        mCalBias = config.getCalBias();
+
+        // settings for the override of calibration overrides
+        m_calibrationDock->EnableCalOVR(settings.value("EnableCalOVR", false).toBool());
+        m_calibrationDock->SetRangeScale(settings.value("RangeScale", 0.001).toDouble());
+        m_calibrationDock->setRangeBias(settings.value("RangeBias", -535).toDouble());
+        m_calibrationDock->setAlphaBias(settings.value("AlphaBias", 1.6).toDouble());
+        m_calibrationDock->setThetaBias(settings.value("ThetaBias", 120).toDouble());
+        m_calibrationDock->setBetaAngle(settings.value("BetaAngle", 0.0).toDouble());
+        m_calibrationDock->setXiAngle(settings.value("XiAngle", 0.0).toDouble());
+        m_calibrationDock->SetMinRange_mm(settings.value("MinRange", 150.0).toDouble());
+        m_calibrationDock->SetMaxRange_mm(settings.value("MaxRange", 40000.0).toDouble());
+
+        // make sure l2lidar class is updated with current settings
+        l2lidar.EnableCalibrationOVR(m_calibrationDock->isCalOVRenabled());
+        l2lidar.SetRangeBiasOVR(m_calibrationDock->getRangeBias());
+        l2lidar.SetRangeScaleOVR(m_calibrationDock->getRangeScale());
+        l2lidar.SetAlphaAngleBiasOVR(m_calibrationDock->getAlphaBias());
+        l2lidar.SetThetaAngleBiasOVR(m_calibrationDock->getThetaBias());
+        l2lidar.SetBetaAngleOVR(m_calibrationDock->getBetaAngle());
+        l2lidar.SetXiAngleOVR(m_calibrationDock->getXiAngle());
+        l2lidar.SetMinRange_mm(m_calibrationDock->getMinRange_mm());
+        l2lidar.SetMaxRange_mm(m_calibrationDock->getMaxRange_mm());
+
+        m_calibrationDock->EnableRangeCorrection(settings.value("EnableRangeCorrection", false).toBool());
+        m_calibrationDock->SetRangeCalFile(settings.value("RangeCalibrationFilename","").toString());
+        l2lidar.EnableRangeCorrection(m_calibrationDock->isRangeCorrectionEnabled());
+
     settings.endGroup();
 
     // windows visibility
@@ -342,23 +389,29 @@ void MainWindow::loadSettings(bool resetRequested)
         mmaxPoints=settings.value("MaxPoints", 450000).toUInt(); // 3D PC frame is 300 points
         config.setMaxPoints(mmaxPoints);
 
-        mIMUadjust = settings.value("IMUadjust", false).toBool();
-        config.setIMUadjustEnabled(mIMUadjust);
+        bool IMUadjust = settings.value("IMUadjust", false).toBool();
+        config.setIMUadjustEnabled(IMUadjust);
+        l2lidar.EnableIMUadjust(IMUadjust);
 
-        mIMUadjustRollPitch = settings.value("IMUadjustRollPitch", false).toBool();
-        config.setIMUadjustRollPitch(mIMUadjustRollPitch);
+        bool IMUadjustRollPitch = settings.value("IMUadjustRollPitch", false).toBool();
+        config.setIMUadjustRollPitch(IMUadjustRollPitch);
+        l2lidar.EnableAdjustRollPitchOnly(IMUadjustRollPitch);
 
-        mFlattenScanEnabled = settings.value("FlattenScanEnabled", false).toBool();
-        config.setFlattenScanEnabled(mFlattenScanEnabled);
+        bool FlattenScanEnabled = settings.value("FlattenScanEnabled", false).toBool();
+        config.setFlattenScanEnabled(FlattenScanEnabled);
+        l2lidar.EnableFlattenScan(FlattenScanEnabled);
 
-        mStartScanAngle = settings.value("StartScanAngle", 0.0).toDouble();
-        config.setStartScanAngle(mStartScanAngle);
+        double StartScanAngle = settings.value("StartScanAngle", 0.0).toDouble();
+        config.setStartScanAngle(StartScanAngle);
+        l2lidar.SetStartScanAngle(StartScanAngle);
 
-        mScanAngleWidth = settings.value("ScanAngleWidth", 360.0).toDouble();
-        config.setScanAngleWidth(mScanAngleWidth);
+        double ScanAngleWidth = settings.value("ScanAngleWidth", 360.0).toDouble();
+        config.setScanAngleWidth(ScanAngleWidth);
+        l2lidar.SetScanAngleWidth(ScanAngleWidth);
 
-        mIMUPCtimeConstraint = settings.value("IMUPCtimeConstraint", 0.07).toDouble();
-        config.setIMUPCtimeConstraint(mIMUPCtimeConstraint);
+        double IMUPCtimeConstraint = settings.value("IMUPCtimeConstraint", 0.07).toDouble();
+        config.setIMUPCtimeConstraint(IMUPCtimeConstraint);
+        l2lidar.SetIMUPCtimeConstraint(IMUPCtimeConstraint);
 
         mNumFramestoAggregate = settings.value("NumFramestoAggregate", 38).toInt();
         config.setAggFrames(mNumFramestoAggregate);

@@ -80,6 +80,8 @@
 //  V1.3.2  2026-07-07  Updated to V1.3.6 of L2LidarClass
 //                      Added point cloud flattened scan capability
 //                      Added starting angle, angle width for point cloud capture
+//  V2.0.0  2026-07-11  Adding calibration mode and diagnostic mode to the app.
+//                      Startup mode is always diagnostic.
 //
 //--------------------------------------------------------
 
@@ -141,8 +143,10 @@
 #include "StatsDock.h"
 #include "ACKDock.h"
 #include "ControlsDock.h"
+#include "CalibrationDock.h"
 #include "WorkModeDialog.h"
 #include "PacketRateDock.h"
+#include "RangeCalinfoDock.h"
 #include "quaternion.h"
 
 #define LIDAR_MODE_3D 0
@@ -185,6 +189,7 @@ public slots:
     void sendSetWorkmode();
     void sendGetL2Workmode();
     void sendReset();
+    void CalDockRangeCorrectionChanged();
 
 private slots:
     // // button controls
@@ -196,6 +201,9 @@ private slots:
     void SyncL2Clock();
     void SavePC();
     void LoadPC();
+    void SetCalibrationMode();
+    void SetDiagnosticMode();
+    void UpdateRangeCalInfo();
 
     // L2 commands
     void startRotation();
@@ -206,7 +214,24 @@ private slots:
     // workmode
     void ClosedWorkmodeDialog();
 
+    // Range Calibration GUI request
+    void RangeCalGUI(bool clear, bool visible);
+    void Stage3accepted();
+    void Stage3rejected();
+
+    void ResetConfigScanSettings(); // restore the StartScanAngle,
+                                    //ScanAngleWidth, Flatten flag,
+                                    //IMUadjust flag, IMUrollPith only flag
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
+
 private:
+    // operating mode
+    bool mCalibrationMode {false};
+        // false    diagnostic mode
+        // true     calibration mode
+
     // helper conversion functions
     QByteArray convertMacStringToByteArray(const QString &macString);
 
@@ -227,6 +252,11 @@ private:
     void HeartbeatFire();   // this is the callback for
                             // heartbeat timer
 
+    //-----------------------------------------------------
+    // For unitree L2 lidar hardware interaction
+    //-----------------------------------------------------
+    L2lidar l2lidar;
+
     // dockable windows
     DiagnosticsDock *m_diagnosticsDock{nullptr};
     IMUDock *m_IMUDock{nullptr};
@@ -234,6 +264,9 @@ private:
     ACKDock *m_ACKDock{nullptr};
     ControlsDock *m_controlsDock{nullptr};
     PacketRateDock* m_packetRateDock{nullptr};
+    CalibrationDock* m_calibrationDock {nullptr};
+    RangeCalinfoDock* m_RangeCalinfoDock {nullptr};
+    CalGraphDock* m_CalGraphDock {nullptr};
 
     // update the dockable windows
     void updateDiagnostics(); // runs off of timer to feed updated
@@ -269,13 +302,6 @@ private:
 
     int mNumFramestoAggregate {38};
 
-    bool mFlattenScanEnabled {false}; // only allow capture of point clouds close to xz plane
-    double mStartScanAngle {0.0};
-    double mScanAngleWidth {360};
-
-    // close point cloud viewer and workmode dialog (non-modal)
-    void closeEvent(QCloseEvent* e);
-
     // sends last frame received to renderer
     void onNewLidarFrame(bool Frame3D);
     void onNew3DLidarFrame() {onNewLidarFrame(true); mLastTypePacketReceived = true;};
@@ -287,20 +313,12 @@ private:
     // throttle for point cloud viewer
     uint32_t mNumFramesToSkip {4};
 
-    // calibration override
-    bool mCalOveride {false};
-    double mCalScale {0.000978};
-    double mCalBias {-365.625};
-
     // mutexf for point cloud frame updates
     QMutex m_cloudMutex;
 
     int mmaxPoints{0}; // computed maximum number of points
 
     // IMU operations
-    bool mIMUadjust{false}; // correct for IMU
-    bool mIMUadjustRollPitch {true}; // correct only for roll, pitch
-    double mIMUPCtimeConstraint {0.07}; // time constraint for matching IMU to Point Cloud
     bool menableIMUstats {true}; // calculate stats on IMU data
     StatsIMU mImuStats;
     void onNewLidarIMU();   // this is only used when enableIMUstatus is true
@@ -309,11 +327,6 @@ private:
 
     // helper function for Config dialog when cancelling dialog
     void RestoreConfigSettings(); // reset the point cloud view back to defaults
-
-    //-----------------------------------------------------
-    // For unitree L2 lidar hardware interaction
-    //-----------------------------------------------------
-    L2lidar l2lidar;
 
     // configuration dialog
     ConfigDialog config;

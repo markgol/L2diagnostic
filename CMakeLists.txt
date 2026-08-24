@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 1.3.2
+    VERSION 2.0.0
     LANGUAGES CXX
 )
+# release candidate 1
 
 # =============================
 # Language / build settings
@@ -78,6 +79,16 @@ else()
 endif()
 
 # =============================
+# Vendored Eigen
+# =============================
+add_library(vendored_eigen INTERFACE)
+
+target_include_directories(vendored_eigen
+    SYSTEM INTERFACE
+        ${CMAKE_SOURCE_DIR}/include/third_party/Eigen
+)
+
+# =============================
 # Link Qt libraries
 # =============================
 target_link_libraries(${PROJECT_NAME}
@@ -88,6 +99,7 @@ target_link_libraries(${PROJECT_NAME}
         Qt6::Charts
         Qt6::OpenGL
         Qt6::OpenGLWidgets
+        vendored_eigen
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

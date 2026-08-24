@@ -73,7 +73,6 @@
 void ConfigDialog::ConfigureUDP()
 {
     emit requestConfigureUDP();
-
 }
 
 //--------------------------------------------------------
@@ -83,7 +82,6 @@ void ConfigDialog::ConfigureUDP()
 void ConfigDialog::SetL2MAC()
 {
     emit requestSetL2MAC();
-
 }
 
 //--------------------------------------------------------

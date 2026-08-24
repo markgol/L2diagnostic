@@ -1,0 +1,7 @@
+The L2 application uses the "Eigen" c++ template library
+for linear algebra V3.4.1
+
+located at: https://gitlab.com/libeigen/eigen
+
+See the include\third_party\Eigen\docs folder
+    for the license information.

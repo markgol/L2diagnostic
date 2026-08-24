@@ -43,6 +43,7 @@
 //                      Adjusted sizing of ControlsDock and ConfigDialog
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
 //  V1.0.0  2026-03-28  Offical release
+//  V2.0.0  2026-08-18  Added button switch to calibration mode
 //
 //--------------------------------------------------------
 #ifndef CONTROLSDOCK_H
@@ -63,8 +64,8 @@ public:
     ~ControlsDock();
 
     // UI state control (called by MainWindow)
-    void setConnectState(bool connected);  // true - L2 connected
-                                        // false - L2 disconnected
+    void setConnectState(bool connected);   // true - L2 connected
+                                            // false - L2 disconnected
     bool GetConnectedState();
 
 signals:
@@ -82,14 +83,14 @@ signals:
     void LoadPC();
     void SavePC();
     void GetL2Params();
+    void CalibrationMode();
 
 protected:
     void closeEvent(QCloseEvent* event) override;
 
 private:
     Ui::ControlsDock *ui;
-
-   bool ConnectState{false};
+    bool ConnectState{false};
 };
 
 #endif // CONTROLSDOCK_H

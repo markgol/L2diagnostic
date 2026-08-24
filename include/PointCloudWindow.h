@@ -133,35 +133,9 @@
 #include <QFile>
 #include <QDataStream>
 #include <QTimer>
-
+#include "PCfileIO.h"
 #include "AxisGridRenderer.h"
 #include "PCpoint.h"
-
-// These fields should reflect a PCpoint
-// This structure must be packed since it
-// is also used to save and read PCD files
-;  // this dummy statement is so that known
-   // bug in clangd doesn't issue warning
-   //   unterminated ‘#pragma pack (push, …)’ at end of file
-#pragma pack(push,1)
-// this structure is written to a file
-// It is 28 bytes in size.
-struct GLPoint
-{
-    QVector3D pos;
-    float intensity;
-    float range;
-    int64_t time; // changed from float to int64
-                    // be accurately save time stamp
-};
-
-struct CCPoint
-{
-    float x,y,z;
-    float intensity;
-    float range;
-};
-#pragma pack(pop)
 
 // struct for the point cloud viewer state
 typedef struct
@@ -242,10 +216,10 @@ protected:
     void wheelEvent(QWheelEvent* e) override;
 
 private:
+    void closeEvent(QCloseEvent* e) override;
     void updateViewMatrix();
     void ensureVisibleOnScreen(QRect& geom) const;
     QVector3D cameraPosition() const;
-    void closeEvent(QCloseEvent* e) override;
     void uploadAccumulatedPoints();
 
 private:

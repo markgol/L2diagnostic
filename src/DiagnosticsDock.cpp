@@ -35,6 +35,7 @@
 //  V0.3.7  2026-01-29  added RTT latency measurement
 //                      added seq ID for point cloud and imu packets
 //  V1.0.0  2026-03-28  Offical release
+//  V2.0.0 2026-07-29 RC1 Changed radians to degress for display.
 //
 //--------------------------------------------------------
 
@@ -107,16 +108,16 @@ void DiagnosticsDock::updateDiagnostics(const LidarInsideState& State,
     ResultString = ResultString.asprintf("%.6f m",Calib.b_axis_dist);
     ui->lblBaxisValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.4f rad",Calib.theta_angle_bias);
+    ResultString = ResultString.asprintf("%.4f deg",Calib.theta_angle_bias * RAD_TO_DEG);
     ui->lblThetaBiasValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f rad",Calib.alpha_angle_bias);
+    ResultString = ResultString.asprintf("%.6f deg",Calib.alpha_angle_bias * RAD_TO_DEG);
     ui->lblAlphaBiasValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f rad",Calib.beta_angle);
+    ResultString = ResultString.asprintf("%.6f deg",Calib.beta_angle * RAD_TO_DEG);
     ui->lblBetaAngleValue->setText(ResultString);
 
-    ResultString = ResultString.asprintf("%.6f rad",Calib.xi_angle);
+    ResultString = ResultString.asprintf("%.6f deg",Calib.xi_angle * RAD_TO_DEG);
     ui->lblXiAngleValue->setText(ResultString);
 
     ResultString = ResultString.asprintf("%.3f mm",Calib.range_bias);

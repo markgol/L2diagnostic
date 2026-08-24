@@ -25,17 +25,18 @@ Standalone (without Qt installed) apps for use on Ubuntu for NVidia Jetson Orin 
 
 **Goals**
 
-1.) Only use unitree_lidar_protocols.h and unitree_lidar_utlities.h files from Unitree in an application.
+1.) Only use unitree_lidar_protocols.h and unitree_lidar_utlities.h files from Unitree for the basis of the application.  Dp not use the Unitree examples or other source code.
 
 2.) Open source for the L2 along with open source L2lidar class instead of Unitree archive library. This class has a ROS2 compatible architecture.
 
 3.) A diagnostic app to tell if the L2 is operating properly
 
         Display packet, info, calibration and other stats
-
         Point cloud data viewer
+        Allow override and adjustment of the calibration parameters in real time
+        Generate a range correction LUT to compensate for the non-linear range response of the L2
 
-4.) A L2lidar class open source implementation that can correct some of the issues observed with the L2 such as keeping the L2 time base constantly synced to the host.  This helps resolved the problem with the L2 timebase running ~1/2 time (one second on L2 is ~2 seconds in real world).
+4.) A L2lidar class open source implementation that can correct some of the issues observed with the L2 such as keeping the L2 time base constantly synced to the host.  This helps resolved the problem with the L2 timebase running ~1/2 time (one second on L2 is ~2 seconds in real world).  Allow the user to override the built-in calibration parameters.  On some L2 units there is a significant difference between the optimal value and the built-in values.
 
 
 
@@ -58,6 +59,20 @@ Jetson Orin Super Nano running Jetpack 7.2 (Ubuntu 24.04)
 1G Ethernet backbone
 
 
+
+#### **CURRENT RELEASE**
+
+**V2.0.0 release candidate 1**
+
+This is a significant upgrade to the  L2diagnostic application.
+
+The primary purpose was to split operation into 2 modes; diagnostics and calibration
+
+The calibration mode allows the user to adjust override calibration parameters while observing realtime point clouds.
+
+It also allows the collection of data needed to create a nonlinear range correction using a piecewise cubic spline.  It generates a calibration file that is compatible for use with the L2lidar class so that it can be used on ROS2 and other applications.  A separate writeup is being generated with the calibration process.
+
+#### **RELEASE HISTORY**
 
 **V0.3.10 release**
 
@@ -233,7 +248,9 @@ This adds flattening a slow anglular scan range into a a single flat scan.
 Added specifying a angular scan range to collect for the 3d point cloud.
 Updated the range value saved in the PCD file to be the calibrated range value instead of the raw range value returned by the L2.
 
-**Current Status**
+
+
+## **Current Status**
 
 UDP only. (serial workmode currently planned)
 
@@ -348,7 +365,7 @@ if you close a window you may need to go into the Config dialog, uncheck the win
 **Issues:**
 
 This supports only UPD Ethernet interface. No plans going forward to support the UART interface.
-On some system with lettering in the dialog boxes can be obscured because of the resolution settings for the display.
+On some system the lettering in the dialog boxes can be obscured because of the resolution settings for the display.
 
 
 

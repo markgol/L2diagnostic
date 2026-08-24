@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>498</width>
-    <height>229</height>
+    <height>264</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,7 +31,7 @@
     <property name="geometry">
      <rect>
       <x>380</x>
-      <y>60</y>
+      <y>110</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -43,8 +43,8 @@
    <widget class="QPushButton" name="btnConfig">
     <property name="geometry">
      <rect>
-      <x>280</x>
-      <y>10</y>
+      <x>400</x>
+      <y>60</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -83,7 +83,7 @@
     <property name="geometry">
      <rect>
       <x>280</x>
-      <y>60</y>
+      <y>110</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -121,8 +121,8 @@
    <widget class="QPushButton" name="btnWorkmode">
     <property name="geometry">
      <rect>
-      <x>380</x>
-      <y>10</y>
+      <x>280</x>
+      <y>60</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -199,17 +199,30 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>280</x>
-      <y>110</y>
+      <x>150</x>
+      <y>210</y>
       <width>191</width>
-      <height>31</height>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>L2diagnostics V1.3.2</string>
+     <string>L2diagnostics V2.0.0 RC1</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnCalibrate">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>10</y>
+      <width>201</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Switch to calibration mode</string>
     </property>
    </widget>
   </widget>

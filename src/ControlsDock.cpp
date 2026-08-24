@@ -44,6 +44,23 @@
 //  V1.0.0  2026-03-28  Offical release
 //
 //--------------------------------------------------------
+
+//--------------------------------------------------------
+// GPL-3.0 license
+//
+// This file is part of L2diagnsotic.
+//
+// L2diagnsotic is free software : you can redistribute it and /or modify it under
+// the terms of the GNU General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+//
+// L2diagnsotic is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License along with L2diagnsotic.
+// If not, see < https://www.gnu.org/licenses/>.
+//--------------------------------------------------------
+
 #include "ControlsDock.h"
 
 #include <QCloseEvent>
@@ -117,6 +134,10 @@ ControlsDock::ControlsDock(QWidget *parent)
     connect(ui->btnL2GetParams, &QPushButton::clicked,
             this, &ControlsDock::GetL2Params);
 
+    //  Swith to calibration mode button
+    connect(ui->btnCalibrate, &QPushButton::clicked,
+            this, &ControlsDock::CalibrationMode);
+
     setConnectState(false); // L2 is disconnected at start
 }
 
@@ -138,7 +159,7 @@ void ControlsDock::setConnectState(bool connected)
     // true - L2 connected
     // false - L2 disconnected
     ui->btnL2Connect->setEnabled(!connected);
-    ui->btnStart->setEnabled(connected);
+    ui->btnStart->setEnabled(connected); // Start rotation, diagnostic mode
     ui->btnStop->setEnabled(connected);
     ui->btnReset->setEnabled(connected);
     ui->btnL2Disconnect->setEnabled(connected);
@@ -152,13 +173,18 @@ void ControlsDock::setConnectState(bool connected)
     ConnectState = connected;
 }
 
+//--------------------------------------------------------
+//  GetConnectedState
+//--------------------------------------------------------
 bool ControlsDock::GetConnectedState()
 {
     return ConnectState;
 }
 
+//--------------------------------------------------------
+//  closeEvent
+//--------------------------------------------------------
 void ControlsDock::closeEvent(QCloseEvent* event)
 {
     event->ignore();
 }
-
