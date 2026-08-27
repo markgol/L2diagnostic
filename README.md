@@ -385,7 +385,7 @@ On some system the lettering in the dialog boxes can be obscured because of the 
 
 **Using Qt 6.11.x**
 
-The project has been developed using Qt Creator 18.0.x  Qt 6.10.x
+The project has been developed using Qt Creator 20.0.x  Qt 6.11.x
 
 Using MSVC 2022 x86_64 and gcc 64
 
@@ -408,13 +408,13 @@ When you open Qt Creator -> File -> Open file or project
 
 Qt will ask you to select a configuration.
 
-    Select Desktop Qt 6.10.x MSVC2022 64bit for Windows x64
+    Select Desktop Qt 6.11.x MSVC2022 64bit for Windows x64
 
         This selection will only show up if you have MSVC 2022 already installed
 
-            Select Desktop QT6.10.x Clang18 for Ubuntu x64
+            Select Desktop QT6.11.x Clang for Ubuntu x64
 
-            Select Desktop Qt6.10.x GCC for Ubuntu ARM64 on RPI5
+            Select Desktop Qt6.11.x GCC for Ubuntu ARM64 on RPI5
 
 When operating on RPI5 with Ubuntu, Clangd may not be able to be used because of memory limitations on certain RPIs.
 
