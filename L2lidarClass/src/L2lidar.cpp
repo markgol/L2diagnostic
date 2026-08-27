@@ -164,6 +164,9 @@
 //                            that generates the calibration dataset used in the application of
 //                            range correction methods.
 //                      Updated some of the private class variables to start with m...
+//  V2.0.1  2026-08-24 Implemented application of the alpha angle LUT
+//                     Added Alpha Angle step size override
+//                     Removed unused code
 //
 //--------------------------------------------------------
 
@@ -2117,8 +2120,18 @@ bool L2lidar::LoadRangeCalibration(const std::string& filename)
 {
     ClearRangeCorrection();
     if(RangeCorrection.LoadRangeCalibration(filename)) {
+        mRangeCorrectionLUT.clear();
         mRangeCorrectionLUT = RangeCorrection.GetRangeCorrectionLUT();
         mRangeCorrectionLoaded = true;
+
+        // load the AlphaAngleLUT if found
+        mAlphaAngleLUTloaded = RangeCorrection.IsAlphaAngleLUTloaded();
+        if(mAlphaAngleLUTloaded) {
+            mAlphaAngleLUT = RangeCorrection.GetAlphaAngleLUT();
+        } else {
+            mAlphaAngleLUT.clear();
+        }
+
         auto RangeCalInfo = RangeCorrection.GetRangeCalibrationInfo();
         // L2 device ranges (calibration range handled elsewhere)
         mMinRange_mm = RangeCalInfo.MinRange; // mm
@@ -2127,6 +2140,7 @@ bool L2lidar::LoadRangeCalibration(const std::string& filename)
         // restore overdide biases from calibration file
         mThetaBiasOVR = RangeCalInfo.ThetaAngleBias; // deg
         mAlphaBiasOVR = RangeCalInfo.AlphaAngleBias; // deg
+        mAlphaAngleStepOVR = RangeCalInfo.AlphaAngleStepSize; // deg
         mXiOVR = RangeCalInfo.XiAngle; // deg
         mBetaOVR = RangeCalInfo.BetaAngle; // deg
         mRangeBiasOVR = RangeCalInfo.RangeBias; // mm
@@ -2209,6 +2223,7 @@ inline void L2lidar::SelectiveParseFromPacketToPointCloud(unilidar_sdk2::PointCl
     int32_t RangeBias;
     double RangeScale;
     double AlphaBias;
+    double AlphaStep;
     double ThetaBias;
     double BetaAngle;
     double XiAngle;
@@ -2219,6 +2234,7 @@ inline void L2lidar::SelectiveParseFromPacketToPointCloud(unilidar_sdk2::PointCl
         RangeBias =  mRangeBiasOVR;
         RangeScale = mRangeScaleOVR;
         AlphaBias = mAlphaBiasOVR * DEG_TO_RAD;
+        AlphaStep = mAlphaAngleStepOVR * DEG_TO_RAD;
         ThetaBias =  mThetaBiasOVR * DEG_TO_RAD;
         BetaAngle = mBetaOVR * DEG_TO_RAD;
         XiAngle = mXiOVR * DEG_TO_RAD;
@@ -2227,6 +2243,7 @@ inline void L2lidar::SelectiveParseFromPacketToPointCloud(unilidar_sdk2::PointCl
         RangeBias =  (int32_t)(packet.data.param.range_bias-0.5); // round to neaest mm, subraction because it is negative.
         RangeScale = packet.data.param.range_scale;
         AlphaBias = packet.data.param.alpha_angle_bias;
+        AlphaStep = packet.data.angle_increment;
         ThetaBias = packet.data.param.theta_angle_bias;
         BetaAngle = (double)packet.data.param.beta_angle;
         XiAngle = (double)packet.data.param.xi_angle;
@@ -2298,12 +2315,14 @@ inline void L2lidar::SelectiveParseFromPacketToPointCloud(unilidar_sdk2::PointCl
     range_min = mMinRange_mm; //mm
     range_max = mMaxRange_mm; //mm
 
+    bool enableAlphaAngleLUT = mAlphaAngleLUTloaded && mEnableAlphaAngleCorrection;
+
     double time_relative = 0.0;
 
     double theta_cur = packet.data.com_horizontal_angle_start + ThetaBias;
     double alpha_cur = packet.data.angle_min + AlphaBias;
+    double alphaUsed;
 
-    double alpha_step = packet.data.angle_increment;
     double theta_step;
     if(!mFlattenScanEnabled) {
         theta_step = packet.data.com_horizontal_angle_step;
@@ -2312,7 +2331,7 @@ inline void L2lidar::SelectiveParseFromPacketToPointCloud(unilidar_sdk2::PointCl
         theta_step = 0.0;
     }
 
-    for (int j = 0; j < num_of_points; j += 1, alpha_cur += alpha_step,
+    for (int j = 0; j < num_of_points; j += 1, alpha_cur += AlphaStep,
                                        theta_cur += theta_step, time_relative += time_step)
     {
         int32_t rangeI;
@@ -2336,8 +2355,7 @@ inline void L2lidar::SelectiveParseFromPacketToPointCloud(unilidar_sdk2::PointCl
 
         // jump points beyond range limit
         range = (double)rangeI;
-        if (range < range_min || range > range_max)
-        {
+        if (range < range_min || range > range_max) {
             continue;
         }
 
@@ -2348,9 +2366,16 @@ inline void L2lidar::SelectiveParseFromPacketToPointCloud(unilidar_sdk2::PointCl
 
         range = RangeScale * range; // range _float is in meters
 
+        // use AlphaAngleLUT is enabled
+        if(enableAlphaAngleLUT) {
+            alphaUsed = mAlphaAngleLUT[j] + AlphaBias;
+        } else {
+            alphaUsed = alpha_cur;
+        }
+
         // transform to XYZ coordinate
-        sin_alpha = sin((double)alpha_cur);
-        cos_alpha = cos((double)alpha_cur);
+        sin_alpha = sin((double)alphaUsed);
+        cos_alpha = cos((double)alphaUsed);
 
         if(!mFlattenScanEnabled) {
             sin_theta = sin((double)theta_cur);
@@ -2381,4 +2406,22 @@ inline void L2lidar::SelectiveParseFromPacketToPointCloud(unilidar_sdk2::PointCl
         mNumPointedConverted++;
     }
     return;
+}
+
+
+//--------------------------------------------------------
+//  ClearAlphaAngleLUT
+//--------------------------------------------------------
+void L2lidar::ClearAlphaAngleLUT()
+{
+    mAlphaAngleLUT.clear();
+    mAlphaAngleLUTloaded = false;
+}
+
+//--------------------------------------------------------
+//  GetAlphaAngleLUT
+//--------------------------------------------------------
+const std::vector<double>& L2lidar::GetAlphaAngleLUT() const noexcept
+{
+    return mAlphaAngleLUT;
 }

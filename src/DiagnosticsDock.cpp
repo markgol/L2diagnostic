@@ -36,6 +36,8 @@
 //                      added seq ID for point cloud and imu packets
 //  V1.0.0  2026-03-28  Offical release
 //  V2.0.0 2026-07-29 RC1 Changed radians to degress for display.
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 

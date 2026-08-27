@@ -10,6 +10,8 @@
 //  Metadata entry
 //
 //  V2.0.0 RC1 2026-07-30
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -278,6 +280,5 @@ void Stage2CalRangeDialog::StartAcq()
 void Stage2CalRangeDialog::SaveAcq()
 {
     // genaralize to capture verify user did not cancel
-    emit SavePC();
-    mSaved = true;
+    emit Stage2SavePC();
 }

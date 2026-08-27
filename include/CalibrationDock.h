@@ -28,7 +28,11 @@
 //  This allows correction of the range value before it is converted
 //  into a x,y,z point poistion.
 //
-//  V2.0.0  2026-08-18  Added calibration model for the L2
+//  V2.0.0 RC1 2026-08-18 Added calibration model for the L2
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 #ifndef CALIBRATIONDOCK_H
@@ -113,6 +117,11 @@ public:
         return static_cast<double>(ui->spinAlphaAngle->value());
     }
 
+    double getAlphaStep() const
+    {
+        return static_cast<double>(ui->spinAlphaStepSize->value());
+    }
+
     double getThetaBias() const
     {
         return static_cast<double>(ui->spinThetaBias->value());
@@ -166,6 +175,11 @@ public:
         ui->spinAlphaAngle->setValue(p);
     }
 
+    void setAlphaStep(double p) const
+    {
+        ui->spinAlphaStepSize->setValue(p);
+    }
+
     void setThetaBias(double p) const
     {
         ui->spinThetaBias->setValue(p);
@@ -190,6 +204,7 @@ public:
             return mstage2->IsACQrunning();
         return false;
     }
+    void Stage2SaveDone(bool completed);
 
     // get analysis result for GUI
     const std::vector<Stage3BPoint>& GetStage3BPoints() const noexcept
@@ -210,6 +225,7 @@ signals:
     void ClearPCwindowRequested();
     void LoadPC();
     void SavePC();
+    void SavePC4Stage2();
     void UpdateRangeCalInfo();
     void EnableRangeCorrectionChanged();
     void CalGUIrequest(bool clear, bool visible);
@@ -236,10 +252,13 @@ private:
     void RangeScaleChanged();
     void ThetaChanged();
     void AlphaChanged();
+    void AlphaSizeChanged();
     void BetaChanged();
     void XiChanged();
     void CalOVRenable();
     void FinishStage2ACQ();
+    void Stage2SavePC();
+    void AlphaAngleCheckbox();
 
     // range correction stages
     void Stage1Dialog(); //btnStage1
@@ -268,6 +287,7 @@ private:
         0,
         0.001,
         1.65,
+        0.602,
         120.0,
         0.25,
         0.25,
@@ -289,8 +309,6 @@ private:
 
     // stage 4 results
     L2RangeCalibrationFit mStage4CalFit;
-
-
 };
 
 #endif // CALIBRATIONDOCK_H

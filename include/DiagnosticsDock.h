@@ -35,6 +35,7 @@
 //  V0.3.7  2026-01-29  added RTT latency measurement
 //                      added seq ID for point cloud and imu packets
 //  V1.0.0  2026-03-28  Offical release
+//  V2.0.1  2026-08-24  This is the intial V2.x release
 //
 //--------------------------------------------------------
 

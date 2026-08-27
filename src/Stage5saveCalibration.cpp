@@ -9,6 +9,10 @@
 //  Stage 5 save calibration file
 //
 //  V2.0.0 RC1 2026-08-15
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -42,7 +46,8 @@ bool L2RangeCalibrationWriter::SaveCalibrationFile(
         const std::string& filename,
         const RangeCalibrationCandidate& candidate,
         const std::vector<RangeCalibrationMeasurement>& measurements,
-        const RangeCalibrationInfo& info)
+        const RangeCalibrationInfo& info,
+        const std::vector<double>& AlphaAngleLUT)
 {
     mLastErrorMessage.clear();
 
@@ -71,6 +76,12 @@ bool L2RangeCalibrationWriter::SaveCalibrationFile(
 
     if (!WriteCalibrationPoints( stream, measurements)) {
         return false;
+    }
+
+    if(AlphaAngleLUT.size() == NUM_ALPHA_ANGLES_IN_SCAN) {
+        if(!WriteAlphaAngleLUT( stream, AlphaAngleLUT)) {
+            return false;
+        }
     }
 
     stream.flush();
@@ -118,7 +129,6 @@ bool L2RangeCalibrationWriter::ValidateInput(
     }
 
     // minCalRange and maxCalRange are in meters, compare using mm
-    // ???
     if ((candidate.minCalRange) < candidate.minRange ||
         (candidate.maxCalRange) > candidate.maxRange) {
         mLastErrorMessage = "The calibrated range is outside the physical measurement range.";
@@ -181,6 +191,8 @@ bool L2RangeCalibrationWriter::WriteMetadata(
         << info.RangeScale << '\n'
         << "# AlphaAngleBias,"
         << info.AlphaAngleBias << '\n'
+        << "# AlphaAngleStepSize,"
+        << info.AlphaAngleStepSize << '\n'
         << "# ThetaAngleBias,"
         << info.ThetaAngleBias << '\n'
         << "# BetaAngle,"
@@ -255,6 +267,31 @@ bool L2RangeCalibrationWriter::WriteCalibrationPoints(std::ostream& stream,
             << measurement.measuredRange_m << ','
             << measurement.trueRange_m << ','
             << measurement.correction_m << '\n';
+    }
+
+    if (!stream.good()) {
+        mLastErrorMessage = "Failed while writing calibration points.";
+        return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------
+//  WriteCalibrationPoints
+//--------------------------------------------------------
+bool L2RangeCalibrationWriter::WriteAlphaAngleLUT(std::ostream& stream,
+                                const std::vector<double>& AlphaAngleLUT)
+{
+    stream
+        << "\n# ALPHA ANGLE LUT\n"
+        << "FastScanIndex, RelativeAngle\n";
+
+    for (int i=0; i< NUM_ALPHA_ANGLES_IN_SCAN; i++)
+    {
+        stream
+            << i << ','
+            << AlphaAngleLUT[i] << '\n';
     }
 
     if (!stream.good()) {

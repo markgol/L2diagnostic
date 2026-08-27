@@ -9,6 +9,10 @@
 //  Stage 3 data analysis and extraction
 //
 //  V2.0.0 RC1 2026-08-18
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -58,11 +62,6 @@ public:
     explicit Stage3CalRangeDialog(QWidget* parent = nullptr);
     ~Stage3CalRangeDialog();
 
-    void SetAlphaAngleBias(double p) {mCal.alphaAngleBias = p;}
-    void SetBetaAngle(double p) {mCal.betaAngle = p;}
-    void SetXiAngle(double p) {mCal.xiAngle = p;}
-    void SetAlphaAngleStep(double p) {mCal.alphaAngleStepSize = p;}
-
     void SetMinRange_m(double p) {mMinRange_m = p;} // units are meters
     void SetMaxRange_m(double p) {mMaxRange_m = p;} // units are meters
 
@@ -96,7 +95,6 @@ private: // functions
     void Exit();
 
 private: // variables
-    L2AngularCalibration mCal;
     Ui::Stage3CalRangeDialog* ui;
     QVector<GLPoint> mcloud;
     L2RangeAnalysis mRangeAnalysis;

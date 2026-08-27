@@ -45,6 +45,7 @@
 //  V1.1.1  2026-04-29  Added CloudCompare PCD compatible output file
 //                      with just x,y,z,intensity,range
 //  V1.2.0  2026-05-12  Updated L2lidarClass for more precise timestamp calculations
+//  V2.0.1  2026-08-24  This is the intial V2.x release
 //
 //--------------------------------------------------------
 

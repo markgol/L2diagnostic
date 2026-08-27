@@ -165,6 +165,9 @@
 //                          API interface for the 3d point cloud parser
 //                              ConvertL2data2pointcloud()
 //                          Updates for 2d scan mode conversion no longer actively supported
+//  V2.0.1  2026-08-24 Implemented application of the alpha angle LUT
+//                     Added Alpha Angle step size override
+//                     Removed unused code
 //
 //--------------------------------------------------------
 
@@ -401,6 +404,7 @@ public:
     void SetRangeBiasOVR(int32_t Offset) {mRangeBiasOVR = Offset;}
     void SetThetaAngleBiasOVR(double angle) {mThetaBiasOVR = angle;} // in degrees
     void SetAlphaAngleBiasOVR(double angle) {mAlphaBiasOVR = angle;} // in degrees
+    void SetAlphaAngleStepOVR(double angle) {mAlphaAngleStepOVR = angle;} // in degrees
     void SetBetaAngleOVR(double angle) {mBetaOVR = angle;} // in degrees
     void SetXiAngleOVR(double angle) {mXiOVR = angle;} // in degrees
 
@@ -408,6 +412,7 @@ public:
     int32_t GetRangeBiasOVR() {return mRangeBiasOVR;}
     double GetThetaAngleBiasOVR() {return mThetaBiasOVR;} // in degrees
     double GetAlphaAngleBiasOVR() {return mAlphaBiasOVR;} // in degrees
+    double GetAlphaAngleStepOVR() {return mAlphaAngleStepOVR;} // in degrees
     double GetBetaAngleOVR() {return mBetaOVR;} // in degrees
     double GetXiAngleOVR() {return mXiOVR;} // in degrees
 
@@ -457,6 +462,12 @@ public:
     {
         return RangeCorrection.GetRangeCalibrationInfo();
     };
+    // L2 alpha angle LUT
+    bool IsAlphaAngleLUTloaded() {return mRangeCorrectionLoaded;}
+    bool IsAlphaAngleLUTenabled() {return mEnableRangeCorrection ;}
+    void EnableAlphaAngleLUT(bool p) {mEnableAlphaAngleCorrection = p;}
+    void ClearAlphaAngleLUT();
+    const std::vector<double>& GetAlphaAngleLUT() const noexcept;
 
     // IMU adjustment to point cloud
     // true: apply IMU adjustment
@@ -690,6 +701,7 @@ private: // variables
     double mRangeScaleOVR {.001};
     int32_t mRangeBiasOVR {-500};
     double mAlphaBiasOVR {1.5};
+    double mAlphaAngleStepOVR {0.602};
     double mThetaBiasOVR {120.0};
     double mBetaOVR {0.0};
     double mXiOVR {0.0};
@@ -710,4 +722,8 @@ private: // variables
     std::vector<double> mRangeCorrectionLUT;
     bool mRangeCorrectionLoaded {false};
 
+    // L2 Alpha angle LUT
+    bool mEnableAlphaAngleCorrection {false};
+    bool mAlphaAngleLUTloaded {false};
+    std::vector<double> mAlphaAngleLUT;
 };

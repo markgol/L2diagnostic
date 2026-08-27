@@ -35,6 +35,7 @@
 //  V0.4.0  2026-02-06  Added support for both OpenGL Core 3.3
 //                      and OpenGLES 3.x
 //  V1.0.0  2026-03-28  Offical release
+//  V2.0.1  2026-08-24  This is the intial V2.x release
 //
 //--------------------------------------------------------
 

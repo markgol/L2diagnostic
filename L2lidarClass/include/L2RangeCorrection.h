@@ -28,6 +28,9 @@
 //                          It does not include the creation and calibration procedures
 //                            that generates the calibration dataset used in the application of
 //                            range correction methods.
+//  V2.0.1  2026-08-24 Implemented application of the alpha angle LUT
+//                     Added Alpha Angle step size override
+//                     Removed unused code
 //
 //--------------------------------------------------------
 
@@ -56,6 +59,7 @@
 #include <array>
 #include "RangeCalSegments.h"
 
+#define NUM_ALPHA_ANGLES_IN_SCAN 300
 //=====================================================================
 // non classed structures
 //=====================================================================
@@ -84,6 +88,7 @@ struct RangeCalibrationInfo
     int32_t RangeBias = 0;
     double RangeScale = 0.001;
     double AlphaAngleBias = 1.75;
+    double AlphaAngleStepSize = 0.602;
     double ThetaAngleBias = 120.0;
     double BetaAngle = 0.25;
     double XiAngle = 0.25;
@@ -111,6 +116,7 @@ static constexpr const char* META_SENSOR_ID               = "SensorID";
 static constexpr const char* META_RANGE_BIAS              = "RangeBias";
 static constexpr const char* META_RANGE_SCALE             = "RangeScale";
 static constexpr const char* META_ALPHA_ANGLE_BIAS        = "AlphaAngleBias";
+static constexpr const char* META_ALPHA_ANGLE_STEP        = "AlphaAngleStepSize";
 static constexpr const char* META_THETA_ANGLE_BIAS        = "ThetaAngleBias";
 static constexpr const char* META_BETA_ANGLE              = "BetaAngle";
 static constexpr const char* META_XI_ANGLE                = "XiAngle";
@@ -173,6 +179,16 @@ static constexpr std::array<const char*, 2> ALPHA_ANLGE_LUT_FIELDS =
         "RelativeAngle"
 };
 
+//=====================================================================
+// Alpha Angle LUT Fields Segments
+//=====================================================================
+struct AlphaAngleLUTFields
+{
+    uint32_t fieldCount {0};
+
+    std::array<double, MAX_ALPHA_ANGLE_LUT_FIELDS> fields {};
+};
+
 //---------------------------------------------------------------------
 // class L2RangeCorrection definition
 //---------------------------------------------------------------------
@@ -216,17 +232,11 @@ public:
 
     void ClearCalibration();
 
+    bool IsAlphaAngleLUTloaded();
+    const std::vector<double>& GetAlphaAngleLUT() const noexcept;
+
 private: // structures
 
-    //=====================================================================
-    // Alpha Angle LUT Fields Segments
-    //=====================================================================
-    struct AlphaAngleLUTFields
-    {
-        uint32_t fieldCount {0};
-
-        std::array<double, MAX_ALPHA_ANGLE_LUT_FIELDS> fields {};
-    };
 
     //=====================================================================
     // Range Model Fields Segments
@@ -332,8 +342,6 @@ private: // functions
 private:
 
     ParseState mParseState = ParseState::Metadata;
-
-    bool mValid = false;
     RangeCalibrationInfo mRangeCalibrationInfo; // this instance uses mm as units
 
     CalibrationMethod mMethod = CalibrationMethod::Unknown;
@@ -344,7 +352,9 @@ private:
 
     bool mAlphaAngleLUTheaderRead {false};
     uint32_t mAlphaAngleLUTFieldCount {0};
-    std::vector<AlphaAngleLUTFields> mAlphaAngleLUT;
+    std::vector<AlphaAngleLUTFields> mAlphaAngleLUTfields;
+    std::vector<double> mAlphaAngleLUT;
+    bool mAlphaLUTvalid {false};
 
     bool mCalibrationPointsHeaderRead {false};
     uint32_t mExpectedCalibrationPointFieldCount {0};
@@ -353,10 +363,6 @@ private:
     std::vector<double> mRangeCorrectionLUT;
     double mMinCalibratedRange = 65535.0;
     double mMaxCalibratedRange = 0.0;
-
-    std::vector<double> mCandidateRangeCorrectionLUT;
-    // ??? RangeCalibrationCandidate mCandidateCalibration;
-    bool mCandidateCalibrationEnabled {false};
 
     std::vector<std::string> mWarnings;
     std::vector<std::string> mErrors;

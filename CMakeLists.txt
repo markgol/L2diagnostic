@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(L2diagnostic
-    VERSION 2.0.0
+    VERSION 2.0.1
     LANGUAGES CXX
 )
 # release candidate 1
@@ -75,7 +75,7 @@ if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /MP /Zi)
     target_link_options(${PROJECT_NAME} PRIVATE /DEBUG)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wunused-function)
 endif()
 
 # =============================

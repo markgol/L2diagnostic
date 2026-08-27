@@ -10,6 +10,10 @@
 //  Metadata entry
 //
 //  V2.0.0 RC1 2026-08-18
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -84,10 +88,11 @@ public:
 
     bool GetACQsaved() {return mSaved;}
     void ClearSaved() {mSaved = false;}
+    void SetAQCsaved(bool p) {mSaved = p;}
     bool IsACQrunning() {return mACQrunning;}
 
 signals:
-    void SavePC();
+    void Stage2SavePC();
     void ClearPCwindowRequested();
     void Finished();
 

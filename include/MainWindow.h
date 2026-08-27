@@ -82,6 +82,10 @@
 //                      Added starting angle, angle width for point cloud capture
 //  V2.0.0  2026-07-11  Adding calibration mode and diagnostic mode to the app.
 //                      Startup mode is always diagnostic.
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -199,7 +203,7 @@ private slots:
     void openWorkmode();
     void ClearPCwindow();
     void SyncL2Clock();
-    void SavePC();
+    bool SavePC();
     void LoadPC();
     void SetCalibrationMode();
     void SetDiagnosticMode();
@@ -222,6 +226,8 @@ private slots:
     void ResetConfigScanSettings(); // restore the StartScanAngle,
                                     //ScanAngleWidth, Flatten flag,
                                     //IMUadjust flag, IMUrollPith only flag
+
+    void SavePC4Stage2();
 
 protected:
     void closeEvent(QCloseEvent* event) override;

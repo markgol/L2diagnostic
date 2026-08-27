@@ -9,6 +9,10 @@
 //  Stage 5 save calibration file
 //
 //  V2.0.0 RC1 2026-08-18
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -42,7 +46,8 @@ public:
         const std::string& filename,
         const RangeCalibrationCandidate& candidate,
         const std::vector<RangeCalibrationMeasurement>& measurements,
-        const RangeCalibrationInfo& info);
+        const RangeCalibrationInfo& info,
+        const std::vector<double>& AlphaAngleLUT);
 
     const std::string&
     GetLastErrorMessage() const noexcept
@@ -67,6 +72,11 @@ private:
     bool WriteCalibrationPoints(
         std::ostream& stream,
         const std::vector<RangeCalibrationMeasurement>& measurements);
+
+    bool WriteAlphaAngleLUT(
+        std::ostream& stream,
+        const std::vector<double>& AlphaAngleLUT
+    );
 
     std::string mLastErrorMessage;
 };

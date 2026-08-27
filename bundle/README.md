@@ -1,4 +1,4 @@
-**Updated: 2026-07-11**
+**Updated: 2026-08-26**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -62,15 +62,15 @@ Jetson Orin Super Nano running Jetpack 7.2 (Ubuntu 24.04)
 
 #### **CURRENT RELEASE**
 
-**V2.0.0 release candidate 1**
+**V2.0.1 release**
 
-This is a significant upgrade to the  L2diagnostic application.
+The is the initial V2.x release.
+It added supoprt for overriding the fast scan elevation angle step size.
+This release also changes which version of Qt for source builds is being used:
 
-The primary purpose was to split operation into 2 modes; diagnostics and calibration
+- QtCreator 20.0.x
 
-The calibration mode allows the user to adjust override calibration parameters while observing realtime point clouds.
-
-It also allows the collection of data needed to create a nonlinear range correction using a piecewise cubic spline.  It generates a calibration file that is compatible for use with the L2lidar class so that it can be used on ROS2 and other applications.  A separate writeup is being generated with the calibration process.
+- Qt 6.11.x
 
 #### **RELEASE HISTORY**
 
@@ -250,6 +250,20 @@ Updated the range value saved in the PCD file to be the calibrated range value i
 
 
 
+**V2.0.0 release candidate 1**
+
+This is a significant upgrade to the L2diagnostic application.
+
+The primary purpose was to split operation into 2 modes; diagnostics and calibration
+
+The calibration mode allows the user to adjust override calibration parameters while observing realtime point clouds.
+
+It also allows the collection of data needed to create a nonlinear range correction using a piecewise cubic spline. It generates a calibration file that is compatible for use with the L2lidar class so that it can be used on ROS2 and other applications. A separate writeup is being generated with the calibration process.
+
+For source build. This release use Eigen V3.4.1 Template source library. This library is not compatible with github. It can be found at: https://libeigen.gitlab.io/
+
+It must be extracted to the include/third_party folder as a subfolder named Eigen.
+
 ## **Current Status**
 
 UDP only. (serial workmode currently planned)
@@ -369,7 +383,7 @@ On some system the lettering in the dialog boxes can be obscured because of the 
 
 
 
-**Using Qt 6.10.x**
+**Using Qt 6.11.x**
 
 The project has been developed using Qt Creator 18.0.x  Qt 6.10.x
 
@@ -378,6 +392,13 @@ Using MSVC 2022 x86_64 and gcc 64
 It has been tested for targets: Windows x64, Ubuntu x64 and ARM64
 
 There this a CmakeList.txt project.  I have tried to keep things compatible to other targets.
+
+
+
+For source build. This release use Eigen V3.4.1 Template source library. This library is not compatible with github. It can be found at: https://libeigen.gitlab.io/
+It must be extracted to the include/third_party folder as a subfolder named Eigen.
+
+
 
 If you are copying the project then copy it using the existing folder structure to whatever folder will be your project folder.
 

@@ -285,7 +285,7 @@
     <property name="geometry">
      <rect>
       <x>-3</x>
-      <y>320</y>
+      <y>350</y>
       <width>81</width>
       <height>20</height>
      </rect>
@@ -301,7 +301,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>320</y>
+      <y>350</y>
       <width>71</width>
       <height>19</height>
      </rect>
@@ -314,7 +314,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>340</y>
+      <y>370</y>
       <width>71</width>
       <height>19</height>
      </rect>
@@ -327,7 +327,7 @@
     <property name="geometry">
      <rect>
       <x>-3</x>
-      <y>340</y>
+      <y>370</y>
       <width>81</width>
       <height>20</height>
      </rect>
@@ -343,7 +343,7 @@
     <property name="geometry">
      <rect>
       <x>210</x>
-      <y>380</y>
+      <y>420</y>
       <width>101</width>
       <height>19</height>
      </rect>
@@ -356,7 +356,7 @@
     <property name="geometry">
      <rect>
       <x>97</x>
-      <y>380</y>
+      <y>420</y>
       <width>101</width>
       <height>20</height>
      </rect>
@@ -469,7 +469,7 @@
     <property name="geometry">
      <rect>
       <x>-10</x>
-      <y>400</y>
+      <y>440</y>
       <width>631</width>
       <height>16</height>
      </rect>
@@ -482,7 +482,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>410</y>
+      <y>450</y>
       <width>301</width>
       <height>19</height>
      </rect>
@@ -495,9 +495,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>440</y>
+      <y>480</y>
       <width>441</width>
-      <height>331</height>
+      <height>301</height>
      </rect>
     </property>
     <property name="text">
@@ -630,7 +630,7 @@
     <property name="geometry">
      <rect>
       <x>-3</x>
-      <y>280</y>
+      <y>310</y>
       <width>81</width>
       <height>41</height>
      </rect>
@@ -649,7 +649,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>300</y>
+      <y>330</y>
       <width>71</width>
       <height>19</height>
      </rect>
@@ -723,7 +723,7 @@
     <property name="geometry">
      <rect>
       <x>-3</x>
-      <y>360</y>
+      <y>390</y>
       <width>81</width>
       <height>20</height>
      </rect>
@@ -739,13 +739,45 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>360</y>
+      <y>390</y>
       <width>71</width>
       <height>19</height>
      </rect>
     </property>
     <property name="text">
      <string>unknown</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblAlphaAngleStep">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>290</y>
+      <width>71</width>
+      <height>19</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>unknown</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_24">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>270</y>
+      <width>81</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Alpha Angle Step:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>

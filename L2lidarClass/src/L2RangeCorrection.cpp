@@ -22,12 +22,15 @@
 //  The L2RangeCorrection class implements the range calibration to be used
 //  for realtime range correction.  This cuurently is a piecewise cubic spline fit.
 //
-//  V2.0.0RC1 2026-08-20 Adding range calibration class to be used in the L2lidar class
+//  V2.0.0 RC1 2026-08-20 Adding range calibration class to be used in the L2lidar class
 //                          This will align with L2diagnostics V2.0.0
 //                          It will only include the application of the range correction methods
 //                          It does not include the creation and calibration procedures
 //                            that generates the calibration dataset used in the application of
 //                            range correction methods.
+//  V2.0.1  2026-08-24 Implemented application of the alpha angle LUT
+//                     Added Alpha Angle step size override
+//                     Removed unused code
 //
 //--------------------------------------------------------
 
@@ -49,6 +52,7 @@
 #include "L2RangeCorrection.h"
 #include <fstream>
 #include <stdexcept>
+#include "quaternion.h"
 
 //=============================================================================
 //
@@ -69,11 +73,12 @@ L2RangeCorrection::L2RangeCorrection()
 //=============================================================================
 void L2RangeCorrection::ClearCalibration()
 {
-    mValid = false;
     mRangeCalibrationInfo = RangeCalibrationInfo();
     mRangeCalibrationPoints.clear();
     mRangeCorrectionLUT.clear();
     mRangeCalibrationInfo = RangeCalibrationInfo();
+    mAlphaAngleLUTfields.clear();
+    mAlphaAngleLUTFieldCount = 0;
 }
 
 //--------------------------------------------------------
@@ -102,11 +107,22 @@ bool L2RangeCorrection::LoadRangeCalibration(
     }
 
     if(!ValidateAlphaAngleLUT()) {
+        mAlphaAngleLUTfields.clear();
         mAlphaAngleLUT.clear();
+        mAlphaLUTvalid = false;
         return false;
     }
+    // if the alpha angles LUT fields is validated
+    // the angles needs to be copied to the real LUT
+    if(mAlphaLUTvalid) {
+        // copy to just angles to mAlphaAngleLUT
+        double next = 0.0;
+        for(int i=0; i<NUM_ALPHA_ANGLES_IN_SCAN; i++) {
+            mAlphaAngleLUT.emplace_back(next);
+            next += mAlphaAngleLUTfields[i].fields[1] * DEG_TO_RAD;
+        }
+    }
 
-    mValid = true;
     return true;
 }
 
@@ -239,6 +255,15 @@ bool L2RangeCorrection::ParseMetadataLine(
     } else if (key == META_ALPHA_ANGLE_BIAS) {
         if (!ParseDouble(value, mRangeCalibrationInfo.AlphaAngleBias)) {
             mErrors.push_back(
+                "Line " +
+                std::to_string(lineNumber) +
+                ": Invalid AlphaAngleBias value.\n");
+            return false;
+        }
+    } else if (key == META_ALPHA_ANGLE_STEP) {
+        if (!ParseDouble(value, mRangeCalibrationInfo.AlphaAngleStepSize)) {
+            mErrors.push_back(
+
                 "Line " +
                 std::to_string(lineNumber) +
                 ": Invalid AlphaAngleBias value.\n");
@@ -455,7 +480,7 @@ bool L2RangeCorrection::ParseAlphaAngleLUTline(
         angles.fields[i] = field_dbl[i];
     }
 
-    mAlphaAngleLUT.emplace_back(std::move(angles));
+    mAlphaAngleLUTfields.emplace_back(std::move(angles));
     return true;
 }
 
@@ -757,9 +782,6 @@ bool L2RangeCorrection::ParseInt32(
 //--------------------------------------------------------
 void L2RangeCorrection::ResetParserState()
 {
-    // Reset parser status.
-    mValid = false;
-
     // Reset parser state.
     mParseState = ParseState::Metadata;
 
@@ -770,7 +792,7 @@ void L2RangeCorrection::ResetParserState()
 
     mAlphaAngleLUTheaderRead = false;
     mAlphaAngleLUTFieldCount = 0;
-    mAlphaAngleLUT.clear();
+    mAlphaAngleLUTfields.clear();
 
     mCalibrationPointsHeaderRead = false;
     mExpectedCalibrationPointFieldCount = 0;
@@ -962,20 +984,25 @@ bool L2RangeCorrection::ValidateAlphaAngleLUT()
     //
     // Verify at least one model segment exists.
     //
-    if (mAlphaAngleLUT.empty()) {
+    mAlphaLUTvalid = false;
+    mAlphaAngleLUT.clear();
+
+    if (mAlphaAngleLUTfields.empty()) {
         mWarnings.emplace_back(
             "Calibration file does not contain Alpha Angle LUT section");
         return true;
     }
     //
-    // Verify entries is 300
+    // Verify entries is NUM_ALPHA_ANGLES_IN_SCAN
     //
-    if (mAlphaAngleLUT.size() != 300) {
+    if (mAlphaAngleLUTfields.size() != NUM_ALPHA_ANGLES_IN_SCAN) {
         mErrors.emplace_back(
             "Alpha Angle LUT section contains " +
             std::to_string(mRangeCorrectionModel.size()) +
             " angles.\n" +
-            "Requirement is 300 only found: " +
+            "Requirement is " +
+            std::to_string(NUM_ALPHA_ANGLES_IN_SCAN) +
+            " only found: " +
             std::to_string(mRangeCalibrationInfo.NumberOfSegments));
         return false;
     }
@@ -983,16 +1010,16 @@ bool L2RangeCorrection::ValidateAlphaAngleLUT()
     //
     // Verify each index.
     //
-    int lastindexnum = mAlphaAngleLUT[0].fields[FIELD_INDEX];
-    double lastangle = mAlphaAngleLUT[0].fields[FIELD_ANGLE];
+    int lastindexnum = mAlphaAngleLUTfields[0].fields[FIELD_INDEX];
+    double lastangle = mAlphaAngleLUTfields[0].fields[FIELD_ANGLE];
     if (lastindexnum != 0 || lastangle!=0.0) {
         mErrors.emplace_back(
             "AlphaAngleLUT[0] entry is not 0,0.0");
         return false;
     }
-    for (size_t i = 1; i < mAlphaAngleLUT.size(); ++i)
+    for (size_t i = 1; i < mAlphaAngleLUTfields.size(); ++i)
     {
-        const auto& entry = mAlphaAngleLUT[i];
+        const auto& entry = mAlphaAngleLUTfields[i];
 
         const int indexnum = entry.fields[FIELD_INDEX];
         const double angle = entry.fields[FIELD_ANGLE];
@@ -1004,26 +1031,11 @@ bool L2RangeCorrection::ValidateAlphaAngleLUT()
             return false;
         }
 
-        if (angle <= lastangle) {
-            mErrors.emplace_back(
-                "AlphaAngleLUT["
-                +std::to_string(i)+ "] is not in ascending order");
-            return false;
-        }
-        lastindexnum = indexnum;
+       lastindexnum = indexnum;
         lastangle = angle;
     }
-    if ((lastangle-mAlphaAngleLUT[0].fields[FIELD_ANGLE]) > 210.0) {
-        mErrors.emplace_back(
-            "Alpha Angle extent can not exceed 210 degrees for L2");
-        return false;
-    }
 
-    if ((lastangle-mAlphaAngleLUT[0].fields[FIELD_ANGLE]) < 165.0) {
-        mErrors.emplace_back(
-            "Alpha Angle extent can not be less than 165 degrees for L2");
-        return false;
-    }
+    mAlphaLUTvalid = true;
 
     return true;
 }
@@ -1091,10 +1103,10 @@ bool L2RangeCorrection::ValidateCubicSpline(
     // The spline segments must encompass that cal range
     double StartCalRange;
     double EndCalRange;
-    // ??? check units here
+
     StartCalRange = mRangeCorrectionModel.front().fields[0]; // starting x0
     EndCalRange = mRangeCorrectionModel.back().fields[1]; // ending x1
-    // ??? check coorect logic here
+
     if(mRangeCalibrationInfo.MinCalRange < StartCalRange) {
         mErrors.emplace_back(
             "Min Cal range: " +
@@ -1325,10 +1337,27 @@ bool L2RangeCorrection::BuildCubicSplineLUT(const std::vector<RangeModelFields>&
     }
     return true;
 }
+
 //--------------------------------------------------------
 //  GetRangeCorrectionLUT
 //--------------------------------------------------------
 const std::vector<double>& L2RangeCorrection::GetRangeCorrectionLUT() const noexcept
 {
     return mRangeCorrectionLUT;
+}
+
+//--------------------------------------------------------
+//  IsAlphaAngleLUTvalid
+//--------------------------------------------------------
+bool L2RangeCorrection::IsAlphaAngleLUTloaded()
+{
+    return mAlphaLUTvalid;
+}
+
+//--------------------------------------------------------
+//  GetAlphaAngleLUT
+//--------------------------------------------------------
+const std::vector<double>& L2RangeCorrection::GetAlphaAngleLUT() const noexcept
+{
+    return mAlphaAngleLUT;
 }

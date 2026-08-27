@@ -34,6 +34,7 @@
 //  V0.4.4  2026-03-02  Added stats to the IMU variables
 //  V1.0.0  2026-03-28  Offical release
 //  V1.3.0  2026-06-15  Added derived stats for roll, pitch and yaw
+//  V2.0.1  2026-08-24  This is the intial V2.x release
 //
 //--------------------------------------------------------
 

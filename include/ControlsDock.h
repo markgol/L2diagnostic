@@ -43,7 +43,11 @@
 //                      Adjusted sizing of ControlsDock and ConfigDialog
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
 //  V1.0.0  2026-03-28  Offical release
-//  V2.0.0  2026-08-18  Added button switch to calibration mode
+//  V2.0.0 RC1 2026-08-18  Added button switch to calibration mode
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 #ifndef CONTROLSDOCK_H

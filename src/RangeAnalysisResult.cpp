@@ -9,6 +9,8 @@
 //  Stage 3 data anaylsis for stage 3
 //
 //  V2.0.0 RC1 2026-08-02
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 

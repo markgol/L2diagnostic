@@ -66,6 +66,13 @@
 //  V2.0.0 RC1 2026-08-01
 //                      Updated save and load settings for range correction calibration
 //                      Additional calibration override (6 total)
+//  V2.0.0 RC2 2026-08-24
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -109,7 +116,6 @@
 #include <QDateTime>
 #include <QSettings>
 #include <QStandardPaths>
-
 #include <cstdio>
 
 //--------------------------------------------------------
@@ -173,6 +179,7 @@ void MainWindow::saveSettings(bool resetRequested)
         settings.setValue("RangeScale", m_calibrationDock->getRangeScale());
         settings.setValue("RangeBias", m_calibrationDock->getRangeBias());
         settings.setValue("AlphaBias", m_calibrationDock->getAlphaBias());
+        settings.setValue("AlphaStep", m_calibrationDock->getAlphaStep());
         settings.setValue("ThetaBias", m_calibrationDock->getThetaBias());
         settings.setValue("BetaAngle", m_calibrationDock->getBetaAngle());
         settings.setValue("XiAngle", m_calibrationDock->getXiAngle());
@@ -184,6 +191,7 @@ void MainWindow::saveSettings(bool resetRequested)
         l2lidar.SetRangeBiasOVR(m_calibrationDock->getRangeBias());
         l2lidar.SetRangeScaleOVR(m_calibrationDock->getRangeScale());
         l2lidar.SetAlphaAngleBiasOVR(m_calibrationDock->getAlphaBias());
+        l2lidar.SetAlphaAngleStepOVR(m_calibrationDock->getAlphaStep());
         l2lidar.SetThetaAngleBiasOVR(m_calibrationDock->getThetaBias());
         l2lidar.SetBetaAngleOVR(m_calibrationDock->getBetaAngle());
         l2lidar.SetXiAngleOVR(m_calibrationDock->getXiAngle());
@@ -325,6 +333,7 @@ void MainWindow::loadSettings(bool resetRequested)
         m_calibrationDock->SetRangeScale(settings.value("RangeScale", 0.001).toDouble());
         m_calibrationDock->setRangeBias(settings.value("RangeBias", -535).toDouble());
         m_calibrationDock->setAlphaBias(settings.value("AlphaBias", 1.6).toDouble());
+        m_calibrationDock->setAlphaStep(settings.value("AlphaStep", 0.602).toDouble());
         m_calibrationDock->setThetaBias(settings.value("ThetaBias", 120).toDouble());
         m_calibrationDock->setBetaAngle(settings.value("BetaAngle", 0.0).toDouble());
         m_calibrationDock->setXiAngle(settings.value("XiAngle", 0.0).toDouble());
@@ -336,6 +345,7 @@ void MainWindow::loadSettings(bool resetRequested)
         l2lidar.SetRangeBiasOVR(m_calibrationDock->getRangeBias());
         l2lidar.SetRangeScaleOVR(m_calibrationDock->getRangeScale());
         l2lidar.SetAlphaAngleBiasOVR(m_calibrationDock->getAlphaBias());
+        l2lidar.SetAlphaAngleStepOVR(m_calibrationDock->getAlphaStep());
         l2lidar.SetThetaAngleBiasOVR(m_calibrationDock->getThetaBias());
         l2lidar.SetBetaAngleOVR(m_calibrationDock->getBetaAngle());
         l2lidar.SetXiAngleOVR(m_calibrationDock->getXiAngle());
@@ -465,8 +475,14 @@ void MainWindow::logParameter(const char *Name, double value)
     if(mLogFile ==NULL) {
         QByteArray filename = mLogFilename.toLocal8Bit();
         const char *cfilename = filename.data();
+#ifdef _MSC_VER
         if(fopen_s(&mLogFile,cfilename,"w"))
             return;
+#else
+        mLogFile = fopen(cfilename,"w");
+        if(!mLogFile)
+            return;
+#endif
     }
     fprintf(mLogFile,"%s: %.8g\n", Name, value);
 }
@@ -477,8 +493,12 @@ void MainWindow::logParameter(const char *Name, bool value)
     if(mLogFile ==NULL) {
         QByteArray filename = mLogFilename.toLocal8Bit();
         const char *cfilename = filename.data();
-        if(fopen_s(&mLogFile,cfilename,"w"))
-            return;
+        #ifdef _MSC_VER
+            if(fopen_s(&mLogFile,cfilename,"w")) return;
+        #else
+            mLogFile = fopen(cfilename,"w");
+            if(!mLogFile) return;
+        #endif
     }
     if(value) {
         fprintf(mLogFile,"%s: true\n", Name);
@@ -493,8 +513,12 @@ void MainWindow::logParameter(const char *Name, float value)
     if(mLogFile ==NULL) {
         QByteArray filename = mLogFilename.toLocal8Bit();
         const char *cfilename = filename.data();
-        if(fopen_s(&mLogFile,cfilename,"w"))
-            return;
+        #ifdef _MSC_VER
+            if(fopen_s(&mLogFile,cfilename,"w")) return;
+        #else
+            mLogFile = fopen(cfilename,"w");
+            if(!mLogFile) return;
+        #endif
     }
     fprintf(mLogFile,"%s: %.8g\n", Name, value);
 }
@@ -505,8 +529,12 @@ void MainWindow::logParameter(const char *Name, int value)
     if(mLogFile ==NULL) {
         QByteArray filename = mLogFilename.toLocal8Bit();
         const char *cfilename = filename.data();
-        if(fopen_s(&mLogFile,cfilename,"w"))
-            return;
+        #ifdef _MSC_VER
+            if(fopen_s(&mLogFile,cfilename,"w")) return;
+        #else
+            mLogFile = fopen(cfilename,"w");
+            if(!mLogFile) return;
+        #endif
     }
     fprintf(mLogFile,"%s: %d\n", Name, value);
 }
@@ -517,8 +545,12 @@ void MainWindow::logParameter(const char *Name, QString text)
     if(mLogFile ==NULL) {
         QByteArray filename = mLogFilename.toLocal8Bit();
         const char *cfilename = filename.data();
-        if(fopen_s(&mLogFile,cfilename,"w"))
-            return;
+        #ifdef _MSC_VER
+            if(fopen_s(&mLogFile,cfilename,"w")) return;
+        #else
+            mLogFile = fopen(cfilename,"w");
+            if(!mLogFile) return;
+        #endif
     }
     QByteArray qvalue = text.toLocal8Bit();
     const char *value = qvalue.data();

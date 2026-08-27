@@ -8,6 +8,10 @@
 //  Stage 3 data anaylsis for stage 3
 //
 //  V2.0.0 RC1 2026-08-18
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -44,17 +48,6 @@
 #include "RangeAnalysisResult.h"
 
 #include "PCfileIO.h" // needed for the definition of GLPoint structre
-
-struct L2AngularCalibration
-{
-    double RangleScale {.001};
-    double alphaAngleBias {0.0};
-    double alphaAngleStepSize {0.0};
-    double RangeBias;
-    double betaAngle {0.0};
-    double xiAngle {0.0};
-};
-
 //---------------------------------------------------------------
 // class definition
 //---------------------------------------------------------------
@@ -86,7 +79,6 @@ public:
 
     bool AnalyzePointCloud(
         const QVector<GLPoint>& cloud,
-        const L2AngularCalibration  AngleCal,
         RangeAnalysisResult& result);
 
     bool ExportFilteredElevationHistogramCSV(

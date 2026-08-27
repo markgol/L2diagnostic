@@ -9,6 +9,8 @@
 //  Stage 3 data analysis and extraction
 //
 //  V2.0.0 RC1 2026-07-31
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -161,7 +163,7 @@ void Stage3CalRangeDialog::AnalyzePC()
     saveINI("RangeCalStage3","FilterRadius",p);
 
     // Stage 3A Analyyze
-    if(!mRangeAnalysis.AnalyzePointCloud(mcloud, mCal, mAnalysisResult)) {
+    if(!mRangeAnalysis.AnalyzePointCloud(mcloud, mAnalysisResult)) {
         return;
     }
 
@@ -179,7 +181,7 @@ void Stage3CalRangeDialog::AnalyzePC()
 
             auto binsfound = mAnalysisResult.elevationPeaks.size();
             auto samplesize = mAnalysisResult.samples.size();
-            QString results = QString::asprintf("Analysis completed\nSamples processed: %u\nElevation bins found: %u\nAnalysis file generated:\n",
+            QString results = QString::asprintf("Analysis completed\nSamples processed: %zu\nElevation bins found: %zu\nAnalysis file generated:\n",
                                                 samplesize, binsfound) + newFile;
             ui->lblStatus->setText(results);
         }
@@ -267,7 +269,7 @@ void Stage3CalRangeDialog::Stage3accepted()
             mL2RangeExtraction.ExportCalMeasurementsCSV(newFile.toStdString(), mMeasurements);
             auto binsfound = mAnalysisResult.elevationPeaks.size();
             auto samplesize = mAnalysisResult.samples.size();
-            QString results = QString::asprintf("Stage3 completed\nSamples processed: %u\nElevation bins found: %u\nAnalysis file generated:\n",
+            QString results = QString::asprintf("Stage3 completed\nSamples processed: %zu\nElevation bins found: %zu\nAnalysis file generated:\n",
                                                 samplesize, binsfound) + newFile;
             ui->lblStatus->setText(results);
         }

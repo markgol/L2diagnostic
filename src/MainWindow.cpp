@@ -142,6 +142,8 @@
 //                      Added starting angle, angle width for point cloud capture
 //  V2.0.0  2026-07-24  Adding calibration mode and diagnostic mode to the app.
 //                      Startup mode is always diagnostic.
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -313,6 +315,10 @@ MainWindow::MainWindow(bool OpenGLES, int major, int minor,QWidget* parent)
     // connect request to reset the scan configuration
     connect(m_calibrationDock, &CalibrationDock::ResetConfigScanSettings,
             this, &MainWindow::ResetConfigScanSettings);
+
+    // connect stage2 save PC acq
+    connect(m_calibrationDock, &CalibrationDock::SavePC4Stage2,
+            this, &MainWindow::SavePC4Stage2);
 
     SetDiagnosticMode();
     //ShowWindows(); // show windows effects all windows including point cloud window
@@ -1892,10 +1898,18 @@ void MainWindow::GetL2workmode()
 }
 
 //--------------------------------------------------------
+//  SavePC4Stage2
+//--------------------------------------------------------
+void MainWindow::SavePC4Stage2()
+{
+    m_calibrationDock->Stage2SaveDone(SavePC());
+}
+
+//--------------------------------------------------------
 //  SavePC
 //  button press
 //--------------------------------------------------------
-void MainWindow::SavePC()
+bool MainWindow::SavePC()
 {
     if (m_pointCloudWindow == nullptr) {
         QMessageBox msgBox;
@@ -1903,7 +1917,7 @@ void MainWindow::SavePC()
         msgBox.setInformativeText("point cloud window must be enabled first");
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.exec();
-        return;
+        return false;
     }
 
     // 1. Ask user which format to save
@@ -1918,7 +1932,7 @@ void MainWindow::SavePC()
     formatBox.exec();
 
     if (formatBox.clickedButton() == cancel)
-        return;
+        return false;
 
     bool useCC = (formatBox.clickedButton() == ccBtn);
 
@@ -1932,7 +1946,7 @@ void MainWindow::SavePC()
         );
 
     if (file.isEmpty())
-        return;
+        return false;
 
     // 3. Dispatch to correct save function
     if (useCC) {
@@ -1944,6 +1958,8 @@ void MainWindow::SavePC()
             saveINI("Save", "PCDfilename",file);
         }
     }
+
+    return true;
 }
 //--------------------------------------------------------
 //  LoadPC

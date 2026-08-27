@@ -29,6 +29,10 @@
 //  into a x,y,z point poistion.
 //
 //  V2.0.0 RC1 2026-07-31  Added calibration model for the L2
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -131,7 +135,6 @@ CalibrationDock::CalibrationDock(L2lidar& lidar, QWidget *parent)
     connect(ui->spinMaxRange, &QSpinBox::valueChanged,
             this, &CalibrationDock::MaxRangeChanged);
 
-
     //  Theta angle bias spin
     connect(ui->spinThetaBias, &QDoubleSpinBox::valueChanged,
             this, &CalibrationDock::ThetaChanged);
@@ -139,6 +142,10 @@ CalibrationDock::CalibrationDock(L2lidar& lidar, QWidget *parent)
     //  Alpha angle bias spin
     connect(ui->spinAlphaAngle, &QDoubleSpinBox::valueChanged,
             this, &CalibrationDock::AlphaChanged);
+
+    //  Alpha angle step size spin
+    connect(ui->spinAlphaStepSize, &QDoubleSpinBox::valueChanged,
+            this, &CalibrationDock::AlphaSizeChanged);
 
     //  Beta angle spin
     connect(ui->spinBetaAngle, &QDoubleSpinBox::valueChanged,
@@ -151,6 +158,10 @@ CalibrationDock::CalibrationDock(L2lidar& lidar, QWidget *parent)
     //CalOVRenable button
     connect(ui->cbCalOveride, &QCheckBox::clicked,
             this, &CalibrationDock::CalOVRenable);
+
+    //  EnableAlphaAngle checkbox clicked
+    connect(ui->cbEnableAlphaLUT, &QCheckBox::clicked,
+            this, &CalibrationDock::AlphaAngleCheckbox);
 
     // Range Correction stage buttons
     ui->btnStage1->setEnabled(false);
@@ -303,6 +314,14 @@ void CalibrationDock::AlphaChanged()
     double Alpha =  ui->spinAlphaAngle->value();
     ml2lidar.SetAlphaAngleBiasOVR(Alpha);
 }
+//--------------------------------------------------------
+//  Alpha Angle bias changed
+//--------------------------------------------------------
+void CalibrationDock::AlphaSizeChanged()
+{
+    double Alpha =  ui->spinAlphaStepSize->value();
+    ml2lidar.SetAlphaAngleStepOVR(Alpha);
+}
 
 //--------------------------------------------------------
 //  Beta Angle changed
@@ -406,6 +425,28 @@ bool CalibrationDock::LoadRangeCal()
     if(!loaded){
         return false;
     }
+
+    mRangeCal.AlphaAngleBias = ml2lidar.GetAlphaAngleBiasOVR();
+    ui->spinAlphaAngle->setValue(mRangeCal.AlphaAngleBias);
+
+    mRangeCal.AlphaAngleStepSize = ml2lidar.GetAlphaAngleStepOVR();
+    ui->spinAlphaStepSize->setValue(mRangeCal.AlphaAngleStepSize);
+
+    mRangeCal.ThetaAngleBias = ml2lidar.GetThetaAngleBiasOVR();
+    ui->spinThetaBias->setValue(mRangeCal.ThetaAngleBias);
+
+    mRangeCal.BetaAngle = ml2lidar.GetBetaAngleOVR();
+    ui->spinBetaAngle->setValue( mRangeCal.BetaAngle);
+
+    mRangeCal.RangeBias = ml2lidar.GetRangeBiasOVR();
+    ui->spinRangeBias->setValue(mRangeCal.RangeBias);
+
+    mRangeCal.RangeScale = ml2lidar.GetRangeScaleOVR();
+    ui->spinRangeScale->setValue(mRangeCal.RangeScale);
+
+    mRangeCal.XiAngle = ml2lidar.GetXiAngleOVR();
+    ui->spinXiAngle->setValue(mRangeCal.XiAngle);
+
     saveINI("Calibration","RangeCalibrationFilename", CurrentFile);
     emit ResetConfigScanSettings();
     emit ClearPCwindowRequested();
@@ -510,8 +551,8 @@ void CalibrationDock::CalibrationDock::Stage2Dialog()
         connect(mstage2, &Stage2CalRangeDialog::ClearPCwindowRequested,
                 this, &CalibrationDock::ClearPCwindowRequested);
 
-        connect(mstage2, &Stage2CalRangeDialog::SavePC,
-                this, &CalibrationDock::SavePC);
+        connect(mstage2, &Stage2CalRangeDialog::Stage2SavePC,
+                this, &CalibrationDock::Stage2SavePC);
 
         connect(mstage2, &Stage2CalRangeDialog::Finished,
                 this, &CalibrationDock::FinishStage2ACQ);
@@ -529,6 +570,31 @@ void CalibrationDock::CalibrationDock::Stage2Dialog()
     ui->lblStatusStage2->setText("incomplete");
 }
 
+//--------------------------------------------------------
+//  FinishStage2ACQ
+//--------------------------------------------------------
+void CalibrationDock::Stage2SavePC()
+{
+    ui->lblStatusStage2->setText("Saving PC");
+    emit SavePC4Stage2();
+}
+
+//--------------------------------------------------------
+//  Stage2SaveDone
+//--------------------------------------------------------
+void CalibrationDock::Stage2SaveDone(bool completed)
+{
+    mstage2->SetAQCsaved(completed);
+    if(completed) {
+        ui->lblStatusStage2->setText("Saved PC");
+    } else {
+        ui->lblStatusStage2->setText("Not saved");
+    }
+}
+
+//--------------------------------------------------------
+//  FinishStage2ACQ
+//--------------------------------------------------------
 void CalibrationDock::FinishStage2ACQ()
 {
     if(mstage2->GetACQsaved()) {
@@ -548,11 +614,7 @@ void CalibrationDock::Stage3Dialog()
 {
     if(mstage3==nullptr) {
         mstage3 = new Stage3CalRangeDialog();
-        mstage3->SetAlphaAngleBias(ml2lidar.GetAlphaAngleBiasOVR());
-        mstage3->SetAlphaAngleStep(0.60); // idealized guess 0 to 180 degree in 300 steps
-        mstage3->SetBetaAngle(ml2lidar.GetBetaAngleOVR());
-        mstage3->SetXiAngle(ml2lidar.GetXiAngleOVR());
-        // ???
+
         mstage3->SetMinRange_m(mRangeCal.MinRange/1000.0); // Stage 3 works in meters
         mstage3->SetMaxRange_m(mRangeCal.MaxRange/1000.0); // Stage 2 works in meters
 
@@ -625,6 +687,8 @@ void CalibrationDock::ProcessStage4()
         Stage1Dialog();
     }
 
+    ui->lblStatusStage4->setText("Processing");
+
     // Query user for the number of spline segments to use
     // read in last use number of spline segments
     int NumSplineSegments = loadINI("Stage4","NumSplineSegments",10);
@@ -643,11 +707,11 @@ void CalibrationDock::ProcessStage4()
         );
 
     if (!ok) {
+        ui->lblStatusStage4->setText("Cancelled");
         return;
     }
 
     // process measurements
-    // ???
     if(mStage4CalFit.ProcessCalibrationMeasurements(measurements,NumSplines,
                                                     mRangeCal.MinRange/1000.0,
                                                     mRangeCal.MaxRange/1000.0)) {
@@ -672,11 +736,18 @@ void CalibrationDock::ProcessStage5()
 {
     // capture current calibration override settings
     mRangeCal.AlphaAngleBias  = ui->spinAlphaAngle->value();
+    mRangeCal.AlphaAngleStepSize  = ui->spinAlphaStepSize->value();
     mRangeCal.ThetaAngleBias = ui->spinThetaBias->value();
     mRangeCal.BetaAngle = ui->spinBetaAngle->value();
     mRangeCal.RangeBias = ui->spinRangeBias->value();
     mRangeCal.RangeScale = ui->spinRangeScale->value();
     mRangeCal.XiAngle = ui->spinXiAngle->value();
+
+    // save Alpha LUT
+    // This is for future implementation of a non linear
+    // Alpha Angle correction if needed
+    std::vector<double> AlphaAngleLUT;
+    AlphaAngleLUT.clear();
 
     L2RangeCalibrationWriter writer;
     RangeCalibrationInfo outputInfo = mRangeCal;
@@ -701,7 +772,8 @@ void CalibrationDock::ProcessStage5()
     if (!writer.SaveCalibrationFile(file.toStdString(),
                                     candidate,
                                     fitMeasurements,
-                                    outputInfo)){
+                                    outputInfo,
+                                    AlphaAngleLUT)) {
         std::string Message  = writer.GetLastErrorMessage();
         QMessageBox msgBox;
         msgBox.setText("Stage5 save cal file failure");
@@ -719,4 +791,14 @@ void CalibrationDock::ProcessStage5()
 
 }
 
-
+//--------------------------------------------------------
+//  AlphaAngleCheckbox
+//--------------------------------------------------------
+void CalibrationDock::AlphaAngleCheckbox()
+{
+    if(ui->cbEnableAlphaLUT->isChecked()) {
+        ml2lidar.EnableAlphaAngleLUT(true);
+    } else {
+        ml2lidar.EnableAlphaAngleLUT(false);
+    }
+}

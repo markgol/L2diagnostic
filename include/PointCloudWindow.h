@@ -61,6 +61,7 @@
 //  V1.0.0  2026-03-28  Offical release
 //  V1.1.1  2026-04-29  Added CloudCompare PCD compatible output file
 //                      with just x,y,z,intensity,range
+//  V2.0.1  2026-08-24  This is the intial V2.x release
 //
 //--------------------------------------------------------
 

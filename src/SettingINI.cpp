@@ -10,6 +10,7 @@
 //
 //  V2.0.0 RC1 2026-08-02
 //                      Save/Load single individual INI settings
+//  V2.0.1  2026-08-24  This is the intial V2.x release
 //
 //--------------------------------------------------------
 

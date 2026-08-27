@@ -9,6 +9,10 @@
 //  display information for a calibration file
 //
 //  V2.0.0 RC1 2026-08-02
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -98,6 +102,9 @@ void RangeCalinfoDock::updateInfo(const RangeCalibrationInfo& info, bool valid)
 
     ResultString = ResultString.asprintf("%.3f deg",info.AlphaAngleBias);
     ui->lblAlphaAngleBias->setText(ResultString);
+
+    ResultString = ResultString.asprintf("%.4f deg",info.AlphaAngleStepSize);
+    ui->lblAlphaAngleStep->setText(ResultString);
 
     ResultString = ResultString.asprintf("%.2f deg",info.ThetaAngleBias);
     ui->lblThetaAngleBias->setText(ResultString);

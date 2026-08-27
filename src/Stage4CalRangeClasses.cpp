@@ -9,6 +9,8 @@
 //  Stage 4 correction computation
 //
 //  V2.0.0 RC1 2026-07-31
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 

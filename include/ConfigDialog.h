@@ -65,6 +65,10 @@
 //  V2.0.0 RC1 2026-08-18
 //                      Updated enable range correction
 //                      Added alpha angle bias override
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 

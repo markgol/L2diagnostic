@@ -10,6 +10,8 @@
 //  Metadata entry
 //
 //  V2.0.0 RC1 2026-08-02
+//  V2.0.1  2026-08-24  This is the intial V2.x release
+//                      Some cleanup of the UI and GUI interactions
 //
 //--------------------------------------------------------
 
@@ -58,7 +60,6 @@ void L2RangeAnalysis::SetElevationHistogramBinWidth(double degrees)
 //  AnalyzePointCloud
 //--------------------------------------------------------
 bool L2RangeAnalysis::AnalyzePointCloud(const QVector<GLPoint>& cloud,
-                                        const L2AngularCalibration  AngleCal,
                                         RangeAnalysisResult& result)
 {
     result.Clear();
