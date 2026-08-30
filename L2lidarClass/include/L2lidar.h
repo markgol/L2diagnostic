@@ -165,9 +165,15 @@
 //                          API interface for the 3d point cloud parser
 //                              ConvertL2data2pointcloud()
 //                          Updates for 2d scan mode conversion no longer actively supported
-//  V2.0.1  2026-08-24 Implemented application of the alpha angle LUT
-//                     Added Alpha Angle step size override
-//                     Removed unused code
+//  V2.0.1  2026-08-24  Implemented application of the alpha angle LUT
+//                      Added Alpha Angle step size override
+//                      Removed unused code
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Corrected logic error for EnableAlphaAngleCorrection
+//                      Renamed LoadRangeCalibration() to LoadCalibration to reflect
+//                          optional use of Range Correction
 //
 //--------------------------------------------------------
 
@@ -232,7 +238,7 @@
 #include <unordered_map>
 #include "quaternion.h"
 #include "PCpoint.h"
-#include "L2RangeCorrection.h"
+#include "L2calibration.h"
 
 // this is required, DO NOT REMOVE
 #pragma pack(push, 1)
@@ -434,14 +440,10 @@ public:
     }
 
     // load range calibration file
-    bool LoadRangeCalibration(const std::string& filename);
+    bool LoadCalibration(const std::string& filename);
 
     // L2 range correction clear
-    void ClearRangeCorrection() {
-        RangeCorrection.ClearCalibration();
-        mRangeCorrectionLoaded = false;
-        mRangeCorrectionLUT.clear();
-    }
+    void ClearRangeCorrection();
     // L2 range correction loaded
     bool IsRangeCorrectionLoaded() {return mRangeCorrectionLoaded;}
 
@@ -450,21 +452,21 @@ public:
     // false: use just linear correction
     bool IsRangeCorrectionEnabled() {return mEnableRangeCorrection ;}
 
-    const std::vector<std::string> GetRangeCorrectionWarnings() {
-        return RangeCorrection.GetWarnings();
+    const std::vector<std::string> GetCalibrationWarnings() {
+        return mCalibration.GetWarnings();
     };
 
-    const std::vector<std::string> GetRangeCorrectionErrors() {
-        return RangeCorrection.GetErrors();
+    const std::vector<std::string> GetCalibrationErrors() {
+        return mCalibration.GetErrors();
     };
 
-    const RangeCalibrationInfo& GetRangeCalibrationInfo() const noexcept
+    const CalibrationInfo& GetCalibrationInfo() const noexcept
     {
-        return RangeCorrection.GetRangeCalibrationInfo();
+        return mCalibration.GetCalibrationInfo();
     };
     // L2 alpha angle LUT
-    bool IsAlphaAngleLUTloaded() {return mRangeCorrectionLoaded;}
-    bool IsAlphaAngleLUTenabled() {return mEnableRangeCorrection ;}
+    bool IsAlphaAngleLUTloaded() {return mAlphaAngleLUTloaded;}
+    bool IsAlphaAngleLUTenabled() {return mEnableAlphaAngleCorrection ;}
     void EnableAlphaAngleLUT(bool p) {mEnableAlphaAngleCorrection = p;}
     void ClearAlphaAngleLUT();
     const std::vector<double>& GetAlphaAngleLUT() const noexcept;
@@ -584,7 +586,7 @@ private: // functions
         );
 
 private: // variables
-    L2RangeCorrection RangeCorrection;
+    L2calibration mCalibration;
 
     // mutex for critical packet access while copying packet
     mutable QMutex  PacketMutex;

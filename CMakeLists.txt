@@ -75,7 +75,7 @@ if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /MP /Zi)
     target_link_options(${PROJECT_NAME} PRIVATE /DEBUG)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wunused-function)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function -Wno-unused-variable)
 endif()
 
 # =============================

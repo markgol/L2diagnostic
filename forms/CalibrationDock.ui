@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>692</width>
-    <height>818</height>
+    <height>834</height>
    </rect>
   </property>
   <property name="layoutDirection">
@@ -85,7 +85,7 @@
    <widget class="QPushButton" name="btnClearDisplay">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>540</x>
       <y>80</y>
       <width>121</width>
       <height>31</height>
@@ -99,7 +99,7 @@
     <property name="geometry">
      <rect>
       <x>590</x>
-      <y>450</y>
+      <y>470</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -112,7 +112,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>414</y>
+      <y>430</y>
       <width>661</width>
       <height>24</height>
      </rect>
@@ -121,37 +121,37 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>420</x>
-      <y>450</y>
+      <x>260</x>
+      <y>458</y>
       <width>161</width>
-      <height>31</height>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Range calibration file</string>
+     <string>Calibration file</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnLoadRangeCal">
+   <widget class="QPushButton" name="btnLoadCal">
     <property name="geometry">
      <rect>
       <x>530</x>
       <y>540</y>
-      <width>121</width>
+      <width>141</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Load Range cal.</string>
+     <string>Load calibration</string>
     </property>
    </widget>
    <widget class="QCheckBox" name="cbEnableRangeCal">
     <property name="geometry">
      <rect>
-      <x>470</x>
-      <y>630</y>
+      <x>250</x>
+      <y>390</y>
       <width>201</width>
       <height>31</height>
      </rect>
@@ -181,12 +181,12 @@
      <rect>
       <x>530</x>
       <y>590</y>
-      <width>121</width>
+      <width>141</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Clear correction</string>
+     <string>Clear calibration</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
@@ -211,9 +211,9 @@
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
-      <x>180</x>
-      <y>387</y>
-      <width>261</width>
+      <x>20</x>
+      <y>397</y>
+      <width>221</width>
       <height>20</height>
      </rect>
     </property>
@@ -221,14 +221,14 @@
      <string>CORRECTION CONTROLS</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignCenter</set>
+     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
    <widget class="QLabel" name="label_4">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>439</y>
+      <y>459</y>
       <width>281</width>
       <height>31</height>
      </rect>
@@ -244,7 +244,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>540</y>
+      <y>560</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -257,7 +257,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>540</y>
+      <y>560</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -270,7 +270,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>590</y>
+      <y>610</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -283,7 +283,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>590</y>
+      <y>610</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -296,7 +296,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>640</y>
+      <y>660</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -309,7 +309,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>640</y>
+      <y>660</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -322,7 +322,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>690</y>
+      <y>710</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -335,7 +335,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>690</y>
+      <y>710</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -348,20 +348,20 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>740</y>
+      <y>760</y>
       <width>101</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Stage 5</string>
+     <string>Save cal.</string>
     </property>
    </widget>
    <widget class="QLabel" name="lblStatusStage5">
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>740</y>
+      <y>760</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -374,7 +374,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>540</y>
+      <y>560</y>
       <width>271</width>
       <height>31</height>
      </rect>
@@ -387,7 +387,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>590</y>
+      <y>610</y>
       <width>131</width>
       <height>31</height>
      </rect>
@@ -400,7 +400,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>640</y>
+      <y>660</y>
       <width>211</width>
       <height>31</height>
      </rect>
@@ -413,7 +413,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>690</y>
+      <y>710</y>
       <width>261</width>
       <height>31</height>
      </rect>
@@ -426,13 +426,13 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>740</y>
+      <y>760</y>
       <width>261</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Save candidate Range correction</string>
+     <string>Save calibration file</string>
     </property>
    </widget>
    <widget class="Line" name="line_3">
@@ -610,7 +610,7 @@
    <widget class="QLabel" name="label_13">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>20</x>
       <y>140</y>
       <width>211</width>
       <height>21</height>
@@ -630,7 +630,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>470</y>
+      <y>490</y>
       <width>181</width>
       <height>31</height>
      </rect>
@@ -643,7 +643,7 @@
     <property name="geometry">
      <rect>
       <x>200</x>
-      <y>470</y>
+      <y>490</y>
       <width>371</width>
       <height>61</height>
      </rect>
@@ -956,7 +956,7 @@ RangeScale set to 0.001 for ACQ</string>
     <property name="geometry">
      <rect>
       <x>450</x>
-      <y>660</y>
+      <y>390</y>
       <width>221</width>
       <height>31</height>
      </rect>

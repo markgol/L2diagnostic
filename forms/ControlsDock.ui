@@ -108,7 +108,7 @@
    <widget class="QPushButton" name="btnResetWindows">
     <property name="geometry">
      <rect>
-      <x>370</x>
+      <x>10</x>
       <y>160</y>
       <width>111</width>
       <height>31</height>
@@ -134,7 +134,7 @@
    <widget class="QPushButton" name="btnClearDisplay">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>360</x>
       <y>160</y>
       <width>121</width>
       <height>31</height>
@@ -206,7 +206,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>L2diagnostics V2.0.1</string>
+     <string>L2diagnostics V2.1.0</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignmentFlag::AlignCenter</set>

@@ -19,7 +19,7 @@
 //  nonlinear range response.
 //
 //  Solution:
-//  The L2RangeCorrection class implements the range calibration to be used
+//  The L2calibration class implements the calibration to be used
 //  for realtime range correction.  This cuurently is a piecewise cubic spline fit.
 //
 //  V2.0.0RC1 2026-08-20 Adding range calibration class to be used in the L2lidar class

@@ -164,9 +164,12 @@
 //                            that generates the calibration dataset used in the application of
 //                            range correction methods.
 //                      Updated some of the private class variables to start with m...
-//  V2.0.1  2026-08-24 Implemented application of the alpha angle LUT
-//                     Added Alpha Angle step size override
-//                     Removed unused code
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Corrected logic error for EnableAlphaAngleCorrection
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection
 //
 //--------------------------------------------------------
 
@@ -2114,37 +2117,37 @@ void L2lidar::SetSystemTimeStamp(TimeStamp& stamp)
 }
 
 //-----------------------------------------------------
-//  LoadRangeCalibration()
+//  LoadCalibration()
 //-----------------------------------------------------
-bool L2lidar::LoadRangeCalibration(const std::string& filename)
+bool L2lidar::LoadCalibration(const std::string& filename)
 {
     ClearRangeCorrection();
-    if(RangeCorrection.LoadRangeCalibration(filename)) {
+    if(mCalibration.LoadCalibration(filename)) {
         mRangeCorrectionLUT.clear();
-        mRangeCorrectionLUT = RangeCorrection.GetRangeCorrectionLUT();
+        mRangeCorrectionLUT = mCalibration.GetRangeCorrectionLUT();
         mRangeCorrectionLoaded = true;
 
         // load the AlphaAngleLUT if found
-        mAlphaAngleLUTloaded = RangeCorrection.IsAlphaAngleLUTloaded();
+        mAlphaAngleLUTloaded = mCalibration.IsAlphaAngleLUTloaded();
         if(mAlphaAngleLUTloaded) {
-            mAlphaAngleLUT = RangeCorrection.GetAlphaAngleLUT();
+            mAlphaAngleLUT = mCalibration.GetAlphaAngleLUT();
         } else {
             mAlphaAngleLUT.clear();
         }
 
-        auto RangeCalInfo = RangeCorrection.GetRangeCalibrationInfo();
+        auto CalInfo = mCalibration.GetCalibrationInfo();
         // L2 device ranges (calibration range handled elsewhere)
-        mMinRange_mm = RangeCalInfo.MinRange; // mm
-        mMaxRange_mm = RangeCalInfo.MaxRange; // mm
-        mMinTrustedRange_mm = RangeCalInfo.MinTrustedRange; // mm
+        mMinRange_mm = CalInfo.MinRange; // mm
+        mMaxRange_mm = CalInfo.MaxRange; // mm
+        mMinTrustedRange_mm = CalInfo.MinTrustedRange; // mm
         // restore overdide biases from calibration file
-        mThetaBiasOVR = RangeCalInfo.ThetaAngleBias; // deg
-        mAlphaBiasOVR = RangeCalInfo.AlphaAngleBias; // deg
-        mAlphaAngleStepOVR = RangeCalInfo.AlphaAngleStepSize; // deg
-        mXiOVR = RangeCalInfo.XiAngle; // deg
-        mBetaOVR = RangeCalInfo.BetaAngle; // deg
-        mRangeBiasOVR = RangeCalInfo.RangeBias; // mm
-        mRangeScaleOVR = RangeCalInfo.RangeScale; // mm->m scaling
+        mThetaBiasOVR = CalInfo.ThetaAngleBias; // deg
+        mAlphaBiasOVR = CalInfo.AlphaAngleBias; // deg
+        mAlphaAngleStepOVR = CalInfo.AlphaAngleStepSize; // deg
+        mXiOVR = CalInfo.XiAngle; // deg
+        mBetaOVR = CalInfo.BetaAngle; // deg
+        mRangeBiasOVR = CalInfo.RangeBias; // mm
+        mRangeScaleOVR = CalInfo.RangeScale; // mm->m scaling
     } else {
         mRangeCorrectionLUT.clear();
         mRangeCorrectionLoaded = false;
@@ -2424,4 +2427,13 @@ void L2lidar::ClearAlphaAngleLUT()
 const std::vector<double>& L2lidar::GetAlphaAngleLUT() const noexcept
 {
     return mAlphaAngleLUT;
+}
+
+//--------------------------------------------------------
+//  ClearRangeCorrection
+//--------------------------------------------------------
+void L2lidar::ClearRangeCorrection() {
+    mCalibration.ClearCalibration();
+    mRangeCorrectionLoaded = false;
+    mRangeCorrectionLUT.clear();
 }

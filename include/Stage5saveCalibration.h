@@ -13,6 +13,19 @@
 //                      Implemented application of the alpha angle LUT
 //                      Added Alpha Angle step size override
 //                      Some cleanup of the UI and GUI interactions
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                      optional.  This allows just metadata to be saved
+//                      which includes the overrride biases.
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection file
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection file
 //
 //--------------------------------------------------------
 
@@ -36,17 +49,17 @@
 // This is the Stage 5 save calibration file
 //--------------------------------------------------------
 #pragma once
-#include "L2RangeCorrection.h"
+#include "L2calibration.h"
 #include "L2RangeExtraction.h"
 
-class L2RangeCalibrationWriter
+class L2CalibrationWriter
 {
 public:
     bool SaveCalibrationFile(
         const std::string& filename,
         const RangeCalibrationCandidate& candidate,
         const std::vector<RangeCalibrationMeasurement>& measurements,
-        const RangeCalibrationInfo& info,
+        const CalibrationInfo& info,
         const std::vector<double>& AlphaAngleLUT);
 
     const std::string&
@@ -59,11 +72,11 @@ private:
     bool ValidateInput(
         const RangeCalibrationCandidate& candidate,
         const std::vector<RangeCalibrationMeasurement>& measurements,
-        const RangeCalibrationInfo& info);
+        const CalibrationInfo& info);
 
     bool WriteMetadata(
         std::ostream& stream,
-        const RangeCalibrationInfo& info);
+        const CalibrationInfo& info);
 
     bool WriteModel(
         std::ostream& stream,

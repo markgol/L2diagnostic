@@ -43,6 +43,11 @@
 //                          to adjust for use on Ubuntu x64 and ARM64 platforms
 //  V1.0.0  2026-03-28  Offical release
 //  V2.0.1  2026-08-24  This is the intial V2.x release
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection file
 //
 //--------------------------------------------------------
 

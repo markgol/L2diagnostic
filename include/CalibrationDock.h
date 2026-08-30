@@ -33,6 +33,11 @@
 //                      Implemented application of the alpha angle LUT
 //                      Added Alpha Angle step size override
 //                      Some cleanup of the UI and GUI interactions
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection
 //
 //--------------------------------------------------------
 #ifndef CALIBRATIONDOCK_H
@@ -41,7 +46,7 @@
 #include <QDockWidget>
 #include <QFileDialog>
 #include "L2lidar.h"
-#include "L2RangeCorrection.h"
+#include "L2calibration.h"
 #include "Stage2CalRangeDialog.h"
 #include "Stage4CalRangeClasses.h"
 #include "Stage5saveCalibration.h"
@@ -61,8 +66,6 @@ public:
     ~CalibrationDock();
 
     void setConnectState(bool connected);
-
-    // L2RangeCorrection RangeCorrection; // moved this into l2lidar class
 
     QString GetRangeCalFile() const
     {
@@ -226,7 +229,7 @@ signals:
     void LoadPC();
     void SavePC();
     void SavePC4Stage2();
-    void UpdateRangeCalInfo();
+    void UpdateCalibrationInfo();
     void EnableRangeCorrectionChanged();
     void CalGUIrequest(bool clear, bool visible);
     void ResetConfigScanSettings(); // restore the StartScanAngle,
@@ -243,7 +246,7 @@ private slots:
 
 private:
     bool BrowseCalFile();
-    bool LoadRangeCal();
+    bool LoadCal();
     void ClearRangeCorrection();
     void Init4Cal();
     void RangeBiasChanged();
@@ -275,15 +278,15 @@ private:
     L2lidar& ml2lidar;
 
     // Stage1 parmeters
-    RangeCalibrationInfo mRangeCal {
-        "Range Correction Calibration spec V2.0.0",
+    CalibrationInfo mCalib {
+        "Range Correction Calibration spec V2.1.0",
         "yyyy-MM-dd hh:mm:ss",
         "Unitree L2 4D LiDAR",
         "#1",
         "unknown",
-        "L2diagnostic V2.0.0 RC1",
-        "CubicSpline",
-        "Validation test",
+        "L2diagnostic V2.1.0",
+        "None",
+        "No calibration loaded",
         0,
         0.001,
         1.65,

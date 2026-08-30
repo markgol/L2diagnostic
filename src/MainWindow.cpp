@@ -144,6 +144,11 @@
 //                      Startup mode is always diagnostic.
 //  V2.0.1  2026-08-24  This is the intial V2.x release
 //                      Some cleanup of the UI and GUI interactions
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection file
 //
 //--------------------------------------------------------
 
@@ -462,7 +467,7 @@ void MainWindow::createDocksViewer()
     //--------------------------------------------------------
     // setup the dockable calibration mode docks
     //--------------------------------------------------------
-    m_RangeCalinfoDock =  new RangeCalinfoDock(this);
+    m_CalibrationInfoDock =  new CalibrationInfoDock(this);
 
     //--------------------------------------------------------
     // setup the dockable calibration mode docks
@@ -700,8 +705,8 @@ void MainWindow::AssignDocksObjectNames()
     //--------------------------------------------------------
     // setup the dockable calibration mode docks
     //--------------------------------------------------------
-    if(m_RangeCalinfoDock!=nullptr) {
-        m_RangeCalinfoDock->setObjectName("RangeCalibrationInfoDock");
+    if(m_CalibrationInfoDock!=nullptr) {
+        m_CalibrationInfoDock->setObjectName("CalibrationInfoDock");
     }
 
     //--------------------------------------------------------
@@ -754,10 +759,10 @@ void MainWindow::AddDocksViewer()
    }
 
     //--------------------------------------------------------
-    //  RangeCalinfoDock setup
+    //  CalibrationInfoDock setup
     //--------------------------------------------------------
-    m_RangeCalinfoDock->setAllowedAreas(Qt::RightDockWidgetArea);
-    addDockWidget(Qt::RightDockWidgetArea, m_RangeCalinfoDock);
+    m_CalibrationInfoDock->setAllowedAreas(Qt::RightDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, m_CalibrationInfoDock);
 
     //--------------------------------------------------------
     //  CalGraphDock setup
@@ -862,8 +867,8 @@ void MainWindow::ConnectDocksViewerActions()
     connect(m_calibrationDock, &CalibrationDock::ClearPCwindowRequested,
             this, &MainWindow::ClearPCwindow);
 
-    connect(m_calibrationDock, &CalibrationDock::UpdateRangeCalInfo,
-            this, &MainWindow::UpdateRangeCalInfo);
+    connect(m_calibrationDock, &CalibrationDock::UpdateCalibrationInfo,
+            this, &MainWindow::UpdateCalibrationInfo);
 
     connect(m_CalGraphDock, &CalGraphDock::Accepted,
             this, &MainWindow::Stage3accepted);
@@ -942,7 +947,7 @@ void MainWindow::applyDocksVisibilityConstraint()
     m_calibrationDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // can not float or move
     m_calibrationDock->setContextMenuPolicy(Qt::PreventContextMenu); // do not allow context menu close
 
-    m_RangeCalinfoDock->setVisible(false);
+    m_CalibrationInfoDock->setVisible(false);
 
     m_CalGraphDock->setMinimumWidth(400);
     m_CalGraphDock->setMinimumHeight(350);
@@ -1685,7 +1690,7 @@ void MainWindow::SetCalibrationMode()
 
     // show the calibration dock
     m_calibrationDock->setVisible(true);
-    m_RangeCalinfoDock->setVisible(true);
+    m_CalibrationInfoDock->setVisible(true);
 
     // save these setting so they be restored
     // when switching to diagnostics mode
@@ -1719,7 +1724,7 @@ void MainWindow::SetDiagnosticMode()
     // make the Calibration dock window invisible
     m_calibrationDock->setVisible(false);
     m_CalGraphDock->setVisible(false);
-    m_RangeCalinfoDock->setVisible(false);
+    m_CalibrationInfoDock->setVisible(false);
     m_controlsDock->setVisible(true);
     // show the control dock
     ShowWindows();
@@ -1827,16 +1832,16 @@ void MainWindow::ClearPCwindow()
 }
 
 //--------------------------------------------------------
-//  UpdateRangeCalInfo
+//  UpdateCalibrationInfo
 //  A calibraiton file was loaded
 //--------------------------------------------------------
-void MainWindow::UpdateRangeCalInfo()
+void MainWindow::UpdateCalibrationInfo()
 {
-    if(m_RangeCalinfoDock!=nullptr){
-        m_RangeCalinfoDock->updateInfo(l2lidar.GetRangeCalibrationInfo(),
+    if(m_CalibrationInfoDock!=nullptr){
+        m_CalibrationInfoDock->updateInfo(l2lidar.GetCalibrationInfo(),
                                        l2lidar.IsRangeCorrectionLoaded());
         auto message = m_calibrationDock->GetLastMessage();
-        m_RangeCalinfoDock->SetMessage(message);
+        m_CalibrationInfoDock->SetMessage(message);
     }
 }
 

@@ -86,6 +86,11 @@
 //                      Implemented application of the alpha angle LUT
 //                      Added Alpha Angle step size override
 //                      Some cleanup of the UI and GUI interactions
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection file
 //
 //--------------------------------------------------------
 
@@ -150,7 +155,7 @@
 #include "CalibrationDock.h"
 #include "WorkModeDialog.h"
 #include "PacketRateDock.h"
-#include "RangeCalinfoDock.h"
+#include "CalibrationInfoDock.h"
 #include "quaternion.h"
 
 #define LIDAR_MODE_3D 0
@@ -207,7 +212,7 @@ private slots:
     void LoadPC();
     void SetCalibrationMode();
     void SetDiagnosticMode();
-    void UpdateRangeCalInfo();
+    void UpdateCalibrationInfo();
 
     // L2 commands
     void startRotation();
@@ -271,7 +276,7 @@ private:
     ControlsDock *m_controlsDock{nullptr};
     PacketRateDock* m_packetRateDock{nullptr};
     CalibrationDock* m_calibrationDock {nullptr};
-    RangeCalinfoDock* m_RangeCalinfoDock {nullptr};
+    CalibrationInfoDock* m_CalibrationInfoDock {nullptr};
     CalGraphDock* m_CalGraphDock {nullptr};
 
     // update the dockable windows

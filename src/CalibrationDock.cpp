@@ -33,6 +33,16 @@
 //                      Implemented application of the alpha angle LUT
 //                      Added Alpha Angle step size override
 //                      Some cleanup of the UI and GUI interactions
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection file
 //
 //--------------------------------------------------------
 
@@ -54,7 +64,7 @@
 
 #include "CalibrationDock.h"
 #include "settingINI.h"
-#include "Stage1CalRangeDialog.h"
+#include "Stage1CalibrationDialog.h"
 #include "Stage2CalRangeDialog.h"
 #include "Stage3CalRangeDialog.h"
 #include "Stage4CalRangeClasses.h"
@@ -104,8 +114,8 @@ CalibrationDock::CalibrationDock(L2lidar& lidar, QWidget *parent)
             this, &CalibrationDock::BrowseCalFile);
 
     //  Load calibration button
-    connect(ui->btnLoadRangeCal, &QPushButton::clicked,
-            this, &CalibrationDock::LoadRangeCal);
+    connect(ui->btnLoadCal, &QPushButton::clicked,
+            this, &CalibrationDock::LoadCal);
 
     //  Clear correction button
     connect(ui->btnClear, &QPushButton::clicked,
@@ -168,7 +178,7 @@ CalibrationDock::CalibrationDock(L2lidar& lidar, QWidget *parent)
     ui->btnStage2->setEnabled(false);
     ui->btnStage3->setEnabled(false);
     ui->btnStage4->setEnabled(false);
-    ui->btnStage5->setEnabled(false);
+    ui->btnStage5->setEnabled(true); // The overrides value can always be saved
 
     // The range correction stage buttons and checkbox
     connect(ui->btnStage1, &QPushButton::clicked,
@@ -247,7 +257,7 @@ void CalibrationDock::ClearRangeCorrection()
 {
     ml2lidar.ClearRangeCorrection();
     mLastMessage = "Calibration cleared";
-    UpdateRangeCalInfo();
+    UpdateCalibrationInfo();
     emit ResetConfigScanSettings();
     emit ClearPCwindowRequested();
 }
@@ -389,17 +399,17 @@ bool CalibrationDock::BrowseCalFile()
 }
 
 //--------------------------------------------------------
-//  LoadRangeCal
+//  LoadCal
 //--------------------------------------------------------
-bool CalibrationDock::LoadRangeCal()
+bool CalibrationDock::LoadCal()
 {
     // get current filename ui->editCalFile
     QString CurrentFile = ui->editCalFile->text().trimmed();
-    bool loaded = ml2lidar.LoadRangeCalibration(CurrentFile.toStdString());
+    bool loaded = ml2lidar.LoadCalibration(CurrentFile.toStdString());
 
-    // update RangeCalinfoDock
-    auto errors = ml2lidar.GetRangeCorrectionErrors();
-    auto warnings = ml2lidar.GetRangeCorrectionWarnings();
+    // update UpdateCalibrationInfo
+    auto errors = ml2lidar.GetCalibrationErrors();
+    auto warnings = ml2lidar.GetCalibrationWarnings();
 
     mLastMessage = "Load Range Calibration finished\n";
 
@@ -420,32 +430,32 @@ bool CalibrationDock::LoadRangeCal()
             mLastMessage =  mLastMessage + str;
         }
     }
-    UpdateRangeCalInfo();
+    UpdateCalibrationInfo();
 
     if(!loaded){
         return false;
     }
 
-    mRangeCal.AlphaAngleBias = ml2lidar.GetAlphaAngleBiasOVR();
-    ui->spinAlphaAngle->setValue(mRangeCal.AlphaAngleBias);
+    mCalib.AlphaAngleBias = ml2lidar.GetAlphaAngleBiasOVR();
+    ui->spinAlphaAngle->setValue(mCalib.AlphaAngleBias);
 
-    mRangeCal.AlphaAngleStepSize = ml2lidar.GetAlphaAngleStepOVR();
-    ui->spinAlphaStepSize->setValue(mRangeCal.AlphaAngleStepSize);
+    mCalib.AlphaAngleStepSize = ml2lidar.GetAlphaAngleStepOVR();
+    ui->spinAlphaStepSize->setValue(mCalib.AlphaAngleStepSize);
 
-    mRangeCal.ThetaAngleBias = ml2lidar.GetThetaAngleBiasOVR();
-    ui->spinThetaBias->setValue(mRangeCal.ThetaAngleBias);
+    mCalib.ThetaAngleBias = ml2lidar.GetThetaAngleBiasOVR();
+    ui->spinThetaBias->setValue(mCalib.ThetaAngleBias);
 
-    mRangeCal.BetaAngle = ml2lidar.GetBetaAngleOVR();
-    ui->spinBetaAngle->setValue( mRangeCal.BetaAngle);
+    mCalib.BetaAngle = ml2lidar.GetBetaAngleOVR();
+    ui->spinBetaAngle->setValue( mCalib.BetaAngle);
 
-    mRangeCal.RangeBias = ml2lidar.GetRangeBiasOVR();
-    ui->spinRangeBias->setValue(mRangeCal.RangeBias);
+    mCalib.RangeBias = ml2lidar.GetRangeBiasOVR();
+    ui->spinRangeBias->setValue(mCalib.RangeBias);
 
-    mRangeCal.RangeScale = ml2lidar.GetRangeScaleOVR();
-    ui->spinRangeScale->setValue(mRangeCal.RangeScale);
+    mCalib.RangeScale = ml2lidar.GetRangeScaleOVR();
+    ui->spinRangeScale->setValue(mCalib.RangeScale);
 
-    mRangeCal.XiAngle = ml2lidar.GetXiAngleOVR();
-    ui->spinXiAngle->setValue(mRangeCal.XiAngle);
+    mCalib.XiAngle = ml2lidar.GetXiAngleOVR();
+    ui->spinXiAngle->setValue(mCalib.XiAngle);
 
     saveINI("Calibration","RangeCalibrationFilename", CurrentFile);
     emit ResetConfigScanSettings();
@@ -458,7 +468,7 @@ bool CalibrationDock::LoadRangeCal()
 //--------------------------------------------------------
 void CalibrationDock::Stage1Dialog()
 {
-    Stage1CalRangeDialog stage1;
+    Stage1CalibrationDialog stage1;
 
     {
         // initialize entries
@@ -469,18 +479,18 @@ void CalibrationDock::Stage1Dialog()
         // date
         QDateTime date = QDateTime::currentDateTime();
         QString formattedTime = date.toString("yyyy-MM-dd hh:mm:ss");
-        mRangeCal.Date = formattedTime.toStdString();
-        stage1.SetDate(mRangeCal.Date);
+        mCalib.Date = formattedTime.toStdString();
+        stage1.SetDate(mCalib.Date);
 
         if(connected) {
             QString Product = QString::fromUtf8((const char *)versioninfo.reserve);
-            mRangeCal.Sensor = Product.toStdString();
+            mCalib.Sensor = Product.toStdString();
         }
-        stage1.SetSensor(mRangeCal.Sensor);
+        stage1.SetSensor(mCalib.Sensor);
 
         QString string = loadINI("Stage1","SensorID",(QString)"L2-1");
-        mRangeCal.SensorID = string.toStdString();
-        stage1.SetSensorID(mRangeCal.SensorID);
+        mCalib.SensorID = string.toStdString();
+        stage1.SetSensorID(mCalib.SensorID);
 
         if(connected){
             QString FWversion = QString().asprintf("FW: %d.%d.%d.%d",
@@ -488,49 +498,51 @@ void CalibrationDock::Stage1Dialog()
                                                    versioninfo.sw_version[1],
                                                    versioninfo.sw_version[2],
                                                    versioninfo.sw_version[3]);
-            mRangeCal.Firmware = FWversion.toStdString();
+            mCalib.Firmware = FWversion.toStdString();
 
         }
-        stage1.SetFirmware(mRangeCal.Firmware);
-        stage1.SetVersion(mRangeCal.Version);
-        stage1.SetCreatedBy(mRangeCal.CreatedBy);
+        stage1.SetFirmware(mCalib.Firmware);
+        stage1.SetVersion(mCalib.Version);
+        stage1.SetCreatedBy(mCalib.CreatedBy);
 
         string = loadINI("Stage1","CalibrationDescription",(QString)"Validation test");
-        mRangeCal.CalibrationDescription = string.toStdString();
-        mRangeCal.MinRange = loadINI("Stage1", "MinRange", 150.0);
-        mRangeCal.MinTrustedRange = loadINI("Stage1", "MinTrustedRange", -1.0);
-        mRangeCal.MaxRange = loadINI("Stage1", "MaxRange", 40000.0);
+        mCalib.CalibrationDescription = string.toStdString();
+        mCalib.MinRange = loadINI("Stage1", "MinRange", 150.0);
+        mCalib.MinTrustedRange = loadINI("Stage1", "MinTrustedRange", -1.0);
+        mCalib.MaxRange = loadINI("Stage1", "MaxRange", 40000.0);
 
-        stage1.SetDescription(mRangeCal.CalibrationDescription);
-        stage1.SetMinRange_mm(mRangeCal.MinRange);
-        stage1.SetMinTrustedRange_mm(mRangeCal.MinTrustedRange);
-        stage1.SetMaxRange_mm(mRangeCal.MaxRange);
+        stage1.SetDescription(mCalib.CalibrationDescription);
+        stage1.SetMinRange_mm(mCalib.MinRange);
+        stage1.SetMinTrustedRange_mm(mCalib.MinTrustedRange);
+        stage1.SetMaxRange_mm(mCalib.MaxRange);
     }
 
     if(ml2lidar.IsRangeCorrectionLoaded()) {
-        auto CalInfo = ml2lidar.GetRangeCalibrationInfo();
-        mRangeCal = CalInfo;
-        mRangeCal.NumberOfSegments = 0;
-        mRangeCal.MinCalRange = 0.0;
-        mRangeCal.MaxCalRange = 0.0;
-        mRangeCal.RMSResidual = 0.0;
+        auto CalInfo = ml2lidar.GetCalibrationInfo();
+        mCalib = CalInfo;
+        mCalib.NumberOfSegments = 0;
+        mCalib.MinCalRange = 0.0;
+        mCalib.MaxCalRange = 0.0;
+        mCalib.RMSResidual = 0.0;
     }
 
     if (stage1.exec() == QDialog::Accepted) {
         // save parameters tmp
-        ui->btnStage2->setEnabled(true);
+        if(ml2lidar.IsL2connected()) {
+            ui->btnStage2->setEnabled(true);
+        }
         ui->lblStatusStage1->setText("Reviewed");
         // save description and sensor ID for next time
-        mRangeCal.CalibrationDescription = stage1.GetDescription();
-        mRangeCal.SensorID = stage1.GetSensorID();
-        mRangeCal.MinRange = stage1.GetMinRange_mm();
-        mRangeCal.MinTrustedRange = stage1.GetMinTrustedRange_mm();
-        mRangeCal.MaxRange = stage1.GetMaxRange_mm();
-        saveINI("Stage1","SensorID", QString::fromStdString(mRangeCal.SensorID));
-        saveINI("Stage1","CalibrationDescription", QString::fromStdString(mRangeCal.CalibrationDescription));
-        saveINI("Stage1", "MinRange", mRangeCal.MinRange);
-        saveINI("Stage1", "MinTrustedRange", mRangeCal.MinTrustedRange);
-        saveINI("Stage1", "MaxRange", mRangeCal.MaxRange);
+        mCalib.CalibrationDescription = stage1.GetDescription();
+        mCalib.SensorID = stage1.GetSensorID();
+        mCalib.MinRange = stage1.GetMinRange_mm();
+        mCalib.MinTrustedRange = stage1.GetMinTrustedRange_mm();
+        mCalib.MaxRange = stage1.GetMaxRange_mm();
+        saveINI("Stage1","SensorID", QString::fromStdString(mCalib.SensorID));
+        saveINI("Stage1","CalibrationDescription", QString::fromStdString(mCalib.CalibrationDescription));
+        saveINI("Stage1", "MinRange", mCalib.MinRange);
+        saveINI("Stage1", "MinTrustedRange", mCalib.MinTrustedRange);
+        saveINI("Stage1", "MaxRange", mCalib.MaxRange);
     }
 }
 
@@ -615,8 +627,8 @@ void CalibrationDock::Stage3Dialog()
     if(mstage3==nullptr) {
         mstage3 = new Stage3CalRangeDialog();
 
-        mstage3->SetMinRange_m(mRangeCal.MinRange/1000.0); // Stage 3 works in meters
-        mstage3->SetMaxRange_m(mRangeCal.MaxRange/1000.0); // Stage 2 works in meters
+        mstage3->SetMinRange_m(mCalib.MinRange/1000.0); // Stage 3 works in meters
+        mstage3->SetMaxRange_m(mCalib.MaxRange/1000.0); // Stage 2 works in meters
 
         // connect for Range Calibration GUI request
         connect(mstage3, &Stage3CalRangeDialog::CalGUIrequest,
@@ -691,7 +703,7 @@ void CalibrationDock::ProcessStage4()
 
     // Query user for the number of spline segments to use
     // read in last use number of spline segments
-    int NumSplineSegments = loadINI("Stage4","NumSplineSegments",10);
+    int NumSplineSegments = loadINI("Stage4","NumSplineSegments",50);
     int maxSplineSegments = measurements.size();
 
     // Query user for number of segments
@@ -713,11 +725,10 @@ void CalibrationDock::ProcessStage4()
 
     // process measurements
     if(mStage4CalFit.ProcessCalibrationMeasurements(measurements,NumSplines,
-                                                    mRangeCal.MinRange/1000.0,
-                                                    mRangeCal.MaxRange/1000.0)) {
+                                                    mCalib.MinRange/1000.0,
+                                                    mCalib.MaxRange/1000.0)) {
         saveINI("Stage4","NumSplineSegments",NumSplines);
         ui->lblStatusStage4->setText("Processed");
-        ui->btnStage5->setEnabled(true);
     } else {
         ui->lblStatusStage4->setText("FAILED");
         std::string Message  = mStage4CalFit.GetLastErrorMessage();
@@ -734,14 +745,22 @@ void CalibrationDock::ProcessStage4()
 //--------------------------------------------------------
 void CalibrationDock::ProcessStage5()
 {
+    // if stage1 not "reviewed" then present stage 1 dialog
+    QString stage1status = ui->lblStatusStage1->text();
+    if(stage1status!="Reviewed") {
+        Stage1Dialog();
+    }
+    // allows review and changes
+    ui->btnStage1->setEnabled(true);
+
     // capture current calibration override settings
-    mRangeCal.AlphaAngleBias  = ui->spinAlphaAngle->value();
-    mRangeCal.AlphaAngleStepSize  = ui->spinAlphaStepSize->value();
-    mRangeCal.ThetaAngleBias = ui->spinThetaBias->value();
-    mRangeCal.BetaAngle = ui->spinBetaAngle->value();
-    mRangeCal.RangeBias = ui->spinRangeBias->value();
-    mRangeCal.RangeScale = ui->spinRangeScale->value();
-    mRangeCal.XiAngle = ui->spinXiAngle->value();
+    mCalib.AlphaAngleBias  = ui->spinAlphaAngle->value();
+    mCalib.AlphaAngleStepSize  = ui->spinAlphaStepSize->value();
+    mCalib.ThetaAngleBias = ui->spinThetaBias->value();
+    mCalib.BetaAngle = ui->spinBetaAngle->value();
+    mCalib.RangeBias = ui->spinRangeBias->value();
+    mCalib.RangeScale = ui->spinRangeScale->value();
+    mCalib.XiAngle = ui->spinXiAngle->value();
 
     // save Alpha LUT
     // This is for future implementation of a non linear
@@ -749,16 +768,25 @@ void CalibrationDock::ProcessStage5()
     std::vector<double> AlphaAngleLUT;
     AlphaAngleLUT.clear();
 
-    L2RangeCalibrationWriter writer;
-    RangeCalibrationInfo outputInfo = mRangeCal;
+    L2CalibrationWriter writer;
+    CalibrationInfo outputInfo = mCalib;
     auto candidate = mStage4CalFit.GetCandidate(); // certain measurements are in meters
     auto fitMeasurements = mStage4CalFit.GetMeasurements();
 
-    // merge stage1 RangeCalibrationInfo with stage 4 results
-    outputInfo.MinCalRange  =candidate.minCalRange*1000.0; // convert to mm
-    outputInfo.MaxCalRange = candidate.maxCalRange*1000.0; // convert to mm
-    outputInfo.RMSResidual = candidate.rmsResidual*1000.0; // convert to mm
-    outputInfo.NumberOfSegments = candidate.segments.size();
+    if(!candidate.segments.empty()) {
+        // merge stage1 CalibrationInfo with stage 4 results
+        outputInfo.MinCalRange =candidate.minCalRange*1000.0; // convert to mm
+        outputInfo.MaxCalRange = candidate.maxCalRange*1000.0; // convert to mm
+        outputInfo.RMSResidual = candidate.rmsResidual*1000.0; // convert to mm
+        outputInfo.NumberOfSegments = candidate.segments.size();
+        outputInfo.RangeCalMethod = candidate.calibrationMethod;
+    } else {
+        outputInfo.MinCalRange =0.0; // convert to mm
+        outputInfo.MaxCalRange = 0.0; // convert to mm
+        outputInfo.RMSResidual = 0.0; // convert to mm
+        outputInfo.NumberOfSegments = 0;
+        outputInfo.RangeCalMethod = "None";
+    }
 
     // get current filename ui->editCalFile
     QString CurrentFile = ui->editCalFile->text().trimmed();

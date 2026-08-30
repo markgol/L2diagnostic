@@ -13,6 +13,11 @@
 //                      Implemented application of the alpha angle LUT
 //                      Added Alpha Angle step size override
 //                      Some cleanup of the UI and GUI interactions
+//  V2.1.0  2026-08-27  Changed calibration file so that range correction
+//                          optional.  This allows just metadata to be saved
+//                          which includes the overrride biases.
+//                      Changed files/names to reflect generalization
+//                          of the calibration file rather than RangeCorrection file
 //
 //--------------------------------------------------------
 
@@ -42,11 +47,11 @@
 //--------------------------------------------------------
 //  SaveCalibrationFile
 //--------------------------------------------------------
-bool L2RangeCalibrationWriter::SaveCalibrationFile(
+bool L2CalibrationWriter::SaveCalibrationFile(
         const std::string& filename,
         const RangeCalibrationCandidate& candidate,
         const std::vector<RangeCalibrationMeasurement>& measurements,
-        const RangeCalibrationInfo& info,
+        const CalibrationInfo& info,
         const std::vector<double>& AlphaAngleLUT)
 {
     mLastErrorMessage.clear();
@@ -70,14 +75,20 @@ bool L2RangeCalibrationWriter::SaveCalibrationFile(
         return false;
     }
 
-    if (!WriteModel(stream, candidate)) {
-        return false;
+    // The RANGE MODEL section is optional
+    if(!candidate.segments.empty()) {
+        if (!WriteModel(stream, candidate)) {
+            return false;
+        }
+        // only write CALIBRATION POINTS section if there is a RANGE MODEL section
+        if(!measurements.empty()) {
+            if (!WriteCalibrationPoints( stream, measurements)) {
+                return false;
+            }
+        }
     }
 
-    if (!WriteCalibrationPoints( stream, measurements)) {
-        return false;
-    }
-
+    // The ALPHA ANGLE LUT section is optional
     if(AlphaAngleLUT.size() == NUM_ALPHA_ANGLES_IN_SCAN) {
         if(!WriteAlphaAngleLUT( stream, AlphaAngleLUT)) {
             return false;
@@ -98,41 +109,50 @@ bool L2RangeCalibrationWriter::SaveCalibrationFile(
 //--------------------------------------------------------
 //  ValidateInput
 //--------------------------------------------------------
-bool L2RangeCalibrationWriter::ValidateInput(
+bool L2CalibrationWriter::ValidateInput(
     const RangeCalibrationCandidate& candidate,
     const std::vector<RangeCalibrationMeasurement>& measurements,
-    const RangeCalibrationInfo& info)
+    const CalibrationInfo& info)
 {
-    if (!candidate.valid) {
-        mLastErrorMessage = "The range calibration candidate is not valid.";
-        return false;
-    }
+    if(info.RangeCalMethod!="None") {
+        if (!candidate.valid) {
+            mLastErrorMessage = "The range calibration candidate is not valid.";
+            return false;
+        }
 
-    if (candidate.calibrationMethod != "CubicSpline") {
-        mLastErrorMessage = "Unsupported correction method: " + candidate.calibrationMethod;
-        return false;
-    }
+        if (candidate.calibrationMethod != "CubicSpline" &&
+            candidate.calibrationMethod != "None") {
+            mLastErrorMessage = "Unsupported correction method: " + candidate.calibrationMethod;
+            return false;
+        }
 
-    if (candidate.segments.empty()) {
-        mLastErrorMessage = "The candidate contains no model segments.";
-        return false;
-    }
+        if (candidate.calibrationMethod == "CubicSpline" && candidate.segments.empty()) {
+            mLastErrorMessage = "The candidate contains no model segments.";
+            return false;
+        }
 
-    if (!(candidate.minRange < candidate.maxRange)) {
-        mLastErrorMessage = "The physical range limits are invalid.";
-        return false;
-    }
+        if (!(candidate.minRange < candidate.maxRange)) {
+            mLastErrorMessage = "The physical range limits are invalid.";
+            return false;
+        }
 
-    if (!(candidate.minCalRange < candidate.maxCalRange)) {
-        mLastErrorMessage = "The calibrated range limits are invalid.";
-        return false;
-    }
+        if (candidate.calibrationMethod == "CubicSpline" && !(candidate.minCalRange < candidate.maxCalRange)) {
+            mLastErrorMessage = "The calibrated range limits are invalid.";
+            return false;
+        }
 
-    // minCalRange and maxCalRange are in meters, compare using mm
-    if ((candidate.minCalRange) < candidate.minRange ||
-        (candidate.maxCalRange) > candidate.maxRange) {
-        mLastErrorMessage = "The calibrated range is outside the physical measurement range.";
-        return false;
+        // minCalRange and maxCalRange are in meters, compare using mm
+        if (candidate.calibrationMethod == "CubicSpline" && (
+            (candidate.minCalRange) < candidate.minRange ||
+            (candidate.maxCalRange) > candidate.maxRange)) {
+            mLastErrorMessage = "The calibrated range is outside the physical measurement range.";
+            return false;
+        }
+
+        if (measurements.empty()) {
+            mLastErrorMessage = "No calibration measurements are available.";
+            return false;
+        }
     }
 
     if (info.SensorID.empty()) {
@@ -145,11 +165,6 @@ bool L2RangeCalibrationWriter::ValidateInput(
         return false;
     }
 
-    if (measurements.empty()) {
-        mLastErrorMessage = "No calibration measurements are available.";
-        return false;
-    }
-
     return true;
 }
 
@@ -158,9 +173,9 @@ bool L2RangeCalibrationWriter::ValidateInput(
 //  note: calculated input distances are in meters and
 //  are output in mms
 //--------------------------------------------------------
-bool L2RangeCalibrationWriter::WriteMetadata(
+bool L2CalibrationWriter::WriteMetadata(
     std::ostream& stream,
-    const RangeCalibrationInfo& info)
+    const CalibrationInfo& info)
 {
     stream
         << "# Version," << info.Version << '\n'
@@ -217,7 +232,7 @@ bool L2RangeCalibrationWriter::WriteMetadata(
 //--------------------------------------------------------
 //  WriteModel
 //--------------------------------------------------------
-bool L2RangeCalibrationWriter::WriteModel(
+bool L2CalibrationWriter::WriteModel(
     std::ostream& stream,
     const RangeCalibrationCandidate& candidate)
 {
@@ -254,7 +269,7 @@ bool L2RangeCalibrationWriter::WriteModel(
 //--------------------------------------------------------
 //  WriteCalibrationPoints
 //--------------------------------------------------------
-bool L2RangeCalibrationWriter::WriteCalibrationPoints(std::ostream& stream,
+bool L2CalibrationWriter::WriteCalibrationPoints(std::ostream& stream,
             const std::vector<RangeCalibrationMeasurement>& measurements)
 {
     stream
@@ -280,7 +295,7 @@ bool L2RangeCalibrationWriter::WriteCalibrationPoints(std::ostream& stream,
 //--------------------------------------------------------
 //  WriteCalibrationPoints
 //--------------------------------------------------------
-bool L2RangeCalibrationWriter::WriteAlphaAngleLUT(std::ostream& stream,
+bool L2CalibrationWriter::WriteAlphaAngleLUT(std::ostream& stream,
                                 const std::vector<double>& AlphaAngleLUT)
 {
     stream

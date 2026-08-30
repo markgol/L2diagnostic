@@ -3,7 +3,7 @@ L2lidar Class  – Framework
 
 **Author:** Mark Stegall  
 **License:** GPL-3.0  
-**Platform:** Qt6.10.2 (Qt Creator), C++  
+**Platform:** Qt6.11.2 (Qt Creator), C++  
 **Hardware:** Unitree L2 LiDAR (Ethernet / UDP)
 
 --------
@@ -137,6 +137,8 @@ Key Features
 - Override of internal calibration settings for point cloud conversion
 
 - Piecewise cubic spline correction for range values
+
+- Allows usage of a calibration file
 
 **Thread-Safe Data Access**
 
