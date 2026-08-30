@@ -1,4 +1,4 @@
-**Updated: 2026-08-26**
+**Updated: 2026-08-29**
 This project is for learning about the unitree L2 Lidar hardware communication over ethernet using UDP.
 
 This is a Qt Creator project.  If you are just using the just the source.  When you open the CMakkeList.txt file in this this folder in Qt Creator.  The first time Qt will not find the its .qtcreator project folder and  it will ask you to configure a new project.  You should select the project that matches your platform.
@@ -62,15 +62,15 @@ Jetson Orin Super Nano running Jetpack 7.2 (Ubuntu 24.04)
 
 #### **CURRENT RELEASE**
 
-**V2.0.1 release**
+**V2.1.0 release**
 
-The is the initial V2.x release.
-It added supoprt for overriding the fast scan elevation angle step size.
-This release also changes which version of Qt for source builds is being used:
+Updated to L2lidar class V2.1.0
+The completes the V2.x update from V1.x.
+The l2dliar class has also been updated to V2.1.0
+This completes the rename of functions, method and variables to reflect the generalization of the calibration file.
+This now compiles and runs on both PC and RPI5.
 
-- QtCreator 20.0.x
 
-- Qt 6.11.x
 
 #### **RELEASE HISTORY**
 
@@ -263,6 +263,18 @@ It also allows the collection of data needed to create a nonlinear range correct
 For source build. This release use Eigen V3.4.1 Template source library. This library is not compatible with github. It can be found at: https://libeigen.gitlab.io/
 
 It must be extracted to the include/third_party folder as a subfolder named Eigen.
+
+
+
+**V2.0.1 release**
+
+The is the initial V2.x release.It added supoprt for overriding the fast scan elevation angle step size.This release also changes which version of Qt for source builds is being used:
+
+* QtCreator 20.0.x
+
+* Qt 6.11.x
+  
+  
 
 ## **Current Status**
 
